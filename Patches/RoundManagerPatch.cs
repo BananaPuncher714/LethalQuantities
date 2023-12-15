@@ -1,5 +1,4 @@
 ﻿using HarmonyLib;
-using System;
 using LethalQuantities.Objects;
 using UnityEngine;
 
@@ -7,45 +6,45 @@ namespace LethalQuantities.Patches
 {
     internal class RoundManagerPatch
     {
-        [HarmonyPatch(typeof(RoundManager), nameof(RoundManager.BeginEnemySpawning))]
+        [HarmonyPatch(typeof(RoundManager), nameof(RoundManager.LoadNewLevel))]
+        [HarmonyPriority(Priority.First)]
         [HarmonyPrefix]
-        static void onBeginEnemySpawningPrefix(RoundManager __instance)
+        static void onLoadNewLevelPrefix(ref SelectableLevel newLevel)
         {
-            if (!__instance.IsServer)
+            if (!RoundManager.Instance.IsServer)
             {
                 return;
             }
             RoundState state = getRoundState();
             if (state != null)
             {
-                Plugin.LETHAL_LOGGER.LogInfo("RoundState found, modifying level before enemy spawning");
+                Plugin.LETHAL_LOGGER.LogInfo("RoundState found, modifying level before loading");
 
-                SelectableLevel level = __instance.currentLevel;
                 if (state.levelConfiguration.enemies.enabled.Value)
                 {
-                    level.maxEnemyPowerCount = state.levelConfiguration.enemies.maxPowerCount.Value;
-                    level.enemySpawnChanceThroughoutDay = state.levelConfiguration.enemies.spawnAmountCurve.Value;
-                    level.spawnProbabilityRange = state.levelConfiguration.enemies.spawnAmountRange.Value;
-                    level.Enemies.Clear();
-                    level.Enemies.AddRange(state.enemies);
+                    newLevel.maxEnemyPowerCount = state.levelConfiguration.enemies.maxPowerCount.Value;
+                    newLevel.enemySpawnChanceThroughoutDay = state.levelConfiguration.enemies.spawnAmountCurve.Value;
+                    newLevel.spawnProbabilityRange = state.levelConfiguration.enemies.spawnAmountRange.Value;
+                    newLevel.Enemies.Clear();
+                    newLevel.Enemies.AddRange(state.enemies);
                 }
 
                 if (state.levelConfiguration.daytimeEnemies.enabled.Value)
                 {
-                    level.maxDaytimeEnemyPowerCount = state.levelConfiguration.daytimeEnemies.maxPowerCount.Value;
-                    level.daytimeEnemySpawnChanceThroughDay = state.levelConfiguration.daytimeEnemies.spawnAmountCurve.Value;
-                    level.daytimeEnemiesProbabilityRange = state.levelConfiguration.daytimeEnemies.spawnAmountRange.Value;
-                    level.DaytimeEnemies.Clear();
-                    level.DaytimeEnemies.AddRange(state.daytimeEnemies);
+                    newLevel.maxDaytimeEnemyPowerCount = state.levelConfiguration.daytimeEnemies.maxPowerCount.Value;
+                    newLevel.daytimeEnemySpawnChanceThroughDay = state.levelConfiguration.daytimeEnemies.spawnAmountCurve.Value;
+                    newLevel.daytimeEnemiesProbabilityRange = state.levelConfiguration.daytimeEnemies.spawnAmountRange.Value;
+                    newLevel.DaytimeEnemies.Clear();
+                    newLevel.DaytimeEnemies.AddRange(state.daytimeEnemies);
                 }
 
                 if (state.levelConfiguration.outsideEnemies.enabled.Value)
                 {
-                    level.maxOutsideEnemyPowerCount = state.levelConfiguration.outsideEnemies.maxPowerCount.Value;
-                    level.outsideEnemySpawnChanceThroughDay = state.levelConfiguration.outsideEnemies.spawnAmountCurve.Value;
+                    newLevel.maxOutsideEnemyPowerCount = state.levelConfiguration.outsideEnemies.maxPowerCount.Value;
+                    newLevel.outsideEnemySpawnChanceThroughDay = state.levelConfiguration.outsideEnemies.spawnAmountCurve.Value;
                     // Nothing for outside enemy spawn range probability
-                    level.OutsideEnemies.Clear();
-                    level.OutsideEnemies.AddRange(state.outsideEnemies);
+                    newLevel.OutsideEnemies.Clear();
+                    newLevel.OutsideEnemies.AddRange(state.outsideEnemies);
                 }
             }
         }

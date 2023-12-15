@@ -1,6 +1,6 @@
 {
   "name": "LethalQuantities",
-  "version_number": "1.0.0",
+  "version_number": "1.0.1",
   "website_url": "https://github.com/BananaPuncher714/LethalQuantities",
   "description": "Customizable enemy spawning per moon",
   "dependencies": [

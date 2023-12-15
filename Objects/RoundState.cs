@@ -14,6 +14,8 @@ namespace LethalQuantities.Objects
         public List<SpawnableEnemyWithRarity> daytimeEnemies { get; } = new List<SpawnableEnemyWithRarity>();
         public List<SpawnableEnemyWithRarity> outsideEnemies { get; } = new List<SpawnableEnemyWithRarity>();
 
+        private List<GameObject> instantiatedEnemies = new List<GameObject>();
+
         public void initialize()
         {
             Plugin.LETHAL_LOGGER.LogInfo("Generating spawnable enemy options");
@@ -31,14 +33,22 @@ namespace LethalQuantities.Objects
             }
         }
 
-        private void populate(List<SpawnableEnemyWithRarity> enemies, List<EnemyTypeConfiguration> configs, bool isOutside = false, bool isDaytimeEnemy = false)
+        void OnDestroy()
+        {
+            foreach (GameObject enemy in instantiatedEnemies)
+            {
+                Destroy(enemy);
+            }
+        }
+
+        private void populate(List<SpawnableEnemyWithRarity> enemiesList, List<EnemyTypeConfiguration> configs, bool isOutside = false, bool isDaytimeEnemy = false)
         {
             foreach (var item in configs)
             {
-                EnemyType type = Instantiate(item.type);
                 int rarity = item.rarity.Value;
                 if (rarity > 0)
                 {
+                    EnemyType type = Instantiate(item.type);
                     type.MaxCount = item.maxEnemyCount.Value;
                     type.PowerLevel = item.powerLevel.Value;
                     type.probabilityCurve = item.spawnCurve.Value;
@@ -52,7 +62,7 @@ namespace LethalQuantities.Objects
                     SpawnableEnemyWithRarity spawnable = new SpawnableEnemyWithRarity();
                     spawnable.enemyType = type;
                     spawnable.rarity = rarity;
-                    enemies.Add(spawnable);
+                    enemiesList.Add(spawnable);
                 }
             }
         }
@@ -64,7 +74,8 @@ namespace LethalQuantities.Objects
             obj.SetActive(false);
 
             GameObject copy = Instantiate(obj, new Vector3(-1000000, -1000000, -1000000), Quaternion.identity);
-            SceneManager.MoveGameObjectToScene(copy, scene);
+            SceneManager.MoveGameObjectToScene(copy, SceneManager.GetSceneByName("SampleSceneRelay"));
+            instantiatedEnemies.Add(copy);
             type.enemyPrefab = copy;
             copy.GetComponent<EnemyAI>().enemyType = type;
             obj.SetActive(isActive);

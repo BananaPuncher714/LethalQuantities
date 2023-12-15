@@ -5,11 +5,12 @@ A per-moon enemy spawning customization mod. Please request features or report i
 - Some more control over how many enemies spawn, and on what moons
 - Works with custom levels
 - Works with custom enemies
+- Should work with custom events and other mods that change enemy spawn settings
 ## Bugs
 - May or may not play nicely with other mods that forcefully change spawning behavior
 ## Configuration
 You must host or join a game at least once to generate the configuration files. Any missing or deleted files will be generated with the default options.
-Complex config options:
+Complex config types:
 - [`AnimationCurve`](https://docs.unity3d.com/Manual/animeditor-AnimationCurves.html) - Represents a curve comprised of Keyframes. Each frame represents a key, and a value at that key(generally time).
   - A curve with no frames is left blank
   - A curve with one keyframe is described with a single number
@@ -19,7 +20,11 @@ There are 3 different enemy configuration files:
 - `Enemies.cfg` - Responsible for all enemies that spawn inside.
 - `DaytimeEnemies.cfg` - Responsible for enemies that can spawn outside, but normally passive ones.
 - `OutsideEnemies.cfg` - Responsible for all enemies that can spawn outside, but normally hostile ones.
+
+
 These configuration files do _not_ interfere with each other, meaning enemies spawned based on one config will not count towards settings from another config(such as MaxEnemyCount).
+
+
 **Options**
 - General
   - `Enabled` - Allow/Disallow this config to modify enemy spawning. You **must** enable this option to change enemy spawning behavior.
@@ -53,6 +58,3 @@ The enemy spawn logic in **Lethal Company** is a bit complex, and there are many
 - Customizable spawning formulas
 - YAML/JSON config files for more complex options
 - Random events, maybe
-## Changelog
-### v1.0.0
-- Initial release

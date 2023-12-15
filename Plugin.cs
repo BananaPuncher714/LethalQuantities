@@ -62,14 +62,14 @@ namespace LethalQuantities
 
                 foreach (SelectableLevel level in instance.levels)
                 {
-                    string levelSaveDir = Path.Combine(LEVEL_SAVE_DIR, level.sceneName);
+                    string levelSaveDir = Path.Combine(LEVEL_SAVE_DIR, level.name);
                     levelConfigs.Add(level.sceneName, new LevelConfiguration(levelSaveDir, level, enemies));
                 }
 
                 LETHAL_LOGGER.LogInfo("Printing out default moon info");
                 foreach (var level in instance.levels)
                 {
-                    LETHAL_LOGGER.LogInfo("\tName: " + level.sceneName);
+                    LETHAL_LOGGER.LogInfo("\tName: " + level.name);
                     LETHAL_LOGGER.LogInfo("\tPlanet Name: " + level.PlanetName);
                     LETHAL_LOGGER.LogInfo("\tMax enemy power count: " + level.maxEnemyPowerCount);
                     LETHAL_LOGGER.LogInfo("\tMax daytime enemy power count: " + level.maxDaytimeEnemyPowerCount);
@@ -105,10 +105,9 @@ namespace LethalQuantities
             }
             else if (levelConfigs.ContainsKey(scene.name))
             {
-                LETHAL_LOGGER.LogInfo($"Found scene {scene.name}");
-
                 if (RoundManager.Instance.IsServer)
                 {
+                    LETHAL_LOGGER.LogInfo($"Found scene {scene.name}");
                     // Add a manager to keep track of all objects
                     GameObject levelModifier = new GameObject("LevelModifier");
                     SceneManager.MoveGameObjectToScene(levelModifier, scene);
