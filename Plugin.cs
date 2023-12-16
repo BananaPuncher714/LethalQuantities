@@ -23,6 +23,7 @@ namespace LethalQuantities
         private Dictionary<SelectableLevel, LevelConfiguration> levelConfigs = new Dictionary<SelectableLevel, LevelConfiguration>();
 
         private Harmony _harmony;
+        private bool configInitialized = false;
 
         private void Awake()
         {
@@ -48,10 +49,11 @@ namespace LethalQuantities
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            if (scene.name == "SampleSceneRelay")
-            {
+            if (scene.name == "SampleSceneRelay" && !configInitialized)
+            { 
                 StartOfRound instance = StartOfRound.Instance;
                 HashSet<EnemyType> enemies = new HashSet<EnemyType>();
+                HashSet<Item> items = new HashSet<Item>();
 
                 // Get all enemy types
                 foreach (SelectableLevel level in instance.levels)
@@ -59,12 +61,13 @@ namespace LethalQuantities
                     AddAllTo(enemies, level.Enemies);
                     AddAllTo(enemies, level.DaytimeEnemies);
                     AddAllTo(enemies, level.OutsideEnemies);
+                    AddAllTo(items, level.spawnableScrap);
                 }
 
                 foreach (SelectableLevel level in instance.levels)
                 {
                     string levelSaveDir = Path.Combine(LEVEL_SAVE_DIR, level.name);
-                    levelConfigs.Add(level, new LevelConfiguration(levelSaveDir, level, enemies));
+                    levelConfigs.Add(level, new LevelConfiguration(levelSaveDir, level, enemies, items));
                 }
 
                 LETHAL_LOGGER.LogInfo("Printing out default moon info");
@@ -90,6 +93,8 @@ namespace LethalQuantities
                     LETHAL_LOGGER.LogInfo("\tOutside nemy spawn info:");
                     PrintEnemySpawnTypes(level.OutsideEnemies);
                     LETHAL_LOGGER.LogInfo("\tLevel size multiplier: " + level.factorySizeMultiplier);
+                    LETHAL_LOGGER.LogInfo("\tScrap item info:");
+                    PrintItemTypes(level.spawnableScrap);
                 }
 
                 LETHAL_LOGGER.LogInfo("Printing out default enemy info:");
@@ -103,6 +108,7 @@ namespace LethalQuantities
                     LETHAL_LOGGER.LogInfo("\t\tEnemy spawn falloff curve: " + enemyType.useNumberSpawnedFalloff);
                     PrintAnimationCurve(enemyType.numberSpawnedFalloff);
                 }
+                configInitialized = true;
             }
             else
             {
@@ -151,6 +157,13 @@ namespace LethalQuantities
             }
         }
 
+        private static void AddAllTo(HashSet<Item> items, List<SpawnableItemWithRarity> spawnables)
+        {
+            foreach (var item in spawnables) {
+                items.Add(item.spawnableItem);
+            }
+        }
+
         static void PrintAnimationCurve(AnimationCurve curve)
         {
             int i = 0;
@@ -166,6 +179,14 @@ namespace LethalQuantities
             {
                 EnemyType enemyType = enemy.enemyType;
                 LETHAL_LOGGER.LogInfo("\t\tEnemy: " + enemyType.enemyName + ": " + enemy.rarity);
+            }
+        }
+
+        static void PrintItemTypes(List<SpawnableItemWithRarity> items)
+        {
+            foreach (var item in items)
+            {
+                LETHAL_LOGGER.LogInfo("\tItem: " + item.spawnableItem + ": " + item.rarity);
             }
         }
     }

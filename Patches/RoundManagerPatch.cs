@@ -46,6 +46,22 @@ namespace LethalQuantities.Patches
                     newLevel.OutsideEnemies.Clear();
                     newLevel.OutsideEnemies.AddRange(state.outsideEnemies);
                 }
+
+                if(state.levelConfiguration.scrap.enabled.Value)
+                {
+                    newLevel.maxScrap = state.levelConfiguration.scrap.maxScrap.Value;
+                    newLevel.maxTotalScrapValue = state.levelConfiguration.scrap.maxTotalScrapValue.Value;
+                    newLevel.minScrap = state.levelConfiguration.scrap.minScrap.Value;
+                    newLevel.minTotalScrapValue = state.levelConfiguration.scrap.minTotalScrapValue.Value;
+                    newLevel.spawnableScrap.Clear();
+                    foreach(ScrapItemConfiguration item in state.levelConfiguration.scrap.scrapRarities){
+                        SpawnableItemWithRarity newItem = new SpawnableItemWithRarity();
+                        newItem.spawnableItem = item.Item;
+                        newItem.rarity = item.rarity.Value;
+                        newLevel.spawnableScrap.Add(newItem);
+                    }
+                    
+                }
             }
         }
 
