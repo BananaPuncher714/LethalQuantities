@@ -20,7 +20,7 @@ namespace LethalQuantities
 
         public static ManualLogSource LETHAL_LOGGER { get; private set; }
 
-        private Dictionary<string, LevelConfiguration> levelConfigs = new Dictionary<string, LevelConfiguration>();
+        private Dictionary<SelectableLevel, LevelConfiguration> levelConfigs = new Dictionary<SelectableLevel, LevelConfiguration>();
 
         private Harmony _harmony;
 
@@ -43,6 +43,7 @@ namespace LethalQuantities
             _harmony.PatchAll(typeof(RoundManagerPatch));
 
             SceneManager.sceneLoaded += OnSceneLoaded;
+            SceneManager.sceneUnloaded += OnSceneUnloaded;
         }
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
@@ -63,7 +64,7 @@ namespace LethalQuantities
                 foreach (SelectableLevel level in instance.levels)
                 {
                     string levelSaveDir = Path.Combine(LEVEL_SAVE_DIR, level.name);
-                    levelConfigs.Add(level.sceneName, new LevelConfiguration(levelSaveDir, level, enemies));
+                    levelConfigs.Add(level, new LevelConfiguration(levelSaveDir, level, enemies));
                 }
 
                 LETHAL_LOGGER.LogInfo("Printing out default moon info");
@@ -103,21 +104,42 @@ namespace LethalQuantities
                     PrintAnimationCurve(enemyType.numberSpawnedFalloff);
                 }
             }
-            else if (levelConfigs.ContainsKey(scene.name))
+            else
             {
-                if (RoundManager.Instance.IsServer)
+                if (RoundManager.Instance != null && RoundManager.Instance.IsServer)
                 {
-                    LETHAL_LOGGER.LogInfo($"Found scene {scene.name}");
-                    // Add a manager to keep track of all objects
-                    GameObject levelModifier = new GameObject("LevelModifier");
-                    SceneManager.MoveGameObjectToScene(levelModifier, scene);
+                    SelectableLevel level = null;
+                    foreach (var item in levelConfigs)
+                    {
+                        if (item.Key.sceneName == scene.name && RoundManager.Instance.currentLevel.name == item.Key.name)
+                        {
+                            level = item.Key;
+                            break;
+                        }
+                    }
 
-                    RoundState state = levelModifier.AddComponent<RoundState>();
-                    state.plugin = this;
-                    state.levelConfiguration = levelConfigs[scene.name];
-                    state.scene = scene;
-                    state.initialize();
+                    if (level != null)
+                    {
+                        LETHAL_LOGGER.LogInfo($"Found level {level.name}, modifying enemy spawns");
+                        // Add a manager to keep track of all objects
+                        GameObject levelModifier = new GameObject("LevelModifier");
+                        SceneManager.MoveGameObjectToScene(levelModifier, scene);
+
+                        RoundState state = levelModifier.AddComponent<RoundState>();
+                        state.plugin = this;
+                        state.levelConfiguration = levelConfigs[RoundManager.Instance.currentLevel];
+                        state.scene = scene;
+                        state.initialize();
+                    }
                 }
+            }
+        }
+
+        private void OnSceneUnloaded(Scene scene)
+        {
+            if (scene.name == "SampleSceneRelay")
+            {
+                levelConfigs.Clear();
             }
         }
 

@@ -1,4 +1,6 @@
 ## Changelog
+### v1.0.2
+- Fixed an issue where multiple levels may share the same scene name
 ### v1.0.1
 - Change RoundManager patch to execute before LoadNewLevel with high priority to prevent overwriting other mods' events
 - Changed moon name to use the name rather than scene name
