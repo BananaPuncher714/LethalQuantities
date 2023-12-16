@@ -1,4 +1,6 @@
 ## Changelog
+### v1.0.3
+- Added configurable per level scrap options
 ### v1.0.2
 - Fixed an issue where multiple levels may share the same scene name
 ### v1.0.1

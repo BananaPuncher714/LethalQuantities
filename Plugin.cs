@@ -52,22 +52,21 @@ namespace LethalQuantities
             if (scene.name == "SampleSceneRelay" && !configInitialized)
             { 
                 StartOfRound instance = StartOfRound.Instance;
-                HashSet<EnemyType> enemies = new HashSet<EnemyType>();
-                HashSet<Item> items = new HashSet<Item>();
+                LevelInformation levelInfo = new LevelInformation();
 
                 // Get all enemy types
                 foreach (SelectableLevel level in instance.levels)
                 {
-                    AddAllTo(enemies, level.Enemies);
-                    AddAllTo(enemies, level.DaytimeEnemies);
-                    AddAllTo(enemies, level.OutsideEnemies);
-                    AddAllTo(items, level.spawnableScrap);
+                    AddAllTo(levelInfo.allEnemyTypes, level.Enemies);
+                    AddAllTo(levelInfo.allEnemyTypes, level.DaytimeEnemies);
+                    AddAllTo(levelInfo.allEnemyTypes, level.OutsideEnemies);
+                    AddAllTo(levelInfo.allItems, level.spawnableScrap);
                 }
 
                 foreach (SelectableLevel level in instance.levels)
                 {
                     string levelSaveDir = Path.Combine(LEVEL_SAVE_DIR, level.name);
-                    levelConfigs.Add(level, new LevelConfiguration(levelSaveDir, level, enemies, items));
+                    levelConfigs.Add(level, new LevelConfiguration(levelSaveDir, level, levelInfo));
                 }
 
                 LETHAL_LOGGER.LogInfo("Printing out default moon info");
@@ -98,7 +97,7 @@ namespace LethalQuantities
                 }
 
                 LETHAL_LOGGER.LogInfo("Printing out default enemy info:");
-                foreach (var enemyType in enemies)
+                foreach (var enemyType in levelInfo.allEnemyTypes)
                 {
                     LETHAL_LOGGER.LogInfo("\tEnemy: " + enemyType.enemyName);
                     LETHAL_LOGGER.LogInfo("\t\tEnemy max count: " + enemyType.MaxCount);
@@ -186,7 +185,7 @@ namespace LethalQuantities
         {
             foreach (var item in items)
             {
-                LETHAL_LOGGER.LogInfo("\tItem: " + item.spawnableItem + ": " + item.rarity);
+                LETHAL_LOGGER.LogInfo("\t\tItem: " + item.spawnableItem + ": " + item.rarity);
             }
         }
     }

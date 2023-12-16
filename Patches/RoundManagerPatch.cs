@@ -22,6 +22,7 @@ namespace LethalQuantities.Patches
 
                 if (state.levelConfiguration.enemies.enabled.Value)
                 {
+                    Plugin.LETHAL_LOGGER.LogInfo("Changing inside enemy values");
                     newLevel.maxEnemyPowerCount = state.levelConfiguration.enemies.maxPowerCount.Value;
                     newLevel.enemySpawnChanceThroughoutDay = state.levelConfiguration.enemies.spawnAmountCurve.Value;
                     newLevel.spawnProbabilityRange = state.levelConfiguration.enemies.spawnAmountRange.Value;
@@ -31,6 +32,7 @@ namespace LethalQuantities.Patches
 
                 if (state.levelConfiguration.daytimeEnemies.enabled.Value)
                 {
+                    Plugin.LETHAL_LOGGER.LogInfo("Changing daytime enemy values");
                     newLevel.maxDaytimeEnemyPowerCount = state.levelConfiguration.daytimeEnemies.maxPowerCount.Value;
                     newLevel.daytimeEnemySpawnChanceThroughDay = state.levelConfiguration.daytimeEnemies.spawnAmountCurve.Value;
                     newLevel.daytimeEnemiesProbabilityRange = state.levelConfiguration.daytimeEnemies.spawnAmountRange.Value;
@@ -40,6 +42,7 @@ namespace LethalQuantities.Patches
 
                 if (state.levelConfiguration.outsideEnemies.enabled.Value)
                 {
+                    Plugin.LETHAL_LOGGER.LogInfo("Changing outside enemy values");
                     newLevel.maxOutsideEnemyPowerCount = state.levelConfiguration.outsideEnemies.maxPowerCount.Value;
                     newLevel.outsideEnemySpawnChanceThroughDay = state.levelConfiguration.outsideEnemies.spawnAmountCurve.Value;
                     // Nothing for outside enemy spawn range probability
@@ -47,16 +50,18 @@ namespace LethalQuantities.Patches
                     newLevel.OutsideEnemies.AddRange(state.outsideEnemies);
                 }
 
-                if(state.levelConfiguration.scrap.enabled.Value)
+                if (state.levelConfiguration.scrap.enabled.Value)
                 {
-                    newLevel.maxScrap = state.levelConfiguration.scrap.maxScrap.Value;
-                    newLevel.maxTotalScrapValue = state.levelConfiguration.scrap.maxTotalScrapValue.Value;
+                    Plugin.LETHAL_LOGGER.LogInfo("Changing scrap values");
                     newLevel.minScrap = state.levelConfiguration.scrap.minScrap.Value;
+                    newLevel.maxScrap = state.levelConfiguration.scrap.maxScrap.Value;
                     newLevel.minTotalScrapValue = state.levelConfiguration.scrap.minTotalScrapValue.Value;
+                    newLevel.maxTotalScrapValue = state.levelConfiguration.scrap.maxTotalScrapValue.Value;
                     newLevel.spawnableScrap.Clear();
-                    foreach(ScrapItemConfiguration item in state.levelConfiguration.scrap.scrapRarities){
+                    foreach (ScrapItemConfiguration item in state.levelConfiguration.scrap.scrapRarities)
+                    {
                         SpawnableItemWithRarity newItem = new SpawnableItemWithRarity();
-                        newItem.spawnableItem = item.Item;
+                        newItem.spawnableItem = item.item;
                         newItem.rarity = item.rarity.Value;
                         newLevel.spawnableScrap.Add(newItem);
                     }

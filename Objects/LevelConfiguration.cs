@@ -37,17 +37,18 @@ namespace LethalQuantities.Objects
         public ConfigEntry<int> minScrap { get; set; }
         public ConfigEntry<int> maxScrap { get; set; }
         public ConfigEntry<int> minTotalScrapValue { get; set; }
-        public ConfigEntry<int> maxTotalScrapValue {  get; set; }
+        public ConfigEntry<int> maxTotalScrapValue { get; set; }
         public List<ScrapItemConfiguration> scrapRarities { get; } = new List<ScrapItemConfiguration>();
     }
 
     public class ScrapItemConfiguration
     {
-        public Item Item { get; protected set; }
+        public Item item { get; protected set; }
         internal ScrapItemConfiguration(Item item)
         {
-            this.Item = item;
+            this.item = item;
         }
+
         public ConfigEntry<int> rarity { get; set; }
     }
 
@@ -67,7 +68,7 @@ namespace LethalQuantities.Objects
         public EnemyConfiguration outsideEnemies { get; }
         public ScrapConfiguration scrap { get; }
 
-        public LevelConfiguration(string saveDirectory, SelectableLevel level, HashSet<EnemyType> enemyTypes, HashSet<Item> items)
+        public LevelConfiguration(string saveDirectory, SelectableLevel level, LevelInformation levelInfo)
         {
             levelId = level.levelID;
             sceneName = level.sceneName;
@@ -79,14 +80,13 @@ namespace LethalQuantities.Objects
             scrap = new ScrapConfiguration();
 
 
-            instantiateConfigs(level, enemyTypes, items);
+            instantiateConfigs(level, levelInfo);
         }
 
-        private void instantiateConfigs(SelectableLevel level, HashSet<EnemyType> enemyTypes, HashSet<Item> items)
+        private void instantiateConfigs(SelectableLevel level, LevelInformation levelInfo)
         {
-            instantiateEnemyConfigs(level, enemyTypes);
-            instantiateScrapConfigs(level, items);
-            
+            instantiateEnemyConfigs(level, levelInfo.allEnemyTypes);
+            instantiateScrapConfigs(level, levelInfo.allItems);
         }
 
         private void instantiateEnemyConfigs(SelectableLevel level, HashSet<EnemyType> enemyTypes)
@@ -185,9 +185,7 @@ namespace LethalQuantities.Objects
 
                     itemConfiguration.rarity = scrapConfig.Bind(tablename, "Rarity", itemSpawnRarities.GetValueOrDefault(itemType, 0), "Rarity of an item relative to the total rarity of all enemies combined.");
                     
-
                     scrap.scrapRarities.Add(itemConfiguration);
-                    
                 }
             }
         }
