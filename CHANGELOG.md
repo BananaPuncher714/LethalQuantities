@@ -1,4 +1,7 @@
 ## Changelog
+### v1.0.4
+You should delete your configs if updating, since the config table names are different
+- Use GameObject name instead of item/enemy name
 ### v1.0.3
 - Added configurable per level scrap options
 ### v1.0.2
