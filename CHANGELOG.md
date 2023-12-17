@@ -1,4 +1,6 @@
 ## Changelog
+### 1.0.5
+- Changed all enemy configs to use enemy name, instead of only outside enemies
 ### v1.0.4
 You should delete your configs if updating, since the config table names are different
 - Use GameObject name instead of item/enemy name

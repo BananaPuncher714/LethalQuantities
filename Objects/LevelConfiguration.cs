@@ -103,7 +103,7 @@ namespace LethalQuantities.Objects
                 foreach (EnemyType enemyType in enemyTypes)
                 {
                     EnemyTypeConfiguration typeConfiguration = new EnemyTypeConfiguration(enemyType);
-                    string tablename = $"EnemyTypes.{enemyType.enemyName}";
+                    string tablename = $"EnemyTypes.{enemyType.name}";
 
                     typeConfiguration.rarity = enemyConfig.Bind(tablename, "Rarity", enemySpawnRarities.GetValueOrDefault(enemyType, 0), "Rarity of an enemy relative to the total rarity of all enemies combined.");
                     typeConfiguration.maxEnemyCount = enemyConfig.Bind(tablename, "MaxEnemyCount", enemyType.MaxCount, "Maximum amount of this type of enemy allowed at once.");
@@ -128,7 +128,7 @@ namespace LethalQuantities.Objects
                 foreach (EnemyType enemyType in enemyTypes)
                 {
                     EnemyTypeConfiguration typeConfiguration = new EnemyTypeConfiguration(enemyType);
-                    string tablename = $"EnemyTypes.{enemyType.enemyName}";
+                    string tablename = $"EnemyTypes.{enemyType.name}";
 
                     typeConfiguration.rarity = enemyConfig.Bind(tablename, "Rarity", enemySpawnRarities.GetValueOrDefault(enemyType, 0), "Rarity of an enemy relative to the total rarity of all enemies combined.");
                     typeConfiguration.maxEnemyCount = enemyConfig.Bind(tablename, "MaxEnemyCount", enemyType.MaxCount, "Maximum amount of this type of enemy allowed at once.");
