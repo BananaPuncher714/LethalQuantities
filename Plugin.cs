@@ -49,92 +49,95 @@ namespace LethalQuantities
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            if (scene.name == "SampleSceneRelay" && !configInitialized)
-            { 
-                StartOfRound instance = StartOfRound.Instance;
-                LevelInformation levelInfo = new LevelInformation();
-
-                // Get all enemy types
-                foreach (SelectableLevel level in instance.levels)
-                {
-                    AddAllTo(levelInfo.allEnemyTypes, level.Enemies);
-                    AddAllTo(levelInfo.allEnemyTypes, level.DaytimeEnemies);
-                    AddAllTo(levelInfo.allEnemyTypes, level.OutsideEnemies);
-                    AddAllTo(levelInfo.allItems, level.spawnableScrap);
-                }
-
-                foreach (SelectableLevel level in instance.levels)
-                {
-                    string levelSaveDir = Path.Combine(LEVEL_SAVE_DIR, level.name);
-                    levelConfigs.Add(level, new LevelConfiguration(levelSaveDir, level, levelInfo));
-                }
-
-                LETHAL_LOGGER.LogInfo("Printing out default moon info");
-                foreach (var level in instance.levels)
-                {
-                    LETHAL_LOGGER.LogInfo("\tName: " + level.name);
-                    LETHAL_LOGGER.LogInfo("\tPlanet Name: " + level.PlanetName);
-                    LETHAL_LOGGER.LogInfo("\tMax enemy power count: " + level.maxEnemyPowerCount);
-                    LETHAL_LOGGER.LogInfo("\tMax daytime enemy power count: " + level.maxDaytimeEnemyPowerCount);
-                    LETHAL_LOGGER.LogInfo("\tMax outside enemy power count: " + level.maxOutsideEnemyPowerCount);
-                    LETHAL_LOGGER.LogInfo("\tSpawn probability range: " + level.spawnProbabilityRange);
-                    LETHAL_LOGGER.LogInfo("\tDaytime spawn probability range: " + level.daytimeEnemiesProbabilityRange);
-                    LETHAL_LOGGER.LogInfo("\tEnemy spawn curve:");
-                    PrintAnimationCurve(level.enemySpawnChanceThroughoutDay);
-                    LETHAL_LOGGER.LogInfo("\tDaytime enemy spawn curve:");
-                    PrintAnimationCurve(level.daytimeEnemySpawnChanceThroughDay);
-                    LETHAL_LOGGER.LogInfo("\tOutside enemy spawn curve:");
-                    PrintAnimationCurve(level.outsideEnemySpawnChanceThroughDay);
-                    LETHAL_LOGGER.LogInfo("\tEnemy spawn info:");
-                    PrintEnemySpawnTypes(level.Enemies);
-                    LETHAL_LOGGER.LogInfo("\tDaytime enemy spawn info:");
-                    PrintEnemySpawnTypes(level.DaytimeEnemies);
-                    LETHAL_LOGGER.LogInfo("\tOutside nemy spawn info:");
-                    PrintEnemySpawnTypes(level.OutsideEnemies);
-                    LETHAL_LOGGER.LogInfo("\tLevel size multiplier: " + level.factorySizeMultiplier);
-                    LETHAL_LOGGER.LogInfo("\tScrap item info:");
-                    PrintItemTypes(level.spawnableScrap);
-                }
-
-                LETHAL_LOGGER.LogInfo("Printing out default enemy info:");
-                foreach (var enemyType in levelInfo.allEnemyTypes)
-                {
-                    LETHAL_LOGGER.LogInfo("\tEnemy: " + enemyType.enemyName);
-                    LETHAL_LOGGER.LogInfo("\t\tEnemy max count: " + enemyType.MaxCount);
-                    LETHAL_LOGGER.LogInfo("\t\tEnemy power level: " + enemyType.PowerLevel);
-                    LETHAL_LOGGER.LogInfo("\t\tEnemy spawn curve:");
-                    PrintAnimationCurve(enemyType.probabilityCurve);
-                    LETHAL_LOGGER.LogInfo("\t\tEnemy spawn falloff curve: " + enemyType.useNumberSpawnedFalloff);
-                    PrintAnimationCurve(enemyType.numberSpawnedFalloff);
-                }
-                configInitialized = true;
-            }
-            else
+            if (RoundManager.Instance != null && RoundManager.Instance.IsServer)
             {
-                if (RoundManager.Instance != null && RoundManager.Instance.IsServer)
+                if (scene.name == "SampleSceneRelay" && !configInitialized)
                 {
-                    SelectableLevel level = null;
-                    foreach (var item in levelConfigs)
+                    StartOfRound instance = StartOfRound.Instance;
+                    LevelInformation levelInfo = new LevelInformation();
+
+                    // Get all enemy types
+                    foreach (SelectableLevel level in instance.levels)
                     {
-                        if (item.Key.sceneName == scene.name && RoundManager.Instance.currentLevel.name == item.Key.name)
-                        {
-                            level = item.Key;
-                            break;
-                        }
+                        AddAllTo(levelInfo.allEnemyTypes, level.Enemies);
+                        AddAllTo(levelInfo.allEnemyTypes, level.DaytimeEnemies);
+                        AddAllTo(levelInfo.allEnemyTypes, level.OutsideEnemies);
+                        AddAllTo(levelInfo.allItems, level.spawnableScrap);
                     }
 
-                    if (level != null)
+                    foreach (SelectableLevel level in instance.levels)
                     {
-                        LETHAL_LOGGER.LogInfo($"Found level {level.name}, modifying enemy spawns");
-                        // Add a manager to keep track of all objects
-                        GameObject levelModifier = new GameObject("LevelModifier");
-                        SceneManager.MoveGameObjectToScene(levelModifier, scene);
+                        string levelSaveDir = Path.Combine(LEVEL_SAVE_DIR, level.name);
+                        levelConfigs.Add(level, new LevelConfiguration(levelSaveDir, level, levelInfo));
+                    }
 
-                        RoundState state = levelModifier.AddComponent<RoundState>();
-                        state.plugin = this;
-                        state.levelConfiguration = levelConfigs[RoundManager.Instance.currentLevel];
-                        state.scene = scene;
-                        state.initialize();
+                    LETHAL_LOGGER.LogInfo("Printing out default moon info");
+                    foreach (var level in instance.levels)
+                    {
+                        LETHAL_LOGGER.LogInfo("\tName: " + level.name);
+                        LETHAL_LOGGER.LogInfo("\tPlanet Name: " + level.PlanetName);
+                        LETHAL_LOGGER.LogInfo("\tMax enemy power count: " + level.maxEnemyPowerCount);
+                        LETHAL_LOGGER.LogInfo("\tMax daytime enemy power count: " + level.maxDaytimeEnemyPowerCount);
+                        LETHAL_LOGGER.LogInfo("\tMax outside enemy power count: " + level.maxOutsideEnemyPowerCount);
+                        LETHAL_LOGGER.LogInfo("\tSpawn probability range: " + level.spawnProbabilityRange);
+                        LETHAL_LOGGER.LogInfo("\tDaytime spawn probability range: " + level.daytimeEnemiesProbabilityRange);
+                        LETHAL_LOGGER.LogInfo("\tEnemy spawn curve:");
+                        PrintAnimationCurve(level.enemySpawnChanceThroughoutDay);
+                        LETHAL_LOGGER.LogInfo("\tDaytime enemy spawn curve:");
+                        PrintAnimationCurve(level.daytimeEnemySpawnChanceThroughDay);
+                        LETHAL_LOGGER.LogInfo("\tOutside enemy spawn curve:");
+                        PrintAnimationCurve(level.outsideEnemySpawnChanceThroughDay);
+                        LETHAL_LOGGER.LogInfo("\tEnemy spawn info:");
+                        PrintEnemySpawnTypes(level.Enemies);
+                        LETHAL_LOGGER.LogInfo("\tDaytime enemy spawn info:");
+                        PrintEnemySpawnTypes(level.DaytimeEnemies);
+                        LETHAL_LOGGER.LogInfo("\tOutside nemy spawn info:");
+                        PrintEnemySpawnTypes(level.OutsideEnemies);
+                        LETHAL_LOGGER.LogInfo("\tLevel size multiplier: " + level.factorySizeMultiplier);
+                        LETHAL_LOGGER.LogInfo("\tScrap item info:");
+                        PrintItemTypes(level.spawnableScrap);
+                    }
+
+                    LETHAL_LOGGER.LogInfo("Printing out default enemy info:");
+                    foreach (var enemyType in levelInfo.allEnemyTypes)
+                    {
+                        LETHAL_LOGGER.LogInfo("\tEnemy: " + enemyType.enemyName);
+                        LETHAL_LOGGER.LogInfo("\t\tEnemy max count: " + enemyType.MaxCount);
+                        LETHAL_LOGGER.LogInfo("\t\tEnemy power level: " + enemyType.PowerLevel);
+                        LETHAL_LOGGER.LogInfo("\t\tEnemy spawn curve:");
+                        PrintAnimationCurve(enemyType.probabilityCurve);
+                        LETHAL_LOGGER.LogInfo("\t\tEnemy spawn falloff curve: " + enemyType.useNumberSpawnedFalloff);
+                        PrintAnimationCurve(enemyType.numberSpawnedFalloff);
+                    }
+                    configInitialized = true;
+                }
+                else
+                {
+                    if (RoundManager.Instance != null && RoundManager.Instance.IsServer)
+                    {
+                        SelectableLevel level = null;
+                        foreach (var item in levelConfigs)
+                        {
+                            if (item.Key.sceneName == scene.name && RoundManager.Instance.currentLevel.name == item.Key.name)
+                            {
+                                level = item.Key;
+                                break;
+                            }
+                        }
+
+                        if (level != null)
+                        {
+                            LETHAL_LOGGER.LogInfo($"Found level {level.name}, modifying enemy spawns");
+                            // Add a manager to keep track of all objects
+                            GameObject levelModifier = new GameObject("LevelModifier");
+                            SceneManager.MoveGameObjectToScene(levelModifier, scene);
+
+                            RoundState state = levelModifier.AddComponent<RoundState>();
+                            state.plugin = this;
+                            state.levelConfiguration = levelConfigs[RoundManager.Instance.currentLevel];
+                            state.scene = scene;
+                            state.initialize();
+                        }
                     }
                 }
             }

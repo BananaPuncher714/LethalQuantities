@@ -1,4 +1,7 @@
 ## Changelog
+### 1.0.6
+- Fixed randomly floating enemies in the middle of nowhere
+- Fixed compatibility with other mods like ScanForEnemies
 ### 1.0.5
 - Changed all enemy configs to use enemy name, instead of only outside enemies
 ### v1.0.4

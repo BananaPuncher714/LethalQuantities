@@ -14,8 +14,6 @@ namespace LethalQuantities.Objects
         public List<SpawnableEnemyWithRarity> daytimeEnemies { get; } = new List<SpawnableEnemyWithRarity>();
         public List<SpawnableEnemyWithRarity> outsideEnemies { get; } = new List<SpawnableEnemyWithRarity>();
 
-        private List<GameObject> instantiatedEnemies = new List<GameObject>();
-
         public void initialize()
         {
             Plugin.LETHAL_LOGGER.LogInfo("Generating spawnable enemy options");
@@ -30,14 +28,6 @@ namespace LethalQuantities.Objects
             if (levelConfiguration.outsideEnemies.enabled.Value)
             {
                 populate(outsideEnemies, levelConfiguration.outsideEnemies.enemyTypes, true);
-            }
-        }
-
-        void OnDestroy()
-        {
-            foreach (GameObject enemy in instantiatedEnemies)
-            {
-                Destroy(enemy);
             }
         }
 
@@ -73,12 +63,12 @@ namespace LethalQuantities.Objects
             bool isActive = obj.activeSelf;
             obj.SetActive(false);
 
-            GameObject copy = Instantiate(obj, new Vector3(-1000000, -1000000, -1000000), Quaternion.identity);
+            GameObject copy = Instantiate(obj, new Vector3(0, -50, 0), Quaternion.identity);
             SceneManager.MoveGameObjectToScene(copy, SceneManager.GetSceneByName("SampleSceneRelay"));
-            instantiatedEnemies.Add(copy);
             type.enemyPrefab = copy;
             copy.GetComponent<EnemyAI>().enemyType = type;
             obj.SetActive(isActive);
+            copy.hideFlags = HideFlags.HideInInspector;
             copy.SetActive(isActive);
         }
     }
