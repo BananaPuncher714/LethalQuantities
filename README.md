@@ -1,5 +1,5 @@
 # Lethal Quantities
-A per-moon enemy and item spawning customization mod. **All configs are disabled by default.** Please request features or report issues [here](https://github.com/BananaPuncher714/LethalQuantities/issues)
+A per-moon enemy and item spawning customization mod. **All configs are disabled by default.** Please request features or report issues [here](https://github.com/BananaPuncher714/LethalQuantities/issues). **Configs are generated after you host or join a game, and can be confirmed if this mod prints out debug information in the console about every moon and enemy type.**
 ## Features
 - Provides optional(disabled by default) settings to enhance your Lethal Company experience
 - Some more control over how many enemies spawn, and on what moons

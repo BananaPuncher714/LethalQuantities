@@ -1,4 +1,6 @@
 ## Changelog
+### 1.0.7
+- Fixed configs not getting saved/loaded
 ### 1.0.6
 - Fixed randomly floating enemies in the middle of nowhere
 - Fixed compatibility with other mods like ScanForEnemies
