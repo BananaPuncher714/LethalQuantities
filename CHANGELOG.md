@@ -1,4 +1,7 @@
 ## Changelog
+### 1.0.8
+- Don't add enemies with a max enemy count of 0, even if the rarity is not 0
+- Changed enemy hideflags on spawn to worth with other mods
 ### 1.0.7
 - Fixed configs not getting saved/loaded
 ### 1.0.6

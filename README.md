@@ -38,7 +38,7 @@ These configuration files do _not_ interfere with each other, meaning enemies sp
   - `SpawnAmountCurve` - An AnimationCurve with a key ranging from 0 to 1. The key represents the percentage of time progressed in the current level. The value is the amount of enemies to spawn at the given time.
   - `SpawnAmountRange` - The range of enemies that can spawn. A value of 3 means that 3 more or 3 less enemies can spawn, based on the value returned by the `SpawnAmountCurve`.
 - EnemyType - There is one section for each enemy. Invalid enemy types are ignored.
-  - `Rarity` - The weight given to this enemy vs other enemies
+  - `Rarity` - The weight given to this enemy vs other enemies. If you do not want the enemy to spawn, set the rarity to 0.
   - `MaxEnemyCount` - The total amount of enemies of the given type that can spawn
   - `PowerLevel` - How much power an enemy of the given type counts for
   - `SpawnCurve` - An AnimationCurve from 0 to 1. The key represents the percentage of time progressed, much like `SpawnChanceCurve`. The value normally ranges from 0 to 1, and is multiplied by `Rarity` to find the weight.

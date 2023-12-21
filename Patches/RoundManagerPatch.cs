@@ -65,7 +65,6 @@ namespace LethalQuantities.Patches
                         newItem.rarity = item.rarity.Value;
                         newLevel.spawnableScrap.Add(newItem);
                     }
-                    
                 }
             }
         }
