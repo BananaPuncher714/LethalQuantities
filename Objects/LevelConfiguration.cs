@@ -185,8 +185,8 @@ namespace LethalQuantities.Objects
                     string tablename = $"ItemType.{itemType.name}";
 
                     itemConfiguration.rarity = scrapConfig.Bind(tablename, "Rarity", itemSpawnRarities.GetValueOrDefault(itemType, 0), "Rarity of an item relative to the total rarity of all enemies combined.");
-                    itemConfiguration.minValue = scrapConfig.Bind(tablename, "minValue", itemType.minValue, "Minimum value of a scrap item");
-                    itemConfiguration.maxValue = scrapConfig.Bind(tablename, "maxValue", itemType.maxValue, "Maximum value of a scrap item");
+                    itemConfiguration.minValue = scrapConfig.Bind(tablename, "MinValue", itemType.minValue, "Minimum value of a scrap item");
+                    itemConfiguration.maxValue = scrapConfig.Bind(tablename, "MaxValue", itemType.maxValue, "Maximum value of a scrap item");
 
                     scrap.scrapRarities.Add(itemConfiguration);
                 }

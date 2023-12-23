@@ -1,4 +1,6 @@
 ## Changelog
+### 1.0.10
+- Updated config key naming convention to upper camel case
 ### 1.0.9
 - Removed MaxTotalValue and MinTotalValue scrap config options, as they did nothing
 - Added per item MaxValue and MinValue scrap config options
