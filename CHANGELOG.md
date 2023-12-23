@@ -1,4 +1,8 @@
 ## Changelog
+### 1.0.9
+- Removed maxTotalValue and minTotalValue config options, as they did nothing
+- Added per item maxValue and minValue config options
+- Added config options for changing scrapAmountMultiplier and scrapValueMultiplier
 ### 1.0.8
 - Don't add enemies with a max enemy count of 0, even if the rarity is not 0
 - Changed enemy hideflags on spawn to worth with other mods

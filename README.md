@@ -64,10 +64,12 @@ These configuration values are set per moon.
   - `Enabled` - Allow/Disallow this config to modify scrap spawning. You **must** enable this option to change scrap spawning behavior.
   - `MaxScrapCount` - Maximum total number of scrap items generated in a level. 
   - `MinScrapCount` - Minimum total number of scrap items generated in a level. 
-  - `MaxTotalScrapValue` - The maximum total value for all scrap generated in a level.
-  - `MinTotalScrapValue` - The minimum total value for all scrap generated in a level.
+  - `ScrapValueMultiplier` - Multiplies the value of a scrap item by this multiplier.
+  - `ScrapAmountMultiplier` - Multiplies the total number of scrap on a level by this multiplier.
 - ItemType - There is one section for each item.
   - `Rarity` - The weight of this item, relative to the total weight of all items.
+  - `MinValue` - The minimum value of this item.
+  - `MaxValue` - The maximum value of this item.
  </details>
 
 ## Spawn Logic

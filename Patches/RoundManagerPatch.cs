@@ -9,9 +9,9 @@ namespace LethalQuantities.Patches
         [HarmonyPatch(typeof(RoundManager), nameof(RoundManager.LoadNewLevel))]
         [HarmonyPriority(Priority.First)]
         [HarmonyPrefix]
-        static void onLoadNewLevelPrefix(ref SelectableLevel newLevel)
+        static void onLoadNewLevelPrefix(RoundManager __instance, ref SelectableLevel newLevel)
         {
-            if (!RoundManager.Instance.IsServer)
+            if (!__instance.IsServer)
             {
                 return;
             }
@@ -55,14 +55,17 @@ namespace LethalQuantities.Patches
                     Plugin.LETHAL_LOGGER.LogInfo("Changing scrap values");
                     newLevel.minScrap = state.levelConfiguration.scrap.minScrap.Value;
                     newLevel.maxScrap = state.levelConfiguration.scrap.maxScrap.Value;
-                    newLevel.minTotalScrapValue = state.levelConfiguration.scrap.minTotalScrapValue.Value;
-                    newLevel.maxTotalScrapValue = state.levelConfiguration.scrap.maxTotalScrapValue.Value;
+                    __instance.scrapAmountMultiplier = state.levelConfiguration.scrap.scrapAmountMultiplier.Value;
+                    __instance.scrapValueMultiplier = state.levelConfiguration.scrap.scrapValueMultiplier.Value;
+
                     newLevel.spawnableScrap.Clear();
                     foreach (ScrapItemConfiguration item in state.levelConfiguration.scrap.scrapRarities)
                     {
                         SpawnableItemWithRarity newItem = new SpawnableItemWithRarity();
                         newItem.spawnableItem = item.item;
                         newItem.rarity = item.rarity.Value;
+                        newItem.spawnableItem.maxValue = item.maxValue.Value;
+                        newItem.spawnableItem.minValue = item.minValue.Value;
                         newLevel.spawnableScrap.Add(newItem);
                     }
                 }
