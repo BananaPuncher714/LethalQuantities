@@ -36,8 +36,8 @@ namespace LethalQuantities.Objects
         public ConfigEntry<bool> enabled { get; set; }
         public ConfigEntry<int> minScrap { get; set; }
         public ConfigEntry<int> maxScrap { get; set; }
-        public ConfigEntry<int> minTotalScrapValue { get; set; }
-        public ConfigEntry<int> maxTotalScrapValue { get; set; }
+        public ConfigEntry<float> scrapValueMultiplier { get; set; }
+        public ConfigEntry<float> scrapAmountMultiplier { get; set; }
         public List<ScrapItemConfiguration> scrapRarities { get; } = new List<ScrapItemConfiguration>();
     }
 
@@ -50,6 +50,8 @@ namespace LethalQuantities.Objects
         }
 
         public ConfigEntry<int> rarity { get; set; }
+        public ConfigEntry<int> maxValue { get; set; }
+        public ConfigEntry<int> minValue { get; set; }
     }
 
     public class LevelConfiguration
@@ -174,9 +176,8 @@ namespace LethalQuantities.Objects
                 scrap.enabled = scrapConfig.Bind("General", "Enabled", false, "Enables/disables custom scrap generation");
                 scrap.maxScrap = scrapConfig.Bind("General", "MaxScrapCount", level.maxScrap, "Maximum total number of scrap generated in the level.");
                 scrap.minScrap = scrapConfig.Bind("General", "MinScrapCount", level.minScrap, "Minimum total number of scrap generated in the level.");
-                scrap.maxTotalScrapValue = scrapConfig.Bind("General", "MaxTotalScrapValue", level.maxTotalScrapValue, "The maximum total value of all scrap generated in the level.");
-                scrap.minTotalScrapValue = scrapConfig.Bind("General", "MinTotalScrapValue", level.minTotalScrapValue, "The maximum total value of all scrap generated in the level.");
-
+                scrap.scrapAmountMultiplier = scrapConfig.Bind("General", "ScrapAmountMultiplier", 1f, "Modifier to the total amount of scrap generated in the level.");
+                scrap.scrapValueMultiplier = scrapConfig.Bind("General", "ScrapValueMultiplier", .4f, "Modifier to the total value of scrap generated in the level.");
                 Dictionary<Item, int> itemSpawnRarities = convertToDictionary(level.spawnableScrap);
                 foreach ( Item itemType in items)
                 {
@@ -184,7 +185,9 @@ namespace LethalQuantities.Objects
                     string tablename = $"ItemType.{itemType.name}";
 
                     itemConfiguration.rarity = scrapConfig.Bind(tablename, "Rarity", itemSpawnRarities.GetValueOrDefault(itemType, 0), "Rarity of an item relative to the total rarity of all enemies combined.");
-                    
+                    itemConfiguration.minValue = scrapConfig.Bind(tablename, "minValue", itemType.minValue, "Minimum value of a scrap item");
+                    itemConfiguration.maxValue = scrapConfig.Bind(tablename, "maxValue", itemType.maxValue, "Maximum value of a scrap item");
+
                     scrap.scrapRarities.Add(itemConfiguration);
                 }
             }

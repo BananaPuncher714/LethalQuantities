@@ -15,6 +15,9 @@ namespace LethalQuantities.Objects
         public List<SpawnableEnemyWithRarity> outsideEnemies { get; } = new List<SpawnableEnemyWithRarity>();
 
         public List<GameObject> modifiedEnemyTypes { get; } = new List<GameObject>();
+        public float defaultScrapValueMultiplier = 1f;
+        public float defaultScrapAmountMultiplier = 1f;
+        public Dictionary<Item, ItemInformation> defaultItems = new Dictionary<Item, ItemInformation>();
         public void initialize()
         {
             Plugin.LETHAL_LOGGER.LogInfo("Generating spawnable enemy options");
@@ -30,6 +33,12 @@ namespace LethalQuantities.Objects
             {
                 populate(outsideEnemies, levelConfiguration.outsideEnemies.enemyTypes, true);
             }
+            if(levelConfiguration.scrap.enabled.Value)
+            {
+                defaultScrapAmountMultiplier = RoundManager.Instance.scrapAmountMultiplier;
+                defaultScrapValueMultiplier = RoundManager.Instance.scrapValueMultiplier;
+                copyDefaultItems(defaultItems, levelConfiguration.scrap.scrapRarities) ;
+            }
         }
 
         public void OnDestroy()
@@ -39,6 +48,16 @@ namespace LethalQuantities.Objects
                 Destroy(obj);
             }
             modifiedEnemyTypes.Clear();
+            if (levelConfiguration.scrap.enabled.Value)
+            {
+                RoundManager.Instance.scrapAmountMultiplier = defaultScrapAmountMultiplier;
+                RoundManager.Instance.scrapValueMultiplier = defaultScrapValueMultiplier;
+                foreach (var item in defaultItems)
+                {
+                    item.Key.maxValue = item.Value.maxValue;
+                    item.Key.minValue = item.Value.minValue;
+                }
+            }
         }
 
         public void Update()
@@ -95,6 +114,16 @@ namespace LethalQuantities.Objects
             copy.SetActive(isActive);
 
             DontDestroyOnLoad(copy);
+        }
+
+
+        private void copyDefaultItems(Dictionary<Item, ItemInformation> items,List<ScrapItemConfiguration> scrapRarities)
+        {
+            foreach (ScrapItemConfiguration itemconfig in scrapRarities)
+            {
+                items.Add(itemconfig.item, new ItemInformation(itemconfig.item.minValue, itemconfig.item.maxValue));
+            }
+
         }
     }
 }
