@@ -15,9 +15,11 @@ namespace LethalQuantities.Objects
         public List<SpawnableEnemyWithRarity> outsideEnemies { get; } = new List<SpawnableEnemyWithRarity>();
 
         public List<GameObject> modifiedEnemyTypes { get; } = new List<GameObject>();
-        public float defaultScrapValueMultiplier = 1f;
+
         public float defaultScrapAmountMultiplier = 1f;
+        public float defaultScrapValueMultiplier = .4f;
         public Dictionary<Item, ItemInformation> defaultItems = new Dictionary<Item, ItemInformation>();
+
         public void initialize()
         {
             Plugin.LETHAL_LOGGER.LogInfo("Generating spawnable enemy options");
@@ -123,7 +125,6 @@ namespace LethalQuantities.Objects
             {
                 items.Add(itemconfig.item, new ItemInformation(itemconfig.item.minValue, itemconfig.item.maxValue));
             }
-
         }
     }
 }
