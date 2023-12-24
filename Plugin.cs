@@ -42,6 +42,7 @@ namespace LethalQuantities
 
             _harmony = new Harmony("LethalQuantities");
             _harmony.PatchAll(typeof(RoundManagerPatch));
+            _harmony.PatchAll(typeof(ObjectPatch));
 
             SceneManager.sceneLoaded += OnSceneLoaded;
         }
@@ -106,6 +107,10 @@ namespace LethalQuantities
                     LETHAL_LOGGER.LogInfo("\t\tEnemy spawn falloff curve: " + enemyType.useNumberSpawnedFalloff);
                     PrintAnimationCurve(enemyType.numberSpawnedFalloff);
                 }
+
+                // TODO Change max ship capacity
+                // TODO 
+
                 configInitialized = true;
             }
             else

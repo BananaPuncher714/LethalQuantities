@@ -84,8 +84,6 @@ The enemy spawn logic in **Lethal Company** is a bit complex, and there are many
 - The total amount of enemies that can spawn is calculated first; the enemy types to spawn are determined afterwards
 - The chance of an enemy spawning is `weight of enemy type / total weight`, where the total weight is the sum of the weights of all enemy types
 - The weight of an enemy type is `rarity * spawn chance at the current time` . If `UseSpawnFalloff` is enabled(like baboon hawks), then it is `rarity * spawn chance at the current time * spawn falloff multiplier at the current time`. Spawn falloff multiplier has a curve with a key that is the total amount of that mob / 10.
-## Bugs
-- A non-interactive bunker spider may be spotted floating in the map. This is only visible to the host but otherwise does not affect gameplay.
 ## Roadmap
 - Additional settings
 - Customizable spawning formulas

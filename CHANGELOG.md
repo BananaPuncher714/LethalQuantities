@@ -1,4 +1,8 @@
 ## Changelog
+### 1.0.11
+- Fixed non interactive floating spider and other random enemies that may have appeared in strange locations
+- Changed config saving to load into the level a little faster
+- Updated configs with a QOL description including the user friendly name of the item/enemy
 ### 1.0.10
 - Updated config key naming convention to upper camel case
 ### 1.0.9

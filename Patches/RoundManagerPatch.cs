@@ -9,7 +9,7 @@ namespace LethalQuantities.Patches
         [HarmonyPatch(typeof(RoundManager), nameof(RoundManager.LoadNewLevel))]
         [HarmonyPriority(Priority.First)]
         [HarmonyPrefix]
-        static void onLoadNewLevelPrefix(RoundManager __instance, ref SelectableLevel newLevel)
+        private static void onLoadNewLevelPrefix(RoundManager __instance, ref SelectableLevel newLevel)
         {
             if (!__instance.IsServer)
             {

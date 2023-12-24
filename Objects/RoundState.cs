@@ -14,7 +14,7 @@ namespace LethalQuantities.Objects
         public List<SpawnableEnemyWithRarity> daytimeEnemies { get; } = new List<SpawnableEnemyWithRarity>();
         public List<SpawnableEnemyWithRarity> outsideEnemies { get; } = new List<SpawnableEnemyWithRarity>();
 
-        public List<GameObject> modifiedEnemyTypes { get; } = new List<GameObject>();
+        public HashSet<GameObject> modifiedEnemyTypes { get; } = new HashSet<GameObject>();
 
         public float defaultScrapAmountMultiplier = 1f;
         public float defaultScrapValueMultiplier = .4f;
@@ -113,11 +113,9 @@ namespace LethalQuantities.Objects
             copy.GetComponent<EnemyAI>().enemyType = type;
             obj.SetActive(isActive);
             copy.hideFlags = HideFlags.HideAndDontSave;
-            copy.SetActive(isActive);
 
             DontDestroyOnLoad(copy);
         }
-
 
         private void copyDefaultItems(Dictionary<Item, ItemInformation> items,List<ScrapItemConfiguration> scrapRarities)
         {
