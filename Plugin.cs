@@ -20,7 +20,7 @@ namespace LethalQuantities
 
         public static ManualLogSource LETHAL_LOGGER { get; private set; }
 
-        private Dictionary<SelectableLevel, LevelConfiguration> levelConfigs = new Dictionary<SelectableLevel, LevelConfiguration>();
+        private Dictionary<string, LevelConfiguration> levelConfigs = new Dictionary<string, LevelConfiguration>();
 
         private Harmony _harmony;
         private bool configInitialized = false;
@@ -66,7 +66,7 @@ namespace LethalQuantities
                 foreach (SelectableLevel level in instance.levels)
                 {
                     string levelSaveDir = Path.Combine(LEVEL_SAVE_DIR, level.name);
-                    levelConfigs.Add(level, new LevelConfiguration(levelSaveDir, level, levelInfo));
+                    levelConfigs.Add(level.name, new LevelConfiguration(levelSaveDir, level, levelInfo));
                 }
 
                 LETHAL_LOGGER.LogInfo("Printing out default moon info");
@@ -117,16 +117,7 @@ namespace LethalQuantities
             {
                 if (RoundManager.Instance != null && RoundManager.Instance.IsServer)
                 {
-                    SelectableLevel level = null;
-                    foreach (var item in levelConfigs)
-                    {
-                        if (item.Key.sceneName == scene.name && RoundManager.Instance.currentLevel.name == item.Key.name)
-                        {
-                            level = item.Key;
-                            break;
-                        }
-                    }
-
+                    SelectableLevel level = RoundManager.Instance.currentLevel;
                     if (level != null)
                     {
                         LETHAL_LOGGER.LogInfo($"Found level {level.name}, modifying enemy spawns");
@@ -136,9 +127,9 @@ namespace LethalQuantities
 
                         RoundState state = levelModifier.AddComponent<RoundState>();
                         state.plugin = this;
-                        state.levelConfiguration = levelConfigs[RoundManager.Instance.currentLevel];
+                        state.levelConfiguration = levelConfigs[RoundManager.Instance.currentLevel.name];
                         state.scene = scene;
-                        state.initialize();
+                        state.initialize(level);
                     }
                 }
             }

@@ -1,4 +1,6 @@
 ## Changelog
+### 1.0.12
+- Fixed re-loading saves causing errors with custom moons
 ### 1.0.11
 - Fixed non interactive floating spider and other random enemies that may have appeared in strange locations
 - Changed config saving to load into the level a little faster
