@@ -50,7 +50,7 @@ namespace LethalQuantities.Objects
             {
                 defaultScrapAmountMultiplier = RoundManager.Instance.scrapAmountMultiplier;
                 defaultScrapValueMultiplier = RoundManager.Instance.scrapValueMultiplier;
-                copyDefaultItems(defaultItems, levelConfiguration.scrap.scrapRarities) ;
+                copyDefaultItems(defaultItems, levelConfiguration.scrap.scrapRarities);
             }
         }
 
@@ -83,17 +83,6 @@ namespace LethalQuantities.Objects
             if (levelConfiguration.outsideEnemies.enabled.Value)
             {
                 level.OutsideEnemies = oldOutsideEnemies;
-            }
-        }
-
-        public void Update()
-        {
-            foreach (var item in RoundManager.Instance.SpawnedEnemies)
-            {
-                if (item.hideFlags != HideFlags.None)
-                {
-                    item.hideFlags = HideFlags.None;
-                }
             }
         }
 
@@ -141,9 +130,9 @@ namespace LethalQuantities.Objects
             DontDestroyOnLoad(copy);
         }
 
-        private void copyDefaultItems(Dictionary<Item, ItemInformation> items,List<ScrapItemConfiguration> scrapRarities)
+        private void copyDefaultItems(Dictionary<Item, ItemInformation> items, List<ItemConfiguration> scrapRarities)
         {
-            foreach (ScrapItemConfiguration itemconfig in scrapRarities)
+            foreach (ItemConfiguration itemconfig in scrapRarities)
             {
                 items.Add(itemconfig.item, new ItemInformation(itemconfig.item.minValue, itemconfig.item.maxValue));
             }

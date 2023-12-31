@@ -59,13 +59,17 @@ namespace LethalQuantities.Patches
                     __instance.scrapValueMultiplier = state.levelConfiguration.scrap.scrapValueMultiplier.Value;
 
                     newLevel.spawnableScrap.Clear();
-                    foreach (ScrapItemConfiguration item in state.levelConfiguration.scrap.scrapRarities)
+                    foreach (ItemConfiguration item in state.levelConfiguration.scrap.scrapRarities)
                     {
                         SpawnableItemWithRarity newItem = new SpawnableItemWithRarity();
                         newItem.spawnableItem = item.item;
                         newItem.rarity = item.rarity.Value;
-                        newItem.spawnableItem.maxValue = item.maxValue.Value;
-                        newItem.spawnableItem.minValue = item.minValue.Value;
+                        if (item is ScrapItemConfiguration)
+                        {
+                            ScrapItemConfiguration scrapItem = item as ScrapItemConfiguration;
+                            newItem.spawnableItem.maxValue = scrapItem.maxValue.Value;
+                            newItem.spawnableItem.minValue = scrapItem.minValue.Value;
+                        }
                         newLevel.spawnableScrap.Add(newItem);
                     }
                 }

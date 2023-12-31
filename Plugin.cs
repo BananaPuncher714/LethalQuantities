@@ -54,14 +54,9 @@ namespace LethalQuantities
                 StartOfRound instance = StartOfRound.Instance;
                 LevelInformation levelInfo = new LevelInformation();
 
-                // Get all enemy types
-                foreach (SelectableLevel level in instance.levels)
-                {
-                    AddAllTo(levelInfo.allEnemyTypes, level.Enemies);
-                    AddAllTo(levelInfo.allEnemyTypes, level.DaytimeEnemies);
-                    AddAllTo(levelInfo.allEnemyTypes, level.OutsideEnemies);
-                    AddAllTo(levelInfo.allItems, level.spawnableScrap);
-                }
+                // Get all enemy and item types
+                levelInfo.allEnemyTypes.UnionWith(Resources.FindObjectsOfTypeAll<EnemyType>());
+                levelInfo.allItems.UnionWith(Resources.FindObjectsOfTypeAll<Item>());
 
                 foreach (SelectableLevel level in instance.levels)
                 {
@@ -132,21 +127,6 @@ namespace LethalQuantities
                         state.initialize(level);
                     }
                 }
-            }
-        }
-
-        private static void AddAllTo(HashSet<EnemyType> enemies, List<SpawnableEnemyWithRarity> spawnables)
-        {
-            foreach (var enemy in spawnables)
-            {
-                enemies.Add(enemy.enemyType);
-            }
-        }
-
-        private static void AddAllTo(HashSet<Item> items, List<SpawnableItemWithRarity> spawnables)
-        {
-            foreach (var item in spawnables) {
-                items.Add(item.spawnableItem);
             }
         }
 

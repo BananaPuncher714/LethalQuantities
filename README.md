@@ -39,7 +39,7 @@ These configuration files do _not_ interfere with each other, meaning enemies sp
   - `SpawnAmountCurve` - An AnimationCurve with a key ranging from 0 to 1. The key represents the percentage of time progressed in the current level. The value is the amount of enemies to spawn at the given time.
   - `SpawnAmountRange` - The range of enemies that can spawn. A value of 3 means that 3 more or 3 less enemies can spawn, based on the value returned by the `SpawnAmountCurve`.
 - EnemyType - There is one section for each enemy. Invalid enemy types are ignored.
-  - `Rarity` - The weight given to this enemy vs other enemies. If you do not want the enemy to spawn, set the rarity to 0.
+  - `Rarity` - The weight given to this enemy vs other enemies. If you do not want the enemy to spawn, set the rarity to 0. A higher rarity increases the chances for an enemy to spawn.
   - `MaxEnemyCount` - The total amount of enemies of the given type that can spawn
   - `PowerLevel` - How much power an enemy of the given type counts for
   - `SpawnCurve` - An AnimationCurve from 0 to 1. The key represents the percentage of time progressed, much like `SpawnChanceCurve`. The value normally ranges from 0 to 1, and is multiplied by `Rarity` to find the weight.
@@ -57,7 +57,7 @@ There is 1 scrap configuration file.
 - `Scrap.cfg` -  responsible for all scrap generation
 
 
-These configuration values are set per moon.
+These configuration values are set per moon. Store items and items share the same spawning pool and are not separate.
 
 
 **Options**
@@ -68,9 +68,11 @@ These configuration values are set per moon.
   - `ScrapValueMultiplier` - Multiplies the value of a scrap item by this multiplier.
   - `ScrapAmountMultiplier` - Multiplies the total number of scrap on a level by this multiplier.
 - ItemType - There is one section for each item.
-  - `Rarity` - The weight of this item, relative to the total weight of all items.
+  - `Rarity` - The weight of this item, relative to the total weight of all items. A higher rarity increases the chances for an item to spawn.
   - `MinValue` - The minimum value of this item.
   - `MaxValue` - The maximum value of this item.
+- StoreItemType - There is one section for each store item.
+  - `Rarity` - The weight of this item, relative to the total weight of all items. A higher rarity increases the chances for an item to spawn.
  </details>
 
 ## Spawn Logic

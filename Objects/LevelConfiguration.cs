@@ -38,18 +38,26 @@ namespace LethalQuantities.Objects
         public ConfigEntry<int> maxScrap { get; set; }
         public ConfigEntry<float> scrapValueMultiplier { get; set; }
         public ConfigEntry<float> scrapAmountMultiplier { get; set; }
-        public List<ScrapItemConfiguration> scrapRarities { get; } = new List<ScrapItemConfiguration>();
+        public List<ItemConfiguration> scrapRarities { get; } = new List<ItemConfiguration>();
     }
 
-    public class ScrapItemConfiguration
+    public class ItemConfiguration
     {
         public Item item { get; protected set; }
-        internal ScrapItemConfiguration(Item item)
+        internal ItemConfiguration(Item item)
         {
             this.item = item;
         }
 
         public ConfigEntry<int> rarity { get; set; }
+    }
+
+    public class ScrapItemConfiguration : ItemConfiguration
+    {
+        internal ScrapItemConfiguration(Item item) : base(item)
+        {
+        }
+
         public ConfigEntry<int> maxValue { get; set; }
         public ConfigEntry<int> minValue { get; set; }
     }
@@ -109,7 +117,7 @@ namespace LethalQuantities.Objects
                     EnemyTypeConfiguration typeConfiguration = new EnemyTypeConfiguration(enemyType);
                     string tablename = $"EnemyTypes.{enemyType.name}";
 
-                    typeConfiguration.rarity = enemyConfig.Bind(tablename, "Rarity", enemySpawnRarities.GetValueOrDefault(enemyType, 0), $"Rarity of a(n) {enemyType.enemyName} spawning relative to the total rarity of all other enemy types combined.");
+                    typeConfiguration.rarity = enemyConfig.Bind(tablename, "Rarity", enemySpawnRarities.GetValueOrDefault(enemyType, 0), $"Rarity of a(n) {enemyType.enemyName} spawning relative to the total rarity of all other enemy types combined. A higher rarity increases the chance that the enemy will spawn.");
                     typeConfiguration.maxEnemyCount = enemyConfig.Bind(tablename, "MaxEnemyCount", enemyType.MaxCount, $"Maximum amount of {enemyType.enemyName}s allowed at once.");
                     typeConfiguration.powerLevel = enemyConfig.Bind(tablename, "PowerLevel", enemyType.PowerLevel, $"How much a single {enemyType.enemyName} contributes to the maximum power level.");
                     typeConfiguration.spawnCurve = enemyConfig.Bind(tablename, "SpawnChanceCurve", enemyType.probabilityCurve, $"How likely a(n) {enemyType.enemyName} is to spawn as the day progresses. (Key ranges from 0-1 )");
@@ -137,7 +145,7 @@ namespace LethalQuantities.Objects
                     EnemyTypeConfiguration typeConfiguration = new EnemyTypeConfiguration(enemyType);
                     string tablename = $"EnemyTypes.{enemyType.name}";
 
-                    typeConfiguration.rarity = enemyConfig.Bind(tablename, "Rarity", enemySpawnRarities.GetValueOrDefault(enemyType, 0), $"Rarity of a(n) {enemyType.enemyName} relative to the total rarity of all other enemy types combined.");
+                    typeConfiguration.rarity = enemyConfig.Bind(tablename, "Rarity", enemySpawnRarities.GetValueOrDefault(enemyType, 0), $"Rarity of a(n) {enemyType.enemyName} relative to the total rarity of all other enemy types combined. A higher rarity increases the chance that the enemy will spawn.");
                     typeConfiguration.maxEnemyCount = enemyConfig.Bind(tablename, "MaxEnemyCount", enemyType.MaxCount, $"Maximum amount of {enemyType.enemyName}s allowed at once.");
                     typeConfiguration.powerLevel = enemyConfig.Bind(tablename, "PowerLevel", enemyType.PowerLevel, $"How much a(n) {enemyType.enemyName} contributes to the maximum power level.");
                     typeConfiguration.spawnCurve = enemyConfig.Bind(tablename, "SpawnChanceCurve", enemyType.probabilityCurve, $"How likely a(n) {enemyType.enemyName} is to spawn as the day progresses. (Key ranges from 0-1 )");
@@ -165,7 +173,7 @@ namespace LethalQuantities.Objects
                     EnemyTypeConfiguration typeConfiguration = new EnemyTypeConfiguration(enemyType);
                     string tablename = $"EnemyTypes.{enemyType.name}";
 
-                    typeConfiguration.rarity = enemyConfig.Bind(tablename, "Rarity", enemySpawnRarities.GetValueOrDefault(enemyType, 0), $"Rarity of a(n) {enemyType.enemyName} relative to the total rarity of all other enemy types combined.");
+                    typeConfiguration.rarity = enemyConfig.Bind(tablename, "Rarity", enemySpawnRarities.GetValueOrDefault(enemyType, 0), $"Rarity of a(n) {enemyType.enemyName} relative to the total rarity of all other enemy types combined. A higher rarity increases the chance that the enemy will spawn.");
                     typeConfiguration.maxEnemyCount = enemyConfig.Bind(tablename, "MaxEnemyCount", enemyType.MaxCount, $"Maximum amount of {enemyType.enemyName}s allowed at once.");
                     typeConfiguration.powerLevel = enemyConfig.Bind(tablename, "PowerLevel", enemyType.PowerLevel, $"How much a(n) {enemyType.enemyName} contributes to the maximum power level.");
                     typeConfiguration.spawnCurve = enemyConfig.Bind(tablename, "SpawnChanceCurve", enemyType.probabilityCurve, $"How likely a(n) {enemyType.enemyName} is to spawn as the day progresses, (Key ranges from 0-1).");
@@ -192,14 +200,25 @@ namespace LethalQuantities.Objects
                 Dictionary<Item, int> itemSpawnRarities = convertToDictionary(level.spawnableScrap);
                 foreach ( Item itemType in items)
                 {
-                    ScrapItemConfiguration itemConfiguration = new ScrapItemConfiguration(itemType);
-                    string tablename = $"ItemType.{itemType.name}";
+                    ItemConfiguration configuration;
+                    string tablename;
+                    if (itemType.isScrap)
+                    {
+                        ScrapItemConfiguration itemConfiguration = new ScrapItemConfiguration(itemType);
+                        configuration = itemConfiguration;
+                        tablename = $"ItemType.{itemType.name}";
 
-                    itemConfiguration.rarity = scrapConfig.Bind(tablename, "Rarity", itemSpawnRarities.GetValueOrDefault(itemType, 0), $"Rarity of a(n) {itemType.itemName} relative to the total rarity of all other item types combined.");
-                    itemConfiguration.minValue = scrapConfig.Bind(tablename, "MinValue", itemType.minValue, $"Minimum value of a {itemType.itemName}");
-                    itemConfiguration.maxValue = scrapConfig.Bind(tablename, "MaxValue", itemType.maxValue, $"Maximum value of a {itemType.itemName}");
+                        itemConfiguration.minValue = scrapConfig.Bind(tablename, "MinValue", itemType.minValue, $"Minimum value of a {itemType.itemName}");
+                        itemConfiguration.maxValue = scrapConfig.Bind(tablename, "MaxValue", itemType.maxValue, $"Maximum value of a {itemType.itemName}");
+                    }
+                    else
+                    {
+                        configuration = new ItemConfiguration(itemType);
+                        tablename = $"StoreItemType.{itemType.name}";
+                    }
 
-                    scrap.scrapRarities.Add(itemConfiguration);
+                    configuration.rarity = scrapConfig.Bind(tablename, "Rarity", itemSpawnRarities.GetValueOrDefault(itemType, 0), $"Rarity of a(n) {itemType.itemName} relative to the total rarity of all other item types combined. A higher rarity increases the chance that the item will spawn.");
+                    scrap.scrapRarities.Add(configuration);
                 }
                 scrapConfig.SaveOnConfigSet = true;
                 scrapConfig.Save();

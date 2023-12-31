@@ -16,6 +16,7 @@ namespace LethalQuantities.Patches
             {
                 if (state.modifiedEnemyTypes.Contains(original) && !original.activeSelf)
                 {
+                    original.hideFlags = HideFlags.None;
                     original.SetActive(true);
                 }
             }
@@ -31,6 +32,7 @@ namespace LethalQuantities.Patches
             {
                 if (state.modifiedEnemyTypes.Contains(original) && original.activeSelf)
                 {
+                    original.hideFlags = HideFlags.HideAndDontSave;
                     original.SetActive(false);
                 }
             }

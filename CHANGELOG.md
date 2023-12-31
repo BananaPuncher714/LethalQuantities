@@ -1,4 +1,7 @@
 ## Changelog
+### 1.0.13
+- Fixed enemies being hidden from other mods(SpectateEnemies)
+- Added store items to spawnable items
 ### 1.0.12
 - Fixed re-loading saves causing errors with custom moons
 ### 1.0.11
