@@ -1,4 +1,6 @@
 ## Changelog
+### 1.0.14
+- Fixed numbers from being saved with commas instead of periods
 ### 1.0.13
 - Fixed enemies being hidden from other mods(SpectateEnemies)
 - Added store items to spawnable items

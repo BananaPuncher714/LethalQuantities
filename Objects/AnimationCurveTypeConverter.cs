@@ -1,4 +1,5 @@
 ﻿using BepInEx.Configuration;
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using UnityEngine;
@@ -25,13 +26,13 @@ namespace LethalQuantities.Objects
                     for (int i = 0; i < frames.Length; i++)
                     {
                         string[] frameInfo = frames[i].Split(":");
-                        newFrames[i] = new Keyframe(float.Parse(frameInfo[0]), float.Parse(frameInfo[1]));
+                        newFrames[i] = new Keyframe(float.Parse(frameInfo[0], CultureInfo.InvariantCulture), float.Parse(frameInfo[1], CultureInfo.InvariantCulture));
                     }
                     return new AnimationCurve(newFrames);
                 }
                 else if (!string.IsNullOrEmpty(frames[0]))
                 {
-                    return new AnimationCurve(new Keyframe(0, float.Parse(frames[0])));
+                    return new AnimationCurve(new Keyframe(0, float.Parse(frames[0], CultureInfo.InvariantCulture)));
                 }
 
                 return new AnimationCurve();
@@ -52,7 +53,7 @@ namespace LethalQuantities.Objects
                 }
                 else if (frames.Length == 1)
                 {
-                    return frames[0].value.ToString();
+                    return frames[0].value.ToString(CultureInfo.InvariantCulture);
                 }
                 else
                 {
@@ -60,9 +61,9 @@ namespace LethalQuantities.Objects
                     for (int i = 0; i < frames.Length; i++)
                     {
                         Keyframe keyframe = frames[i];
-                        stringBuilder.Append(keyframe.time.ToString());
+                        stringBuilder.Append(keyframe.time.ToString(CultureInfo.InvariantCulture));
                         stringBuilder.Append(":");
-                        stringBuilder.Append(keyframe.value.ToString());
+                        stringBuilder.Append(keyframe.value.ToString(CultureInfo.InvariantCulture));
 
                         if (i < frames.Length - 1)
                         {
