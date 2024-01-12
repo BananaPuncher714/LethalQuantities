@@ -1,6 +1,10 @@
-﻿using HarmonyLib;
+﻿using DunGen.Graph;
+using HarmonyLib;
 using LethalQuantities.Objects;
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection.Emit;
 using UnityEngine;
 
 namespace LethalQuantities.Patches
@@ -114,6 +118,7 @@ namespace LethalQuantities.Patches
                 }
                 else if (state.globalConfiguration.scrapConfiguration.enabled.Value && !state.globalConfiguration.scrapConfiguration.isDefault())
                 {
+                    Plugin.LETHAL_LOGGER.LogInfo("Changing scrap values based on the global config");
                     state.globalConfiguration.scrapConfiguration.minScrap.Set(ref newLevel.minScrap);
                     state.globalConfiguration.scrapConfiguration.maxScrap.Set(ref newLevel.maxScrap);
                     state.globalConfiguration.scrapConfiguration.scrapAmountMultiplier.Set(ref __instance.scrapAmountMultiplier);
@@ -160,6 +165,47 @@ namespace LethalQuantities.Patches
                         }
                     }
                 }
+
+                if (state.levelConfiguration.dungeon.enabled.Value)
+                {
+                    Plugin.LETHAL_LOGGER.LogInfo("Changing dungeon flow values");
+                    state.levelConfiguration.dungeon.mapSizeMultiplier.Set(ref __instance.mapSizeMultiplier);
+                    Dictionary<string, int> flows = new Dictionary<string, int>();
+                    foreach (IntWithRarity entry in newLevel.dungeonFlowTypes)
+                    {
+                        flows.Add(__instance.dungeonFlowTypes[entry.id].name, entry.rarity);
+                    }
+                    foreach (var item in state.levelConfiguration.dungeon.dungeonFlowConfigurations)
+                    {
+                        string name = item.Key;
+                        DungeonFlowConfiguration config = item.Value;
+
+                        int originalRarity = flows.GetValueOrDefault(name, 0);
+                        config.rarity.Set(ref originalRarity);
+                        flows[name] = originalRarity;
+                    }
+                    newLevel.dungeonFlowTypes = __instance.ConvertToDungeonFlowArray(flows);
+                }
+                else if (state.globalConfiguration.dungeonConfiguration.enabled.Value && !state.globalConfiguration.dungeonConfiguration.isDefault())
+                {
+                    Plugin.LETHAL_LOGGER.LogInfo("Changing dungeon flow values based on the global config");
+                    state.globalConfiguration.dungeonConfiguration.mapSizeMultiplier.Set(ref __instance.mapSizeMultiplier);
+                    Dictionary<string, int> flows = new Dictionary<string, int>();
+                    foreach (IntWithRarity entry in newLevel.dungeonFlowTypes)
+                    {
+                        flows.Add(__instance.dungeonFlowTypes[entry.id].name, entry.rarity);
+                    }
+                    foreach (var item in state.globalConfiguration.dungeonConfiguration.dungeonFlowConfigurations)
+                    {
+                        string name = item.Key;
+                        GlobalDungeonFlowConfiguration config = item.Value;
+
+                        int originalRarity = flows.GetValueOrDefault(name, 0);
+                        config.rarity.Set(ref originalRarity);
+                        flows[name] = originalRarity;
+                    }
+                    newLevel.dungeonFlowTypes = __instance.ConvertToDungeonFlowArray(flows);
+                }
             }
         }
 
@@ -174,6 +220,43 @@ namespace LethalQuantities.Patches
                 return obj.GetComponent<RoundState>();
             }
             return null;
+        }
+    }
+
+    public static class RoundManagerExtensions
+    {
+        public static IntWithRarity[] ConvertToDungeonFlowArray(this RoundManager manager, Dictionary<string, int> entries)
+        {
+            List<IntWithRarity> res = new List<IntWithRarity>();
+            foreach (var entry in entries)
+            {
+                int rarity = entry.Value;
+                if (rarity > 0)
+                {
+                    int id = -1;
+                    for (int i = 0; i < manager.dungeonFlowTypes.Length && id < 0; i++)
+                    {
+                        if (manager.dungeonFlowTypes[i].name == entry.Key)
+                        {
+                            id = i;
+                        }
+                    }
+
+                    if (id != -1)
+                    {
+                        IntWithRarity weight = new IntWithRarity();
+                        weight.id = id;
+                        weight.rarity = entry.Value;
+                        res.Add(weight);
+                    }
+                    else
+                    {
+                        Plugin.LETHAL_LOGGER.LogWarning($"Could not find dungeon flow {entry.Key}!");
+                    }
+                }
+            }
+
+            return res.ToArray();
         }
     }
 }

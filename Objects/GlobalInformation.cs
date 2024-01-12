@@ -1,4 +1,5 @@
 ﻿using BepInEx.Configuration;
+using DunGen.Graph;
 using System.Collections.Generic;
 
 namespace LethalQuantities.Objects
@@ -7,6 +8,7 @@ namespace LethalQuantities.Objects
     {
         public HashSet<EnemyType> allEnemyTypes { get; } = new HashSet<EnemyType>();
         public HashSet<Item> allItems { get; } = new HashSet<Item>();
+        public HashSet<DungeonFlow> allDungeonFlows { get; } = new HashSet<DungeonFlow>();
         public HashSet<SelectableLevel> allSelectableLevels { get; } = new HashSet<SelectableLevel>();
 
         public string configSaveDir { get; private set; }

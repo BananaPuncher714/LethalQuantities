@@ -8,6 +8,7 @@ using UnityEngine.SceneManagement;
 using LethalQuantities.Objects;
 using System.IO;
 using LethalQuantities.Patches;
+using DunGen.Graph;
 
 namespace LethalQuantities
 {
@@ -59,6 +60,7 @@ namespace LethalQuantities
                 globalInfo.allEnemyTypes.UnionWith(Resources.FindObjectsOfTypeAll<EnemyType>());
                 globalInfo.allItems.UnionWith(Resources.FindObjectsOfTypeAll<Item>());
                 globalInfo.allSelectableLevels.UnionWith(instance.levels);
+                globalInfo.allDungeonFlows.UnionWith(Resources.FindObjectsOfTypeAll<DungeonFlow>());
 
                 configuration = new GlobalConfiguration(globalInfo);
 
@@ -105,6 +107,28 @@ namespace LethalQuantities
                 // TODO 
 
                 configInitialized = true;
+
+                // Not very good, but for each dungeon flow, add it to the RoundManager if it isn't already there
+                List<DungeonFlow> flows = new List<DungeonFlow>(RoundManager.Instance.dungeonFlowTypes);
+                foreach (DungeonFlow flow in globalInfo.allDungeonFlows)
+                {
+                    int index = -1;
+                    for (int i = 0; i < flows.Count; i++)
+                    {
+                        if (flows[i] == flow)
+                        {
+                            index = i;
+                            break;
+                        }
+                    }
+
+                    if (index == -1)
+                    {
+                        // Not added, so add it now
+                        flows.Add(flow);
+                    }
+                }
+                RoundManager.Instance.dungeonFlowTypes = flows.ToArray();
 
                 // Set some global options here
                 if (configuration.scrapConfiguration.enabled.Value)

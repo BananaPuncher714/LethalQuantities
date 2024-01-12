@@ -1,5 +1,5 @@
 # Lethal Quantities
-A per-moon enemy and item spawning customization mod. **All configs are disabled by default.** Please request features or report issues [here](https://github.com/BananaPuncher714/LethalQuantities/issues). **Configs are generated after you host or join a game, and can be confirmed if this mod prints out debug information in the console about every moon and enemy type.**
+A flexible customization mod that works with other mods. **All configs are disabled by default.** Please request features or report issues [here](https://github.com/BananaPuncher714/LethalQuantities/issues). **Configs are generated after you host or join a game, and can be confirmed if this mod prints out debug information in the console about every moon and enemy type.**
 ## Features
 - Provides optional(disabled by default) settings to enhance your Lethal Company experience
 - Some more control over how many enemies spawn, and on what moons
@@ -8,6 +8,7 @@ A per-moon enemy and item spawning customization mod. **All configs are disabled
 - Works with custom levels
 - Works with custom items
 - Works with custom enemies
+- Works with custom dungeon flows
 - Should work with custom events and other mods that change enemy spawn settings
 ## Bugs
 - May or may not play nicely with other mods that forcefully change spawning behavior
@@ -17,6 +18,8 @@ You must host or join a game at least once to generate the configuration files. 
 
 
 **Global/local option inheritance**
+
+
 This mod uses global/local config files to reduce the amount of configuration and files required. For certain options in the configs, you can use the value DEFAULT(case insensitive) to use the vanilla value that would normally be used.
 For certain options in the moon config files, you can use the option GLOBAL(case insensitive) to use values in the global config files. If the global config file is DEFAULT, then it will use the vanilla value. If the global config does not normally
 have a default value, for example, rarity(since it's moon specific), then it will use the moon's default value. So, if a moon has GLOBAL for an enemy's rarity, and the global config does not exist or has DEFAULT, then it is the same as if the moon option is DEFAULT.
@@ -77,7 +80,7 @@ Exceptions:
 <summary>Scrap</summary>
 
 There is 1 scrap configuration file.
-- `Scrap.cfg` -  responsible for all scrap generation
+- `Scrap.cfg` - Responsible for all scrap generation
 
 
 These configuration values can be set per moon. Store items and items share the same spawning pool and are not separate.
@@ -96,6 +99,24 @@ These configuration values can be set per moon. Store items and items share the 
   - `Conductive` - Whether or not the item can be struck by lightning.
 - Rarity
   - `<item name>` - The weight of this item, relative to the total weight of all items. A higher rarity increases the chances for an item to spawn. Includes store items.
+ </details>
+
+
+ <details>
+ <summary>Dungeon Generation</summary>
+
+ There is 1 dungeon generation configuration file.
+ - `DungeonGeneration.cfg` - Responsible for configuring values that affect dungeon generation
+
+
+These configuration values are set per moon. They should theoretically support custom dungeon flows.
+
+
+**Options**
+- General
+  - MapSizeMultiplier - A multiplier to how large the dungeon generation should be. Cannot be set per-flow
+- Rarity
+  - `<dungeon flow name>` - The weight of this flow, relative to the total weight of all flows. A higher rarity increases the chances for this flow to be used.
  </details>
 
 ## Spawn Logic

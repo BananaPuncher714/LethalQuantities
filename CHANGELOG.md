@@ -1,4 +1,7 @@
 ## Changelog
+### 1.1.1
+- Fixed invalid scrap config not loading
+- Added configurable dungeon flows per moon
 ### 1.1.0 - IF UPDATING TO THIS VERSION THEN BACKUP ALL YOUR CONFIG FILES!
 - Create global config files to reduce clutter instead of individual files per every moon
 - Added optional per-moon configs for user selected moons

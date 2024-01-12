@@ -25,6 +25,8 @@ namespace LethalQuantities.Objects
 
         public float defaultScrapAmountMultiplier = 1f;
         public float defaultScrapValueMultiplier = .4f;
+        public float defaultMapSizeMultiplier = 1f;
+        public List<IntWithRarity> defaultFlowTypes = new List<IntWithRarity>();
         public Dictionary<Item, ItemInformation> defaultItems = new Dictionary<Item, ItemInformation>();
 
         public void setData(Scene scene, GlobalConfiguration config)
@@ -77,7 +79,7 @@ namespace LethalQuantities.Objects
                 defaultScrapValueMultiplier = RoundManager.Instance.scrapValueMultiplier;
                 copyDefaultItems(defaultItems, levelConfiguration.scrap.scrapRarities);
             }
-            else
+            else if (globalConfiguration.scrapConfiguration.enabled.Value)
             {
                 if (!globalConfiguration.scrapConfiguration.scrapAmountMultiplier.isDefault())
                 {
@@ -87,13 +89,23 @@ namespace LethalQuantities.Objects
                 {
                     defaultScrapValueMultiplier = RoundManager.Instance.scrapValueMultiplier;
                 }
-                foreach (GlobalItemScrapConfiguration config in globalConfiguration.scrapConfiguration.itemConfigurations.Values)
+                foreach (GlobalItemConfiguration config in globalConfiguration.scrapConfiguration.itemConfigurations.Values)
                 {
                     if (!config.isDefault())
                     {
                         defaultItems.Add(config.item, new ItemInformation(config.item.minValue, config.item.maxValue, config.item.isConductiveMetal));
                     }
                 }
+            }
+
+            defaultFlowTypes.AddRange(level.dungeonFlowTypes);
+            if (levelConfiguration.dungeon.enabled.Value)
+            {
+                defaultMapSizeMultiplier = RoundManager.Instance.mapSizeMultiplier;
+            }
+            else if(!globalConfiguration.dungeonConfiguration.enabled.Value && !globalConfiguration.dungeonConfiguration.isDefault())
+            {
+                defaultMapSizeMultiplier = RoundManager.Instance.mapSizeMultiplier;
             }
         }
 
@@ -105,13 +117,17 @@ namespace LethalQuantities.Objects
             }
             modifiedEnemyTypes.Clear();
 
-            if ((levelConfiguration.scrap.enabled.Value && !levelConfiguration.scrap.scrapAmountMultiplier.isDefault()) || !globalConfiguration.scrapConfiguration.scrapAmountMultiplier.isDefault())
+            if ((levelConfiguration.scrap.enabled.Value && !levelConfiguration.scrap.scrapAmountMultiplier.isDefault()) || (globalConfiguration.dungeonConfiguration.enabled.Value && !globalConfiguration.scrapConfiguration.scrapAmountMultiplier.isDefault()))
             {
                 RoundManager.Instance.scrapAmountMultiplier = defaultScrapAmountMultiplier;
             }
-            if ((levelConfiguration.scrap.enabled.Value && !levelConfiguration.scrap.scrapValueMultiplier.isDefault()) || !globalConfiguration.scrapConfiguration.scrapValueMultiplier.isDefault())
+            if ((levelConfiguration.scrap.enabled.Value && !levelConfiguration.scrap.scrapValueMultiplier.isDefault()) || (globalConfiguration.dungeonConfiguration.enabled.Value && !globalConfiguration.scrapConfiguration.scrapValueMultiplier.isDefault()))
             {
                 RoundManager.Instance.scrapValueMultiplier = defaultScrapValueMultiplier;
+            }
+            if ((levelConfiguration.dungeon.enabled.Value && !levelConfiguration.dungeon.mapSizeMultiplier.isDefault()) || (globalConfiguration.dungeonConfiguration.enabled.Value && !globalConfiguration.dungeonConfiguration.mapSizeMultiplier.isDefault()))
+            {
+                RoundManager.Instance.mapSizeMultiplier = defaultMapSizeMultiplier;
             }
 
             foreach (var item in defaultItems)
@@ -126,6 +142,7 @@ namespace LethalQuantities.Objects
             level.DaytimeEnemies.AddRange(oldDaytimeEnemies);
             level.OutsideEnemies.Clear();
             level.OutsideEnemies.AddRange(oldOutsideEnemies);
+            level.dungeonFlowTypes = defaultFlowTypes.ToArray();
         }
 
         private void populate<T>(List<SpawnableEnemyWithRarity> enemiesList, List<T> configs, bool isOutside = false, bool isDaytimeEnemy = false) where T : DaytimeEnemyTypeConfiguration

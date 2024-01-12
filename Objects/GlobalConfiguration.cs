@@ -1,5 +1,6 @@
 ﻿using BepInEx;
 using BepInEx.Configuration;
+using DunGen.Graph;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -89,7 +90,6 @@ namespace LethalQuantities.Objects
     public class GlobalScrapConfiguration
     {
         public ConfigEntry<bool> enabled { get; set; }
-
         public CustomEntry<int> minScrap { get; set; }
         public CustomEntry<int> maxScrap { get; set; }
         public CustomEntry<float> scrapAmountMultiplier { get; set; }
@@ -144,6 +144,35 @@ namespace LethalQuantities.Objects
         }
     }
 
+    public class GlobalDungeonGenerationConfiguration
+    {
+        public ConfigEntry<bool> enabled { get; set; }
+        public CustomEntry<float> mapSizeMultiplier { get; set; }
+        public Dictionary<string, GlobalDungeonFlowConfiguration> dungeonFlowConfigurations { get; private set; } = new Dictionary<string, GlobalDungeonFlowConfiguration>();
+
+        public virtual bool isDefault()
+        {
+            foreach (GlobalDungeonFlowConfiguration config in dungeonFlowConfigurations.Values)
+            {
+                if (!config.isDefault())
+                {
+                    return false;
+                }
+            }
+            return mapSizeMultiplier.isDefault();
+        }
+    }
+
+    public class GlobalDungeonFlowConfiguration
+    {
+        public CustomEntry<int> rarity { get; set; }
+        //public CustomEntry<float> factorySizeMultiplier { get; set; }
+
+        public virtual bool isDefault()
+        {
+            return rarity.isDefault();
+        }
+    }
 
     public class GlobalConfiguration
     {
@@ -151,12 +180,14 @@ namespace LethalQuantities.Objects
         public static readonly string DAYTIME_ENEMY_CFG_NAME = "DaytimeEnemies.cfg";
         public static readonly string OUTSIDE_ENEMY_CFG_NAME = "OutsideEnemies.cfg";
         public static readonly string SCRAP_CFG_NAME = "Scrap.cfg";
+        public static readonly string DUNGEON_GENERATION_CFG_NAME = "DungeonGeneration.cfg";
         public static readonly string FILES_CFG_NAME = "Configuration.cfg";
 
         public GlobalEnemyConfiguration<GlobalEnemyTypeConfiguration> enemyConfiguration { get; private set; }
         public GlobalEnemyConfiguration<GlobalDaytimeEnemyTypeConfiguration> daytimeEnemyConfiguration { get; private set; }
         public GlobalOutsideEnemyConfiguration<GlobalEnemyTypeConfiguration> outsideEnemyConfiguration { get; private set; }
         public GlobalScrapConfiguration scrapConfiguration { get; private set; }
+        public GlobalDungeonGenerationConfiguration dungeonConfiguration { get; private set; }
 
         public Dictionary<string, LevelConfiguration> levelConfigs { get; } = new Dictionary<string, LevelConfiguration>();
 
@@ -166,6 +197,7 @@ namespace LethalQuantities.Objects
             daytimeEnemyConfiguration = new GlobalEnemyConfiguration<GlobalDaytimeEnemyTypeConfiguration>();
             outsideEnemyConfiguration = new GlobalOutsideEnemyConfiguration<GlobalEnemyTypeConfiguration>();
             scrapConfiguration = new GlobalScrapConfiguration();
+            dungeonConfiguration = new GlobalDungeonGenerationConfiguration();
 
             instantiateConfigs(globalInfo);
         }
@@ -177,6 +209,7 @@ namespace LethalQuantities.Objects
 
             instantiateEnemyConfigs(globalInfo, fileConfigFile);
             instantiateScrapConfigs(globalInfo, fileConfigFile);
+            instantiateDungeonConfigs(globalInfo, fileConfigFile);
             instantiateMoonConfig(globalInfo, fileConfigFile);
 
             fileConfigFile.SaveOnConfigSet = true;
@@ -341,13 +374,13 @@ namespace LethalQuantities.Objects
             if (scrapConfiguration.enabled.Value)
             {
                 scrapConfig = new ConfigFile(Path.Combine(globalInfo.configSaveDir, SCRAP_CFG_NAME), true);
-                scrapConfig.SaveOnConfigSet = true;
+                scrapConfig.SaveOnConfigSet = false;
             }
 
             scrapConfiguration.minScrap = BindEmptyOrNonDefaultable<int>(scrapConfig, "General", "MinScrapCount", "Minimum total number of scrap generated in the level. Leave blank or DEFAULT to use the moon's default min scrap count.");
             scrapConfiguration.maxScrap = BindEmptyOrNonDefaultable<int>(scrapConfig, "General", "MaxScrapCount", "Maximum total number of scrap generated in the level. Leave blank or DEFAULT to use the moon's default max scrap count.");
-            scrapConfiguration.scrapAmountMultiplier = BindEmptyOrDefaultable(scrapConfig, "General", "ScrapAmountMultiplier", 1f, "Modifier to the total amount of scrap generated in the level. The default value is {0}");
-            scrapConfiguration.scrapValueMultiplier = BindEmptyOrDefaultable(scrapConfig, "General", "ScrapValueMultiplier", .4f, "Modifier to the total value of scrap generated in the level. The default value is {0}");
+            scrapConfiguration.scrapAmountMultiplier = BindEmptyOrDefaultable(scrapConfig, "General", "ScrapAmountMultiplier", RoundManager.Instance.scrapAmountMultiplier, "Modifier to the total amount of scrap generated in the level. The default value is {0}");
+            scrapConfiguration.scrapValueMultiplier = BindEmptyOrDefaultable(scrapConfig, "General", "ScrapValueMultiplier", RoundManager.Instance.scrapValueMultiplier, "Modifier to the total value of scrap generated in the level. The default value is {0}");
             foreach (Item itemType in globalInfo.allItems)
             {
                 GlobalItemConfiguration itemConfiguration;
@@ -376,6 +409,36 @@ namespace LethalQuantities.Objects
             {
                 scrapConfig.SaveOnConfigSet = true;
                 scrapConfig.Save();
+            }
+        }
+
+        private void instantiateDungeonConfigs(GlobalInformation globalInfo, ConfigFile fileConfigFile)
+        {
+            dungeonConfiguration.enabled = fileConfigFile.Bind("Global", "DungeonGenerationEnabled", false, "Whether or not to enable the global config for all dungeon generation.");
+
+            ConfigFile dungeonFile = null;
+            if (dungeonConfiguration.enabled.Value)
+            {
+                dungeonFile = new ConfigFile(Path.Combine(globalInfo.configSaveDir, DUNGEON_GENERATION_CFG_NAME), true);
+                dungeonFile.SaveOnConfigSet = false;
+            }
+
+            dungeonConfiguration.mapSizeMultiplier = BindEmptyOrDefaultable(dungeonFile, "General", "MapSizeMultiplier", RoundManager.Instance.mapSizeMultiplier, "The multiplier to use for determining the size of the dungeon.");
+            foreach (DungeonFlow flow in globalInfo.allDungeonFlows)
+            {
+                GlobalDungeonFlowConfiguration configuration = new GlobalDungeonFlowConfiguration();
+                configuration.rarity = BindEmptyOrNonDefaultable<int>(dungeonFile, "Rarity", flow.name, $"Rarity of a moon using a {flow.name} dungeon generator as the interior. A higher rarity increases the chance that the moon will use this dungeon flow. Leave blank or DEFAULT to use the moon's default rarity.");
+
+                // If more options are added
+                string tablename = $"DungeonFlow." + flow.name;
+
+                dungeonConfiguration.dungeonFlowConfigurations.Add(flow.name, configuration);
+            }
+
+            if (dungeonConfiguration.enabled.Value)
+            {
+                dungeonFile.SaveOnConfigSet = true;
+                dungeonFile.Save();
             }
         }
 

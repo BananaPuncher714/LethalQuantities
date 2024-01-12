@@ -1,4 +1,5 @@
 ﻿using BepInEx.Configuration;
+using DunGen.Graph;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
@@ -79,12 +80,26 @@ namespace LethalQuantities.Objects
         public GlobalConfigEntry<int> minValue { get; set; }
     }
 
+    public class DungeonGenerationConfiguration
+    {
+        public ConfigEntry<bool> enabled { get; set; }
+        public CustomEntry<float> mapSizeMultiplier { get; set; }
+        public Dictionary<string, DungeonFlowConfiguration> dungeonFlowConfigurations { get; private set; } = new Dictionary<string, DungeonFlowConfiguration>();
+    }
+
+    public class DungeonFlowConfiguration
+    {
+        public CustomEntry<int> rarity { get; set; }
+        //public CustomEntry<float> factorySizeMultiplier { get; set; }
+    }
+
     public class LevelConfiguration
     {
         public EnemyConfiguration<EnemyTypeConfiguration> enemies { get; }
         public EnemyConfiguration<DaytimeEnemyTypeConfiguration> daytimeEnemies { get; }
         public OutsideEnemyConfiguration<EnemyTypeConfiguration> outsideEnemies { get; }
         public ScrapConfiguration scrap { get; }
+        public DungeonGenerationConfiguration dungeon { get;  }
 
         public LevelConfiguration(LevelInformation levelInfo)
         {
@@ -92,6 +107,7 @@ namespace LethalQuantities.Objects
             daytimeEnemies = new EnemyConfiguration<DaytimeEnemyTypeConfiguration>();
             outsideEnemies = new OutsideEnemyConfiguration<EnemyTypeConfiguration>();
             scrap = new ScrapConfiguration();
+            dungeon = new DungeonGenerationConfiguration();
 
             instantiateConfigs(levelInfo);
         }
@@ -100,6 +116,7 @@ namespace LethalQuantities.Objects
         {
             instantiateEnemyConfigs(levelInfo);
             instantiateScrapConfigs(levelInfo);
+            instantiateDungeonConfigs(levelInfo);
         }
 
         private void instantiateEnemyConfigs(LevelInformation levelInfo)
@@ -238,17 +255,17 @@ namespace LethalQuantities.Objects
         {
             SelectableLevel level = levelInfo.level;
             {
-                scrap.enabled = levelInfo.mainConfigFile.Bind($"Level.{levelInfo.level.name}", "ScrapEnabled", false, "Enables/disables custom scrap generation");
+                scrap.enabled = levelInfo.mainConfigFile.Bind($"Level.{levelInfo.level.name}", "ScrapEnabled", false, "Enables/disables custom scrap generation modifications");
 
                 if (scrap.enabled.Value)
                 {
                     GlobalConfiguration masterConfig = levelInfo.masterConfig;
                     ConfigFile scrapConfig = new ConfigFile(Path.Combine(levelInfo.levelSaveDir, GlobalConfiguration.SCRAP_CFG_NAME), true);
-                    scrapConfig.SaveOnConfigSet = true;
+                    scrapConfig.SaveOnConfigSet = false;
                     scrap.minScrap = scrapConfig.BindGlobal(masterConfig.scrapConfiguration.minScrap, "General", "MinScrapCount", level.minScrap, "Minimum total number of scrap generated in the level. The default value is {{0}}");
                     scrap.maxScrap = scrapConfig.BindGlobal(masterConfig.scrapConfiguration.maxScrap, "General", "MaxScrapCount", level.maxScrap, "Maximum total number of scrap generated in the level. The default value is {{0}}");
-                    scrap.scrapAmountMultiplier = scrapConfig.BindGlobal(masterConfig.scrapConfiguration.scrapAmountMultiplier, "General", "ScrapAmountMultiplier", 1f, "Modifier to the total amount of scrap generated in the level. Default value is {0}. This option can inherit from the global config with the value GLOBAL and from the game with the value DEFAULT");
-                    scrap.scrapValueMultiplier = scrapConfig.BindGlobal(masterConfig.scrapConfiguration.scrapValueMultiplier, "General", "ScrapValueMultiplier", .4f, "Modifier to the total value of scrap generated in the level. Default value is {0}. This option can inherit from the global config with the value GLOBAL and from the game with the value DEFAULT");
+                    scrap.scrapAmountMultiplier = scrapConfig.BindGlobal(masterConfig.scrapConfiguration.scrapAmountMultiplier, "General", "ScrapAmountMultiplier", RoundManager.Instance.scrapAmountMultiplier, "Modifier to the total amount of scrap generated in the level. Default value is {0}. This option can inherit from the global config with the value GLOBAL and from the game with the value DEFAULT");
+                    scrap.scrapValueMultiplier = scrapConfig.BindGlobal(masterConfig.scrapConfiguration.scrapValueMultiplier, "General", "ScrapValueMultiplier", RoundManager.Instance.scrapValueMultiplier, "Modifier to the total value of scrap generated in the level. Default value is {0}. This option can inherit from the global config with the value GLOBAL and from the game with the value DEFAULT");
                     Dictionary<Item, int> itemSpawnRarities = convertToDictionary(level.spawnableScrap);
                     foreach ( Item itemType in levelInfo.globalInfo.allItems)
                     {
@@ -280,6 +297,42 @@ namespace LethalQuantities.Objects
             }
         }
 
+        private void instantiateDungeonConfigs(LevelInformation levelInfo)
+        {
+            SelectableLevel level = levelInfo.level;
+            {
+                dungeon.enabled = levelInfo.mainConfigFile.Bind($"Level.{levelInfo.level.name}", "DungeonGenerationEnabled", false, "Enables/disables custom dungeon generation modifications for this moon.");
+
+                if (dungeon.enabled.Value)
+                {
+                    GlobalConfiguration masterConfig = levelInfo.masterConfig;
+                    ConfigFile dungeonConfig = new ConfigFile(Path.Combine(levelInfo.levelSaveDir, GlobalConfiguration.DUNGEON_GENERATION_CFG_NAME), true);
+                    dungeonConfig.SaveOnConfigSet = false;
+                    dungeon.mapSizeMultiplier = dungeonConfig.BindGlobal(masterConfig.dungeonConfiguration.mapSizeMultiplier, "General", "MapSizeMultiplier", RoundManager.Instance.mapSizeMultiplier, "Size modifier of the dungeon generated. Default value is {0}. This option can inherit from the global config with the value GLOBAL and from the game with the value DEFAULT");
+                    Dictionary<DungeonFlow, int> flowRarities = new Dictionary<DungeonFlow, int>();
+                    foreach (IntWithRarity flow in level.dungeonFlowTypes)
+                    {
+                        flowRarities.Add(RoundManager.Instance.dungeonFlowTypes[flow.id], flow.rarity);
+                    }
+
+                    foreach (DungeonFlow flow in levelInfo.globalInfo.allDungeonFlows)
+                    {
+                        GlobalDungeonFlowConfiguration masterFlowConfig = masterConfig.dungeonConfiguration.dungeonFlowConfigurations[flow.name];
+                        DungeonFlowConfiguration dungeonFlowConfig = new DungeonFlowConfiguration();
+
+                        dungeonFlowConfig.rarity = dungeonConfig.BindGlobal(masterFlowConfig.rarity, "Rarity", flow.name, flowRarities.GetValueOrDefault(flow, 0), $"Rarity of creating a dungeon using {flow.name} as the generator. Default value is {{0}}. This option can inherit from the global config with the value GLOBAL and from the game with the value DEFAULT");
+
+                        string tablename = $"DungeonFlow.{flow.name}";
+                        // Until I can figure out how the transpiler works, or something
+                        //dungeonFlowConfig.factorySizeMultiplier = dungeonConfig.BindGlobal(masterFlowConfig.factorySizeMultiplier, tablename, "FactorySizeMultiplier", level.factorySizeMultiplier, $"Size of the dungeon when using this dungeon flow. Default value is {{0}}. This option can inherit from the global config with the value GLOBAL and from the game with the value DEFAULT");
+
+                        dungeon.dungeonFlowConfigurations.Add(flow.name, dungeonFlowConfig);
+                    }
+                    dungeonConfig.SaveOnConfigSet = true;
+                    dungeonConfig.Save();
+                }
+            }
+        }
         private static Dictionary<EnemyType, int> convertToDictionary(List<SpawnableEnemyWithRarity> enemies)
         {
             Dictionary<EnemyType, int> enemySpawnRarities = new Dictionary<EnemyType, int>();
