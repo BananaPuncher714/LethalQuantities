@@ -16,6 +16,14 @@ You must host or join a game at least once to generate the configuration files. 
 - `Configuration.cfg` - Enable/disable other configuration files here
 
 
+**Global/local option inheritance**
+This mod uses global/local config files to reduce the amount of configuration and files required. For certain options in the configs, you can use the value DEFAULT(case insensitive) to use the vanilla value that would normally be used.
+For certain options in the moon config files, you can use the option GLOBAL(case insensitive) to use values in the global config files. If the global config file is DEFAULT, then it will use the vanilla value. If the global config does not normally
+have a default value, for example, rarity(since it's moon specific), then it will use the moon's default value. So, if a moon has GLOBAL for an enemy's rarity, and the global config does not exist or has DEFAULT, then it is the same as if the moon option is DEFAULT.
+Moons have higher priority over global config options, so if both have a value set, the moon's value will be used instead. For options that allow GLOBAL, a blank value is the same as GLOBAL, and for options that allow DEFAULT but not GLOBAL, a blank value is the same as DEFAULT.
+If a global config file is disabled, then it will have no effect on moon options that are set to GLOBAL and is equivalent to DEFAULT. A value of DEFAULT should not override values set by other mods.
+
+
 **Complex config types:**
 - [`AnimationCurve`](https://docs.unity3d.com/Manual/animeditor-AnimationCurves.html) - Represents a curve comprised of Keyframes. Each frame represents a key, and a value at that key(generally time).
   - A curve with no frames is left blank
@@ -46,13 +54,19 @@ These configuration files do _not_ interfere with each other, meaning enemies sp
 - General
   - `MaxPowerCount` - Maximum total power allowed for this category of enemies. Different enemy types have different power levels. The total power of a level is the sum of the power levels of all existing enemies.
   - `SpawnAmountCurve` - An AnimationCurve with a key ranging from 0 to 1. The key represents the percentage of time progressed in the current level. The value is the amount of enemies to spawn at the given time.
-  - `SpawnAmountRange` - The range of enemies that can spawn. A value of 3 means that 3 more or 3 less enemies can spawn, based on the value returned by the `SpawnAmountCurve`.
+  - `SpawnAmountRange` - The range of enemies that can spawn. A value of 3 means that 3 more or 3 less enemies can spawn, based on the value returned by the `SpawnAmountCurve`. Not available for outside enemy configs.
 - EnemyType - There is one section for each enemy. Invalid enemy types are ignored.
   - `MaxEnemyCount` - The total amount of enemies of the given type that can spawn
   - `PowerLevel` - How much power an enemy of the given type counts for
   - `SpawnCurve` - An AnimationCurve from 0 to 1. The key represents the percentage of time progressed, much like `SpawnChanceCurve`. The value normally ranges from 0 to 1, and is multiplied by `Rarity` to find the weight.
-  - `SpawnFalloffCurve` - An AnimationCurve describing the multiplier to use when determining the value of `SpawnChanceCurve`, dependent on the number of existing enemies with the same type divided by 10.
-  - `UseSpawnFalloff` - If true, then the resulting value from the `SpawnFalloffCurve` will be multiplied with the value from `SpawnCurve`
+  - `StunTimeMultiplier` - The  multiplier for how long an enemy can be stunned.
+  - `DoorSpeedMultiplier` - The multiplier for how long an enemy takes to open a door.
+  - `StunGameDifficultyMultiplier` - I don't know what this option does.
+  - `Stunnable` - Whether or not this enemy can be stunned.
+  - `Killable` - Whether or not this enemy can die.
+  - `EnemyHp` - The amount of health an enemy has. A shovel does 1 hit of damage by default.
+  - `SpawnFalloffCurve` - An AnimationCurve describing the multiplier to use when determining the value of `SpawnChanceCurve`, dependent on the number of existing enemies with the same type divided by 10. Not available for the daytime enemy configs.
+  - `UseSpawnFalloff` - If true, then the resulting value from the `SpawnFalloffCurve` will be multiplied with the value from `SpawnCurve`.  Not available for the daytime enemy configs.
 - Rarity - There is one option for each enemy type. Invalid enemy types are ignored.
   - `<enemy type>` - The weight given to this enemy vs other enemies. If you do not want the enemy to spawn, set the rarity to 0. A higher rarity increases the chances for an enemy to spawn.
 
@@ -76,8 +90,10 @@ These configuration values can be set per moon. Store items and items share the 
   - `ScrapValueMultiplier` - Multiplies the value of a scrap item by this multiplier.
   - `ScrapAmountMultiplier` - Multiplies the total number of scrap on a level by this multiplier.
 - ItemType - There is one section for each item.
-  - `MinValue` - The minimum value of this item.
-  - `MaxValue` - The maximum value of this item.
+  - `MinValue` - The minimum value of this item. Only available for scrap items
+  - `MaxValue` - The maximum value of this item. Only available for scrap items
+  - `Weight` - The weight of the item. The real in-game weight can be calculated with the formula: `pounds = (value - 1) * 100`. For example, a value of 1.18 is 18lbs. Can only be set in the global scrap config.
+  - `Conductive` - Whether or not the item can be struck by lightning.
 - Rarity
   - `<item name>` - The weight of this item, relative to the total weight of all items. A higher rarity increases the chances for an item to spawn. Includes store items.
  </details>

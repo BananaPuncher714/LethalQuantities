@@ -105,6 +105,16 @@ namespace LethalQuantities
                 // TODO 
 
                 configInitialized = true;
+
+                // Set some global options here
+                if (configuration.scrapConfiguration.enabled.Value)
+                {
+                    foreach (Item item in globalInfo.allItems)
+                    {
+                        GlobalItemConfiguration itemConfig = configuration.scrapConfiguration.itemConfigurations[item];
+                        itemConfig.weight.Set(ref item.weight);
+                    }
+                }
             }
             else
             {

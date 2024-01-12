@@ -3,6 +3,8 @@
 - Create global config files to reduce clutter instead of individual files per every moon
 - Added optional per-moon configs for user selected moons
 - Added GLOBAL and DEFAULT options for certain options to fallback to the global config or default moon values
+- Added item weight and conductivity to the scrap config
+- Added enemy stun multiplier, door speed multiplier, stun game difficulty multiplier, stunnable, killable, and enemy hp to the enemy configs
 ### 1.0.14
 - Fixed numbers from being saved with commas instead of periods
 ### 1.0.13

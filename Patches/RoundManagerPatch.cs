@@ -101,6 +101,7 @@ namespace LethalQuantities.Patches
                         item.rarity.Set(ref newItem.rarity);
                         if (newItem.rarity > 0)
                         {
+                            item.conductive.Set(ref newItem.spawnableItem.isConductiveMetal);
                             if (item is ScrapItemConfiguration)
                             {
                                 ScrapItemConfiguration scrapItem = item as ScrapItemConfiguration;
@@ -140,6 +141,7 @@ namespace LethalQuantities.Patches
                                 newItem.rarity = rarity;
                                 newLevel.spawnableScrap.Add(newItem);
 
+                                globalItemConfiguration.conductive.Set(ref type.isConductiveMetal);
                                 if (globalItemConfiguration is GlobalItemScrapConfiguration)
                                 {
                                     GlobalItemScrapConfiguration scrapConfig = globalItemConfiguration as GlobalItemScrapConfiguration;
@@ -155,16 +157,6 @@ namespace LethalQuantities.Patches
                             newItem.spawnableItem = type;
                             newItem.rarity = defaultRarities[type];
                             newLevel.spawnableScrap.Add(newItem);
-                        }
-                    }
-
-                    foreach (SpawnableItemWithRarity item in newLevel.spawnableScrap)
-                    {
-                        GlobalItemScrapConfiguration scrapConfig = state.globalConfiguration.scrapConfiguration.itemConfigurations[item.spawnableItem];
-                        if (!scrapConfig.isDefault())
-                        {
-                            scrapConfig.minValue.Set(ref item.spawnableItem.minValue);
-                            scrapConfig.maxValue.Set(ref item.spawnableItem.maxValue);
                         }
                     }
                 }

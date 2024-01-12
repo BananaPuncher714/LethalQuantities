@@ -91,7 +91,7 @@ namespace LethalQuantities.Objects
                 {
                     if (!config.isDefault())
                     {
-                        defaultItems.Add(config.item, new ItemInformation(config.item.minValue, config.item.maxValue));
+                        defaultItems.Add(config.item, new ItemInformation(config.item.minValue, config.item.maxValue, config.item.isConductiveMetal));
                     }
                 }
             }
@@ -148,16 +148,22 @@ namespace LethalQuantities.Objects
                     item.maxEnemyCount.Set(ref type.MaxCount);
                     item.powerLevel.Set(ref type.PowerLevel);
                     item.spawnCurve.Set(ref type.probabilityCurve);
-                    EnemyTypeConfiguration normalType = item as EnemyTypeConfiguration;
-                    if (normalType != null)
+                    item.stunTimeMultiplier.Set(ref type.stunTimeMultiplier);
+                    item.doorSpeedMultiplier.Set(ref type.doorSpeedMultiplier);
+                    item.stunGameDifficultyMultiplier.Set(ref type.stunGameDifficultyMultiplier);
+                    item.stunnable.Set(ref type.canBeStunned);
+                    item.killable.Set(ref type.canDie);
+                    if (item is EnemyTypeConfiguration)
                     {
+                        EnemyTypeConfiguration normalType = item as EnemyTypeConfiguration;
                         normalType.spawnFalloffCurve.Set(ref type.numberSpawnedFalloff);
                         normalType.useSpawnFalloff.Set(ref type.useNumberSpawnedFalloff);
                     }
                     type.isOutsideEnemy = isOutside;
                     type.isDaytimeEnemy = isDaytimeEnemy;
 
-                    instantiateEnemyTypeObject(type);
+                    EnemyAI ai = instantiateEnemyTypeObject(type);
+                    item.enemyHp.Set(ref ai.enemyHP);
 
                     SpawnableEnemyWithRarity spawnable = new SpawnableEnemyWithRarity();
                     spawnable.enemyType = type;
@@ -192,9 +198,14 @@ namespace LethalQuantities.Objects
                         type.MaxCount = maxCount;
                         typeConfig.powerLevel.Set(ref type.PowerLevel);
                         typeConfig.spawnCurve.Set(ref type.probabilityCurve);
-                        GlobalEnemyTypeConfiguration enemyConfig = typeConfig as GlobalEnemyTypeConfiguration;
-                        if (enemyConfig != null)
+                        typeConfig.stunTimeMultiplier.Set(ref type.stunTimeMultiplier);
+                        typeConfig.doorSpeedMultiplier.Set(ref type.doorSpeedMultiplier);
+                        typeConfig.stunGameDifficultyMultiplier.Set(ref type.stunGameDifficultyMultiplier);
+                        typeConfig.stunnable.Set(ref type.canBeStunned);
+                        typeConfig.killable.Set(ref type.canDie);
+                        if (typeConfig is GlobalEnemyTypeConfiguration)
                         {
+                            GlobalEnemyTypeConfiguration enemyConfig = typeConfig as GlobalEnemyTypeConfiguration;
                             enemyConfig.spawnFalloffCurve.Set(ref type.numberSpawnedFalloff);
                             enemyConfig.useSpawnFalloff.Set(ref type.useNumberSpawnedFalloff);
                         }
@@ -202,7 +213,8 @@ namespace LethalQuantities.Objects
                         type.isOutsideEnemy = isOutside;
                         type.isDaytimeEnemy = isDaytime;
 
-                        instantiateEnemyTypeObject(type);
+                        EnemyAI ai = instantiateEnemyTypeObject(type);
+                        typeConfig.enemyHp.Set(ref ai.enemyHP);
 
                         SpawnableEnemyWithRarity spawnable = new SpawnableEnemyWithRarity();
                         spawnable.enemyType = type;
@@ -247,7 +259,7 @@ namespace LethalQuantities.Objects
         {
             foreach (ItemConfiguration itemconfig in scrapRarities)
             {
-                items.Add(itemconfig.item, new ItemInformation(itemconfig.item.minValue, itemconfig.item.maxValue));
+                items.Add(itemconfig.item, new ItemInformation(itemconfig.item.minValue, itemconfig.item.maxValue, itemconfig.item.isConductiveMetal));
             }
         }
     }

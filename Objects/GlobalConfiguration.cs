@@ -49,10 +49,25 @@ namespace LethalQuantities.Objects
         public CustomEntry<int> maxEnemyCount { get; set; }
         public CustomEntry<int> powerLevel { get; set; }
         public CustomEntry<AnimationCurve> spawnCurve { get; set; }
+        public CustomEntry<float> stunTimeMultiplier { get; set; }
+        public CustomEntry<float> doorSpeedMultiplier { get; set; }
+        public CustomEntry<float> stunGameDifficultyMultiplier { get; set; }
+        public CustomEntry<bool> stunnable { get; set; }
+        public CustomEntry<bool> killable { get; set; }
+        public CustomEntry<int> enemyHp { get; set; }
 
         public virtual bool isDefault()
         {
-            return rarity.isDefault() && maxEnemyCount.isDefault() && powerLevel.isDefault() && spawnCurve.isDefault();
+            return rarity.isDefault()
+                    && maxEnemyCount.isDefault()
+                    && powerLevel.isDefault()
+                    && spawnCurve.isDefault()
+                    && stunTimeMultiplier.isDefault()
+                    && doorSpeedMultiplier.isDefault()
+                    && stunGameDifficultyMultiplier.isDefault()
+                    && stunnable.isDefault()
+                    && killable.isDefault()
+                    && enemyHp.isDefault();
         }
     }
 
@@ -79,7 +94,7 @@ namespace LethalQuantities.Objects
         public CustomEntry<int> maxScrap { get; set; }
         public CustomEntry<float> scrapAmountMultiplier { get; set; }
         public CustomEntry<float> scrapValueMultiplier { get; set; }
-        public Dictionary<Item, GlobalItemScrapConfiguration> itemConfigurations { get; } = new Dictionary<Item, GlobalItemScrapConfiguration>();
+        public Dictionary<Item, GlobalItemConfiguration> itemConfigurations { get; } = new Dictionary<Item, GlobalItemConfiguration>();
 
         public virtual bool isDefault()
         {
@@ -119,9 +134,12 @@ namespace LethalQuantities.Objects
         }
 
         public CustomEntry<int> rarity { get; set; }
+        public CustomEntry<float> weight { get; set; }
+        public CustomEntry<bool> conductive { get; set; }
 
         public virtual bool isDefault()
         {
+            // The weight and conductivity of the item don't count towards being default or not since they are global options and not set per round
             return rarity.isDefault();
         }
     }
@@ -205,6 +223,12 @@ namespace LethalQuantities.Objects
                     typeConfiguration.maxEnemyCount = BindEmptyOrDefaultable(enemyConfig, tablename, "MaxEnemyCount", enemyType.MaxCount, $"Maximum amount of {enemyType.enemyName}s allowed at once. The default value is {{0}}");
                     typeConfiguration.powerLevel = BindEmptyOrDefaultable(enemyConfig, tablename, "PowerLevel", enemyType.PowerLevel, $"How much a single {enemyType.enemyName} contributes to the maximum power level. The default value is {{0}}");
                     typeConfiguration.spawnCurve = BindEmptyOrDefaultable(enemyConfig, tablename, "SpawnChanceCurve", enemyType.probabilityCurve, $"How likely a(n) {enemyType.enemyName} is to spawn as the day progresses. (Key ranges from 0-1 ). The default value is {{0}}");
+                    typeConfiguration.stunTimeMultiplier = BindEmptyOrDefaultable(enemyConfig, tablename, "StunTimeMultiplier", enemyType.stunTimeMultiplier, $"The multiplier for how long a(n) {enemyType.enemyName} can be stunned. The default value is {{0}}");
+                    typeConfiguration.doorSpeedMultiplier = BindEmptyOrDefaultable(enemyConfig, tablename, "DoorSpeedMultiplier", enemyType.doorSpeedMultiplier, $"The multiplier for how long it takes a(n) {enemyType.enemyName} to open a door. The default value is {{0}}");
+                    typeConfiguration.stunGameDifficultyMultiplier = BindEmptyOrDefaultable(enemyConfig, tablename, "StunGameDifficultyMultiplier", enemyType.stunGameDifficultyMultiplier, $"I don't know what this does. The default value is {{0}}");
+                    typeConfiguration.stunnable = BindEmptyOrDefaultable(enemyConfig, tablename, "Stunnable", enemyType.canBeStunned, $"Whether or not a(n) {enemyType.enemyName} can be stunned. The default value is {{0}}");
+                    typeConfiguration.killable = BindEmptyOrDefaultable(enemyConfig, tablename, "Killable", enemyType.canDie, $"Whether or not a(n) {enemyType.enemyName} can die. The default value is {{0}}");
+                    typeConfiguration.enemyHp = BindEmptyOrDefaultable(enemyConfig, tablename, "EnemyHp", enemyType.enemyPrefab.GetComponent<EnemyAI>().enemyHP, $"The initial amount of health a(n) {enemyType.enemyName} has. The default value is {{0}}");
                     typeConfiguration.spawnFalloffCurve = BindEmptyOrDefaultable(enemyConfig, tablename, "SpawnFalloffCurve", enemyType.numberSpawnedFalloff, $"The spawning curve multiplier of how less/more likely a(n) {enemyType.enemyName} is to spawn based on how many already have been spawned. (Key is number of {enemyType.enemyName}s/10). The default value is {{0}}");
                     typeConfiguration.useSpawnFalloff = BindEmptyOrDefaultable(enemyConfig, tablename, "UseSpawnFalloff", enemyType.useNumberSpawnedFalloff, $"Whether or not to modify spawn rates based on how many existing {enemyType.enemyName}s there are inside. The default value is {{0}}");
 
@@ -244,6 +268,12 @@ namespace LethalQuantities.Objects
                     typeConfiguration.maxEnemyCount = BindEmptyOrDefaultable(enemyConfig, tablename, "MaxEnemyCount", enemyType.MaxCount, $"Maximum amount of {enemyType.enemyName}s allowed at once. The default value is {{0}}");
                     typeConfiguration.powerLevel = BindEmptyOrDefaultable(enemyConfig, tablename, "PowerLevel", enemyType.PowerLevel, $"How much a(n) {enemyType.enemyName} contributes to the maximum power level. The default value is {{0}}");
                     typeConfiguration.spawnCurve = BindEmptyOrDefaultable(enemyConfig, tablename, "SpawnChanceCurve", enemyType.probabilityCurve, $"How likely a(n) {enemyType.enemyName} is to spawn as the day progresses. (Key ranges from 0-1 ). The default value is {{0}}");
+                    typeConfiguration.stunTimeMultiplier = BindEmptyOrDefaultable(enemyConfig, tablename, "StunTimeMultiplier", enemyType.stunTimeMultiplier, $"The multiplier for how long a(n) {enemyType.enemyName} can be stunned. The default value is {{0}}");
+                    typeConfiguration.doorSpeedMultiplier = BindEmptyOrDefaultable(enemyConfig, tablename, "DoorSpeedMultiplier", enemyType.doorSpeedMultiplier, $"The multiplier for how long it takes a(n) {enemyType.enemyName} to open a door. The default value is {{0}}");
+                    typeConfiguration.stunGameDifficultyMultiplier = BindEmptyOrDefaultable(enemyConfig, tablename, "StunGameDifficultyMultiplier", enemyType.stunGameDifficultyMultiplier, $"I don't know what this does. The default value is {{0}}");
+                    typeConfiguration.stunnable = BindEmptyOrDefaultable(enemyConfig, tablename, "Stunnable", enemyType.canBeStunned, $"Whether or not a(n) {enemyType.enemyName} can be stunned. The default value is {{0}}");
+                    typeConfiguration.killable = BindEmptyOrDefaultable(enemyConfig, tablename, "Killable", enemyType.canDie, $"Whether or not a(n) {enemyType.enemyName} can die. The default value is {{0}}");
+                    typeConfiguration.enemyHp = BindEmptyOrDefaultable(enemyConfig, tablename, "EnemyHp", enemyType.enemyPrefab.GetComponent<EnemyAI>().enemyHP, $"The initial amount of health a(n) {enemyType.enemyName} has. The default value is {{0}}");
                     // No spawn curve falloff is implemented for daytime enemies
                     //typeConfiguration.spawnFalloffCurve = BindEmptyOrDefaultable(enemyConfig, tablename, "SpawnFalloffCurve", enemyType.numberSpawnedFalloff, $"The spawning curve multiplier of how less/more likely a(n) {enemyType.enemyName} is to spawn based on how many have already been spawned. (Key is number of {enemyType.enemyName}s/10). This does not work for daytime enemies.");
                     //typeConfiguration.useSpawnFalloff = BindEmptyOrDefaultable(enemyConfig, tablename, "UseSpawnFalloff", enemyType.useNumberSpawnedFalloff, $"Whether or not to modify spawn rates based on how many existing {enemyType.enemyName}s there are.");
@@ -283,6 +313,12 @@ namespace LethalQuantities.Objects
                     typeConfiguration.maxEnemyCount = BindEmptyOrDefaultable(enemyConfig, tablename, "MaxEnemyCount", enemyType.MaxCount, $"Maximum amount of {enemyType.enemyName}s allowed at once. The default value is {{0}}");
                     typeConfiguration.powerLevel = BindEmptyOrDefaultable(enemyConfig, tablename, "PowerLevel", enemyType.PowerLevel, $"How much a(n) {enemyType.enemyName} contributes to the maximum power level. The default value is {{0}}");
                     typeConfiguration.spawnCurve = BindEmptyOrDefaultable(enemyConfig, tablename, "SpawnChanceCurve", enemyType.probabilityCurve, $"How likely a(n) {enemyType.enemyName} is to spawn as the day progresses, (Key ranges from 0-1). The default value is {{0}}");
+                    typeConfiguration.stunTimeMultiplier = BindEmptyOrDefaultable(enemyConfig, tablename, "StunTimeMultiplier", enemyType.stunTimeMultiplier, $"The multiplier for how long a(n) {enemyType.enemyName} can be stunned. The default value is {{0}}");
+                    typeConfiguration.doorSpeedMultiplier = BindEmptyOrDefaultable(enemyConfig, tablename, "DoorSpeedMultiplier", enemyType.doorSpeedMultiplier, $"The multiplier for how long it takes a(n) {enemyType.enemyName} to open a door. The default value is {{0}}");
+                    typeConfiguration.stunGameDifficultyMultiplier = BindEmptyOrDefaultable(enemyConfig, tablename, "StunGameDifficultyMultiplier", enemyType.stunGameDifficultyMultiplier, $"I don't know what this does. The default value is {{0}}");
+                    typeConfiguration.stunnable = BindEmptyOrDefaultable(enemyConfig, tablename, "Stunnable", enemyType.canBeStunned, $"Whether or not a(n) {enemyType.enemyName} can be stunned. The default value is {{0}}");
+                    typeConfiguration.killable = BindEmptyOrDefaultable(enemyConfig, tablename, "Killable", enemyType.canDie, $"Whether or not a(n) {enemyType.enemyName} can die. The default value is {{0}}");
+                    typeConfiguration.enemyHp = BindEmptyOrDefaultable(enemyConfig, tablename, "EnemyHp", enemyType.enemyPrefab.GetComponent<EnemyAI>().enemyHP, $"The initial amount of health a(n) {enemyType.enemyName} has. The default value is {{0}}");
                     typeConfiguration.spawnFalloffCurve = BindEmptyOrDefaultable(enemyConfig, tablename, "SpawnFalloffCurve", enemyType.numberSpawnedFalloff, $"The spawning curve multiplier of how less/more likely a(n) {enemyType.enemyName} is to spawn based on how many have already been spawned. (Key is number of {enemyType.enemyName}s/10). The default value is {{0}}");
                     typeConfiguration.useSpawnFalloff = BindEmptyOrDefaultable(enemyConfig, tablename, "UseSpawnFalloff", enemyType.useNumberSpawnedFalloff, $"Whether or not to modify spawn rates based on how many existing {enemyType.enemyName}s there are. The default value is {{0}}");
 
@@ -315,23 +351,25 @@ namespace LethalQuantities.Objects
             foreach (Item itemType in globalInfo.allItems)
             {
                 GlobalItemConfiguration itemConfiguration;
+                string tablename = $"ItemType.{itemType.name}";
                 if (itemType.isScrap)
                 {
                     GlobalItemScrapConfiguration configuration = new GlobalItemScrapConfiguration(itemType);
                     itemConfiguration = configuration;
 
-                    string tablename = $"ItemType.{itemType.name}";
-
                     configuration.minValue = BindEmptyOrDefaultable(scrapConfig, tablename, "MinValue", itemType.minValue, $"Minimum value of a {itemType.itemName}. The default value is {{0}}");
                     configuration.maxValue = BindEmptyOrDefaultable(scrapConfig, tablename, "MaxValue", itemType.maxValue, $"Maximum value of a {itemType.itemName}. The default value is {{0}}");
-
-                    scrapConfiguration.itemConfigurations.Add(itemType, configuration);
                 } else
                 {
                     itemConfiguration = new GlobalItemConfiguration(itemType);
                 }
 
                 itemConfiguration.rarity = BindEmptyOrNonDefaultable<int>(scrapConfig, "Rarity", itemType.name, $"Rarity of a(n) {itemType.itemName} relative to the total rarity of all other item types combined. A higher rarity increases the chance that the item will spawn. Leave blank or DEFAULT to use the moon's default rarity.");
+
+                itemConfiguration.weight = BindEmptyOrDefaultable(scrapConfig, tablename, "Weight", itemType.weight, $"The weight of a(n) {itemType.itemName}. The default value is {{0}}. The in-game weight can be found by the formula: pounds = (value - 1) * 100. For example, a value of 1.18 means the object weighs 18lbs. This option can only be set in the global config.");
+                itemConfiguration.conductive = BindEmptyOrDefaultable(scrapConfig, tablename, "Conductive", itemType.isConductiveMetal, $"Whether or not {itemType.itemName} is conductive(can be struck by lightning). The default value is {{0}}.");
+
+                scrapConfiguration.itemConfigurations.Add(itemType, itemConfiguration);
             }
 
             if (scrapConfiguration.enabled.Value)
