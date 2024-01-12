@@ -45,6 +45,7 @@ namespace LethalQuantities
             _harmony = new Harmony("LethalQuantities");
             _harmony.PatchAll(typeof(RoundManagerPatch));
             _harmony.PatchAll(typeof(ObjectPatch));
+            _harmony.PatchAll(typeof(DungeonPatch));
 
             SceneManager.sceneLoaded += OnSceneLoaded;
         }
@@ -57,10 +58,11 @@ namespace LethalQuantities
                 GlobalInformation globalInfo = new GlobalInformation(GLOBAL_SAVE_DIR, LEVEL_SAVE_DIR);
 
                 // Get all enemy and item types
-                globalInfo.allEnemyTypes.UnionWith(Resources.FindObjectsOfTypeAll<EnemyType>());
-                globalInfo.allItems.UnionWith(Resources.FindObjectsOfTypeAll<Item>());
-                globalInfo.allSelectableLevels.UnionWith(instance.levels);
-                globalInfo.allDungeonFlows.UnionWith(Resources.FindObjectsOfTypeAll<DungeonFlow>());
+                globalInfo.allEnemyTypes.AddRange(Resources.FindObjectsOfTypeAll<EnemyType>());
+                globalInfo.allItems.AddRange(Resources.FindObjectsOfTypeAll<Item>());
+                globalInfo.allSelectableLevels.AddRange(instance.levels);
+                globalInfo.allDungeonFlows.AddRange(Resources.FindObjectsOfTypeAll<DungeonFlow>());
+                globalInfo.sortData();
 
                 configuration = new GlobalConfiguration(globalInfo);
 

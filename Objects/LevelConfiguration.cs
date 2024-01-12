@@ -90,7 +90,7 @@ namespace LethalQuantities.Objects
     public class DungeonFlowConfiguration
     {
         public CustomEntry<int> rarity { get; set; }
-        //public CustomEntry<float> factorySizeMultiplier { get; set; }
+        public CustomEntry<float> factorySizeMultiplier { get; set; }
     }
 
     public class LevelConfiguration
@@ -323,8 +323,7 @@ namespace LethalQuantities.Objects
                         dungeonFlowConfig.rarity = dungeonConfig.BindGlobal(masterFlowConfig.rarity, "Rarity", flow.name, flowRarities.GetValueOrDefault(flow, 0), $"Rarity of creating a dungeon using {flow.name} as the generator. Default value is {{0}}. This option can inherit from the global config with the value GLOBAL and from the game with the value DEFAULT");
 
                         string tablename = $"DungeonFlow.{flow.name}";
-                        // Until I can figure out how the transpiler works, or something
-                        //dungeonFlowConfig.factorySizeMultiplier = dungeonConfig.BindGlobal(masterFlowConfig.factorySizeMultiplier, tablename, "FactorySizeMultiplier", level.factorySizeMultiplier, $"Size of the dungeon when using this dungeon flow. Default value is {{0}}. This option can inherit from the global config with the value GLOBAL and from the game with the value DEFAULT");
+                        dungeonFlowConfig.factorySizeMultiplier = dungeonConfig.BindGlobal(masterFlowConfig.factorySizeMultiplier, tablename, "FactorySizeMultiplier", level.factorySizeMultiplier, $"Size of the dungeon when using this dungeon flow. Default value is {{0}}. This option can inherit from the global config with the value GLOBAL and from the game with the value DEFAULT");
 
                         dungeon.dungeonFlowConfigurations.Add(flow.name, dungeonFlowConfig);
                     }

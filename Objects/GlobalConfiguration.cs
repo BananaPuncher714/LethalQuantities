@@ -166,7 +166,7 @@ namespace LethalQuantities.Objects
     public class GlobalDungeonFlowConfiguration
     {
         public CustomEntry<int> rarity { get; set; }
-        //public CustomEntry<float> factorySizeMultiplier { get; set; }
+        public CustomEntry<float> factorySizeMultiplier { get; set; }
 
         public virtual bool isDefault()
         {
@@ -423,14 +423,14 @@ namespace LethalQuantities.Objects
                 dungeonFile.SaveOnConfigSet = false;
             }
 
-            dungeonConfiguration.mapSizeMultiplier = BindEmptyOrDefaultable(dungeonFile, "General", "MapSizeMultiplier", RoundManager.Instance.mapSizeMultiplier, "The multiplier to use for determining the size of the dungeon.");
+            dungeonConfiguration.mapSizeMultiplier = BindEmptyOrDefaultable(dungeonFile, "General", "MapSizeMultiplier", RoundManager.Instance.mapSizeMultiplier, "The multiplier to use for determining the size of the dungeon. The default value is {0}");
             foreach (DungeonFlow flow in globalInfo.allDungeonFlows)
             {
                 GlobalDungeonFlowConfiguration configuration = new GlobalDungeonFlowConfiguration();
                 configuration.rarity = BindEmptyOrNonDefaultable<int>(dungeonFile, "Rarity", flow.name, $"Rarity of a moon using a {flow.name} dungeon generator as the interior. A higher rarity increases the chance that the moon will use this dungeon flow. Leave blank or DEFAULT to use the moon's default rarity.");
 
-                // If more options are added
                 string tablename = $"DungeonFlow." + flow.name;
+                configuration.factorySizeMultiplier = BindEmptyOrNonDefaultable<float>(dungeonFile, tablename, "FactorySizeMultiplier", $"Size of the dungeon when using this dungeon flow. Leave blank or DEFAULT to use the moon's default factory size multiplier.");
 
                 dungeonConfiguration.dungeonFlowConfigurations.Add(flow.name, configuration);
             }

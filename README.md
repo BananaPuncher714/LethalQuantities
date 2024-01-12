@@ -114,7 +114,9 @@ These configuration values are set per moon. They should theoretically support c
 
 **Options**
 - General
-  - MapSizeMultiplier - A multiplier to how large the dungeon generation should be. Cannot be set per-flow
+  - `MapSizeMultiplier` - A multiplier foro how large the dungeon generation should be. Cannot be set per-flow
+- DungeonFlow
+  - `FactorySizeMultiplier` - A multiplier for how large the dungeon generation should be for this flow.
 - Rarity
   - `<dungeon flow name>` - The weight of this flow, relative to the total weight of all flows. A higher rarity increases the chances for this flow to be used.
  </details>

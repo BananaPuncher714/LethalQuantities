@@ -1,4 +1,7 @@
 ## Changelog
+### 1.1.2
+- Added factory size multipler per dungeon flow
+- Sort some entries alphabetically to make them easier to locate, such as rarities
 ### 1.1.1
 - Fixed invalid scrap config not loading
 - Added configurable dungeon flows per moon

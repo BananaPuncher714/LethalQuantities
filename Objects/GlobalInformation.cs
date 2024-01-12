@@ -1,15 +1,17 @@
 ﻿using BepInEx.Configuration;
 using DunGen.Graph;
+using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace LethalQuantities.Objects
 {
     public class GlobalInformation
     {
-        public HashSet<EnemyType> allEnemyTypes { get; } = new HashSet<EnemyType>();
-        public HashSet<Item> allItems { get; } = new HashSet<Item>();
-        public HashSet<DungeonFlow> allDungeonFlows { get; } = new HashSet<DungeonFlow>();
-        public HashSet<SelectableLevel> allSelectableLevels { get; } = new HashSet<SelectableLevel>();
+        public List<EnemyType> allEnemyTypes { get; } = new List<EnemyType>();
+        public List<Item> allItems { get; } = new List<Item>();
+        public List<DungeonFlow> allDungeonFlows { get; } = new List<DungeonFlow>();
+        public List<SelectableLevel> allSelectableLevels { get; } = new List<SelectableLevel>();
 
         public string configSaveDir { get; private set; }
         public string moonSaveDir { get; private set; }
@@ -18,6 +20,28 @@ namespace LethalQuantities.Objects
         {
             configSaveDir = globalConfigSaveDir;
             this.moonSaveDir = moonSaveDir;
+        }
+
+        public void sortData()
+        {
+            Comparison<ScriptableObject> sortOfAlphabeticalComparison = (a, b) =>
+            {
+                string nameA = a.name;
+                string nameB = b.name;
+                if (nameA.ToUpper() == nameB.ToUpper())
+                {
+                    return nameA.CompareTo(nameB);
+                }
+                else
+                {
+                    return nameA.ToUpper().CompareTo(nameB.ToUpper());
+                }
+            };
+
+            allEnemyTypes.Sort(sortOfAlphabeticalComparison);
+            allItems.Sort(sortOfAlphabeticalComparison);
+            allDungeonFlows.Sort(sortOfAlphabeticalComparison);
+            allSelectableLevels.Sort(sortOfAlphabeticalComparison);
         }
     }
 
