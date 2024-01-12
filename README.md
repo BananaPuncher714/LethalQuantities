@@ -12,7 +12,8 @@ A per-moon enemy and item spawning customization mod. **All configs are disabled
 ## Bugs
 - May or may not play nicely with other mods that forcefully change spawning behavior
 ## Configuration
-You must host or join a game at least once to generate the configuration files. Any missing or deleted files will be generated with the default options.
+You must host or join a game at least once to generate the configuration files. Any missing or deleted files will be generated with the default options. By default, the only file that is generated is `Configuration.cfg`. You must enable global config files and individual moon config files in order to modify anything.
+- `Configuration.cfg` - Enable/disable other configuration files here
 
 
 **Complex config types:**
@@ -20,6 +21,15 @@ You must host or join a game at least once to generate the configuration files. 
   - A curve with no frames is left blank
   - A curve with one keyframe is described with a single number
   - A curve with multiple keyframes is comprised of a keyframes(`key:value`) separated by commas
+- Global/inheritable options - Represents an option that can be inherited from the global configuration. Generally found in the moon configs.
+  - `GLOBAL` or no value uses the global value
+  - `DEFAULT` uses the default local value
+  - Any value that is neither will be used directly instead
+- Defaultable options - Represents an option that can be modified, or left default/empty to do nothing. Generally found in the global config. If a moon specific option(like rarity) is left default, then it will use the moon's default value
+  - `DEFAULT` or no value uses the default value
+  - Any value that is not `DEFAULT` or empty will be used directly
+
+
 <details>
 <summary>Enemies</summary>
 
@@ -34,18 +44,17 @@ These configuration files do _not_ interfere with each other, meaning enemies sp
 
 **Options**
 - General
-  - `Enabled` - Allow/Disallow this config to modify enemy spawning. You **must** enable this option to change enemy spawning behavior.
   - `MaxPowerCount` - Maximum total power allowed for this category of enemies. Different enemy types have different power levels. The total power of a level is the sum of the power levels of all existing enemies.
   - `SpawnAmountCurve` - An AnimationCurve with a key ranging from 0 to 1. The key represents the percentage of time progressed in the current level. The value is the amount of enemies to spawn at the given time.
   - `SpawnAmountRange` - The range of enemies that can spawn. A value of 3 means that 3 more or 3 less enemies can spawn, based on the value returned by the `SpawnAmountCurve`.
 - EnemyType - There is one section for each enemy. Invalid enemy types are ignored.
-  - `Rarity` - The weight given to this enemy vs other enemies. If you do not want the enemy to spawn, set the rarity to 0. A higher rarity increases the chances for an enemy to spawn.
   - `MaxEnemyCount` - The total amount of enemies of the given type that can spawn
   - `PowerLevel` - How much power an enemy of the given type counts for
   - `SpawnCurve` - An AnimationCurve from 0 to 1. The key represents the percentage of time progressed, much like `SpawnChanceCurve`. The value normally ranges from 0 to 1, and is multiplied by `Rarity` to find the weight.
   - `SpawnFalloffCurve` - An AnimationCurve describing the multiplier to use when determining the value of `SpawnChanceCurve`, dependent on the number of existing enemies with the same type divided by 10.
   - `UseSpawnFalloff` - If true, then the resulting value from the `SpawnFalloffCurve` will be multiplied with the value from `SpawnCurve`
-
+- Rarity - There is one option for each enemy type. Invalid enemy types are ignored.
+  - `<enemy type>` - The weight given to this enemy vs other enemies. If you do not want the enemy to spawn, set the rarity to 0. A higher rarity increases the chances for an enemy to spawn.
 
 Exceptions:
 - The `OutsideEnemies.cfg` option `SpawnChanceRange` has a hardcoded value of `3` in-game, and cannot be changed
@@ -57,22 +66,20 @@ There is 1 scrap configuration file.
 - `Scrap.cfg` -  responsible for all scrap generation
 
 
-These configuration values are set per moon. Store items and items share the same spawning pool and are not separate.
+These configuration values can be set per moon. Store items and items share the same spawning pool and are not separate.
 
 
 **Options**
 - General
-  - `Enabled` - Allow/Disallow this config to modify scrap spawning. You **must** enable this option to change scrap spawning behavior.
   - `MaxScrapCount` - Maximum total number of scrap items generated in a level. 
   - `MinScrapCount` - Minimum total number of scrap items generated in a level. 
   - `ScrapValueMultiplier` - Multiplies the value of a scrap item by this multiplier.
   - `ScrapAmountMultiplier` - Multiplies the total number of scrap on a level by this multiplier.
 - ItemType - There is one section for each item.
-  - `Rarity` - The weight of this item, relative to the total weight of all items. A higher rarity increases the chances for an item to spawn.
   - `MinValue` - The minimum value of this item.
   - `MaxValue` - The maximum value of this item.
-- StoreItemType - There is one section for each store item.
-  - `Rarity` - The weight of this item, relative to the total weight of all items. A higher rarity increases the chances for an item to spawn.
+- Rarity
+  - `<item name>` - The weight of this item, relative to the total weight of all items. A higher rarity increases the chances for an item to spawn. Includes store items.
  </details>
 
 ## Spawn Logic

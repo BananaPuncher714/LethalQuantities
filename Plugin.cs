@@ -14,13 +14,14 @@ namespace LethalQuantities
     [BepInPlugin(PluginInfo.PLUGIN_GUID, PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION)]
     public class Plugin : BaseUnityPlugin
     {
+        private static readonly string GLOBAL_SAVE_DIR = Path.Combine(Paths.ConfigPath, PluginInfo.PLUGIN_NAME, "Global");
         private static readonly string LEVEL_SAVE_DIR = Path.Combine(Paths.ConfigPath, PluginInfo.PLUGIN_NAME, "Moons");
 
         public static Plugin INSTANCE { get; private set; }
 
         public static ManualLogSource LETHAL_LOGGER { get; private set; }
 
-        private Dictionary<string, LevelConfiguration> levelConfigs = new Dictionary<string, LevelConfiguration>();
+        private GlobalConfiguration configuration;
 
         private Harmony _harmony;
         private bool configInitialized = false;
@@ -52,17 +53,14 @@ namespace LethalQuantities
             if (scene.name == "SampleSceneRelay" && !configInitialized)
             {
                 StartOfRound instance = StartOfRound.Instance;
-                LevelInformation levelInfo = new LevelInformation();
+                GlobalInformation globalInfo = new GlobalInformation(GLOBAL_SAVE_DIR, LEVEL_SAVE_DIR);
 
                 // Get all enemy and item types
-                levelInfo.allEnemyTypes.UnionWith(Resources.FindObjectsOfTypeAll<EnemyType>());
-                levelInfo.allItems.UnionWith(Resources.FindObjectsOfTypeAll<Item>());
+                globalInfo.allEnemyTypes.UnionWith(Resources.FindObjectsOfTypeAll<EnemyType>());
+                globalInfo.allItems.UnionWith(Resources.FindObjectsOfTypeAll<Item>());
+                globalInfo.allSelectableLevels.UnionWith(instance.levels);
 
-                foreach (SelectableLevel level in instance.levels)
-                {
-                    string levelSaveDir = Path.Combine(LEVEL_SAVE_DIR, level.name);
-                    levelConfigs.Add(level.name, new LevelConfiguration(levelSaveDir, level, levelInfo));
-                }
+                configuration = new GlobalConfiguration(globalInfo);
 
                 LETHAL_LOGGER.LogInfo("Printing out default moon info");
                 foreach (var level in instance.levels)
@@ -92,7 +90,7 @@ namespace LethalQuantities
                 }
 
                 LETHAL_LOGGER.LogInfo("Printing out default enemy info:");
-                foreach (var enemyType in levelInfo.allEnemyTypes)
+                foreach (var enemyType in globalInfo.allEnemyTypes)
                 {
                     LETHAL_LOGGER.LogInfo("\tEnemy: " + enemyType.enemyName);
                     LETHAL_LOGGER.LogInfo("\t\tEnemy max count: " + enemyType.MaxCount);
@@ -113,7 +111,7 @@ namespace LethalQuantities
                 if (RoundManager.Instance != null && RoundManager.Instance.IsServer)
                 {
                     SelectableLevel level = RoundManager.Instance.currentLevel;
-                    if (level != null)
+                    if (level != null && configuration.levelConfigs.ContainsKey(RoundManager.Instance.currentLevel.name))
                     {
                         LETHAL_LOGGER.LogInfo($"Found level {level.name}, modifying enemy spawns");
                         // Add a manager to keep track of all objects
@@ -122,8 +120,8 @@ namespace LethalQuantities
 
                         RoundState state = levelModifier.AddComponent<RoundState>();
                         state.plugin = this;
-                        state.levelConfiguration = levelConfigs[RoundManager.Instance.currentLevel.name];
-                        state.scene = scene;
+
+                        state.setData(scene, configuration);
                         state.initialize(level);
                     }
                 }

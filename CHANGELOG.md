@@ -1,4 +1,8 @@
 ## Changelog
+### 1.1.0 - IF UPDATING TO THIS VERSION THEN BACKUP ALL YOUR CONFIG FILES!
+- Create global config files to reduce clutter instead of individual files per every moon
+- Added optional per-moon configs for user selected moons
+- Added GLOBAL and DEFAULT options for certain options to fallback to the global config or default moon values
 ### 1.0.14
 - Fixed numbers from being saved with commas instead of periods
 ### 1.0.13

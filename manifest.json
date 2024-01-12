@@ -1,8 +1,8 @@
 {
   "name": "LethalQuantities",
-  "version_number": "1.0.14",
+  "version_number": "1.1.0",
   "website_url": "https://github.com/BananaPuncher714/LethalQuantities",
-  "description": "Customizable enemy and item spawning per moon. Works with custom enemies and items!",
+  "description": "Customize enemy and item spawning for each moon. Works with custom items, enemies and moons! Great for modpack balancing!",
   "dependencies": [
     "BepInEx-BepInExPack-5.4.2100"
   ]

@@ -5,39 +5,49 @@ using UnityEngine;
 
 namespace LethalQuantities.Objects
 {
-    public class EnemyConfiguration
+    public class OutsideEnemyConfiguration<T> where T: DaytimeEnemyTypeConfiguration
     {
         public ConfigEntry<bool> enabled { get; set; }
-        public ConfigEntry<int> maxPowerCount { get; set; }
-        public ConfigEntry<AnimationCurve> spawnAmountCurve { get; set; }
-        public ConfigEntry<float> spawnAmountRange { get; set; }
-        public List<EnemyTypeConfiguration> enemyTypes { get; } = new List<EnemyTypeConfiguration>();
+        public GlobalConfigEntry<int> maxPowerCount { get; set; }
+        public GlobalConfigEntry<AnimationCurve> spawnAmountCurve { get; set; }
+        public List<T> enemyTypes { get; } = new List<T>();
     }
 
-    public class EnemyTypeConfiguration
+    public class EnemyConfiguration<T> : OutsideEnemyConfiguration<T> where T: DaytimeEnemyTypeConfiguration 
+    {
+        public GlobalConfigEntry<float> spawnAmountRange { get; set; }
+    }
+
+    public class DaytimeEnemyTypeConfiguration
     {
         public EnemyType type { get; protected set; }
-        internal EnemyTypeConfiguration(EnemyType type)
+        public DaytimeEnemyTypeConfiguration(EnemyType type)
         {
             this.type = type;
         }
+        public GlobalConfigEntry<int> rarity { get; set; }
+        public GlobalConfigEntry<int> maxEnemyCount { get; set; }
+        public GlobalConfigEntry<int> powerLevel { get; set; }
+        public GlobalConfigEntry<AnimationCurve> spawnCurve { get; set; }
+    }
 
-        public ConfigEntry<int> rarity { get; set; }
-        public ConfigEntry<int> maxEnemyCount { get; set; }
-        public ConfigEntry<int> powerLevel { get; set; }
-        public ConfigEntry<AnimationCurve> spawnCurve { get; set; }
-        public ConfigEntry<AnimationCurve> spawnFalloffCurve { get; set; }
-        public ConfigEntry<bool> useSpawnFalloff { get; set; }
+    public class EnemyTypeConfiguration : DaytimeEnemyTypeConfiguration
+    {
+        public EnemyTypeConfiguration(EnemyType type) : base(type)
+        {
+        }
 
+        public GlobalConfigEntry<AnimationCurve> spawnFalloffCurve { get; set; }
+        public GlobalConfigEntry<bool> useSpawnFalloff { get; set; }
     }
 
     public class ScrapConfiguration
     {
         public ConfigEntry<bool> enabled { get; set; }
-        public ConfigEntry<int> minScrap { get; set; }
-        public ConfigEntry<int> maxScrap { get; set; }
-        public ConfigEntry<float> scrapValueMultiplier { get; set; }
-        public ConfigEntry<float> scrapAmountMultiplier { get; set; }
+        public GlobalConfigEntry<int> minScrap { get; set; }
+        public GlobalConfigEntry<int> maxScrap { get; set; }
+        public GlobalConfigEntry<float> scrapValueMultiplier { get; set; }
+        public GlobalConfigEntry<float> scrapAmountMultiplier { get; set; }
         public List<ItemConfiguration> scrapRarities { get; } = new List<ItemConfiguration>();
     }
 
@@ -49,7 +59,7 @@ namespace LethalQuantities.Objects
             this.item = item;
         }
 
-        public ConfigEntry<int> rarity { get; set; }
+        public DefaultableConfigEntry<int> rarity { get; set; }
     }
 
     public class ScrapItemConfiguration : ItemConfiguration
@@ -58,170 +68,188 @@ namespace LethalQuantities.Objects
         {
         }
 
-        public ConfigEntry<int> maxValue { get; set; }
-        public ConfigEntry<int> minValue { get; set; }
+        public GlobalConfigEntry<int> maxValue { get; set; }
+        public GlobalConfigEntry<int> minValue { get; set; }
     }
 
     public class LevelConfiguration
     {
-        private static readonly string ENEMY_CFG_NAME = "Enemies.cfg";
-        private static readonly string DAYTIME_ENEMY_CFG_NAME = "DaytimeEnemies.cfg";
-        private static readonly string OUTSIDE_ENEMY_CFG_NAME = "OutsideEnemies.cfg";
-        private static readonly string SCRAP_CFG_NAME = "Scrap.cfg";
-
-        public int levelId { get; }
-        public string sceneName { get; }
-        private string saveDirectory { get; }
-
-        public EnemyConfiguration enemies { get; }
-        public EnemyConfiguration daytimeEnemies { get; }
-        public EnemyConfiguration outsideEnemies { get; }
+        public EnemyConfiguration<EnemyTypeConfiguration> enemies { get; }
+        public EnemyConfiguration<DaytimeEnemyTypeConfiguration> daytimeEnemies { get; }
+        public OutsideEnemyConfiguration<EnemyTypeConfiguration> outsideEnemies { get; }
         public ScrapConfiguration scrap { get; }
 
-        public LevelConfiguration(string saveDirectory, SelectableLevel level, LevelInformation levelInfo)
+        public LevelConfiguration(LevelInformation levelInfo)
         {
-            levelId = level.levelID;
-            sceneName = level.sceneName;
-            this.saveDirectory = saveDirectory;
-
-            enemies = new EnemyConfiguration();
-            daytimeEnemies = new EnemyConfiguration();
-            outsideEnemies = new EnemyConfiguration();
+            enemies = new EnemyConfiguration<EnemyTypeConfiguration>();
+            daytimeEnemies = new EnemyConfiguration<DaytimeEnemyTypeConfiguration>();
+            outsideEnemies = new OutsideEnemyConfiguration<EnemyTypeConfiguration>();
             scrap = new ScrapConfiguration();
 
-
-            instantiateConfigs(level, levelInfo);
+            instantiateConfigs(levelInfo);
         }
 
-        private void instantiateConfigs(SelectableLevel level, LevelInformation levelInfo)
+        private void instantiateConfigs(LevelInformation levelInfo)
         {
-            instantiateEnemyConfigs(level, levelInfo.allEnemyTypes);
-            instantiateScrapConfigs(level, levelInfo.allItems);
+            instantiateEnemyConfigs(levelInfo);
+            instantiateScrapConfigs(levelInfo);
         }
 
-        private void instantiateEnemyConfigs(SelectableLevel level, HashSet<EnemyType> enemyTypes)
+        private void instantiateEnemyConfigs(LevelInformation levelInfo)
         {
+            SelectableLevel level = levelInfo.level;
             // Process enemies
             {
-                ConfigFile enemyConfig = new ConfigFile(Path.Combine(saveDirectory, ENEMY_CFG_NAME), true);
-                // TODO Save only if a setting has been changed
-                enemyConfig.SaveOnConfigSet = false;
-                enemies.enabled = enemyConfig.Bind("General", "Enabled", false, "Enables/disables custom enemy spawn rate modification");
-                enemies.maxPowerCount = enemyConfig.Bind("General", "MaxPowerCount", level.maxEnemyPowerCount, "Maximum total power level allowed for inside enemies.");
-                enemies.spawnAmountCurve = enemyConfig.Bind("General", "SpawnAmountCurve", level.enemySpawnChanceThroughoutDay, "How many enemies can spawn enemy as the day progresses. (Key ranges from 0-1 )");
-                enemies.spawnAmountRange = enemyConfig.Bind("General", "SpawnAmountRange", level.spawnProbabilityRange, "How many more/less enemies can spawn. A spawn range of 3 means there can be -/+3 enemies.");
+                enemies.enabled = levelInfo.mainConfigFile.Bind($"Level.{levelInfo.level.name}", "EnemiesEnabled", false, "Enables/disables custom enemy spawn rate modification");
 
-                Dictionary<EnemyType, int> enemySpawnRarities = convertToDictionary(level.Enemies);
-                foreach (EnemyType enemyType in enemyTypes)
+                // Only save the configuration file and options if it is enabled
+                if (enemies.enabled.Value)
                 {
-                    EnemyTypeConfiguration typeConfiguration = new EnemyTypeConfiguration(enemyType);
-                    string tablename = $"EnemyTypes.{enemyType.name}";
+                    GlobalConfiguration masterConfig = levelInfo.masterConfig;
+                    ConfigFile enemyConfig = new ConfigFile(Path.Combine(levelInfo.levelSaveDir, GlobalConfiguration.ENEMY_CFG_NAME), true);
+                    enemyConfig.SaveOnConfigSet = false;
+                    enemies.maxPowerCount = enemyConfig.BindGlobal(masterConfig.enemyConfiguration.maxPowerCount, "General", "MaxPowerCount", level.maxEnemyPowerCount, "Maximum total power level allowed for inside enemies. The default value is {0}");
+                    enemies.spawnAmountCurve = enemyConfig.BindGlobal(masterConfig.enemyConfiguration.spawnAmountCurve, "General", "SpawnAmountCurve", level.enemySpawnChanceThroughoutDay, "How many enemies can spawn enemy as the day progresses. (Key ranges from 0-1 ). The default value is {0}");
+                    enemies.spawnAmountRange = enemyConfig.BindGlobal(masterConfig.enemyConfiguration.spawnAmountRange, "General", "SpawnAmountRange", level.spawnProbabilityRange, "How many more/less enemies can spawn. A spawn range of 3 means there can be -/+3 enemies. The default value is {0}");
 
-                    typeConfiguration.rarity = enemyConfig.Bind(tablename, "Rarity", enemySpawnRarities.GetValueOrDefault(enemyType, 0), $"Rarity of a(n) {enemyType.enemyName} spawning relative to the total rarity of all other enemy types combined. A higher rarity increases the chance that the enemy will spawn.");
-                    typeConfiguration.maxEnemyCount = enemyConfig.Bind(tablename, "MaxEnemyCount", enemyType.MaxCount, $"Maximum amount of {enemyType.enemyName}s allowed at once.");
-                    typeConfiguration.powerLevel = enemyConfig.Bind(tablename, "PowerLevel", enemyType.PowerLevel, $"How much a single {enemyType.enemyName} contributes to the maximum power level.");
-                    typeConfiguration.spawnCurve = enemyConfig.Bind(tablename, "SpawnChanceCurve", enemyType.probabilityCurve, $"How likely a(n) {enemyType.enemyName} is to spawn as the day progresses. (Key ranges from 0-1 )");
-                    typeConfiguration.spawnFalloffCurve = enemyConfig.Bind(tablename, "SpawnFalloffCurve", enemyType.numberSpawnedFalloff, $"The spawning curve multiplier of how less/more likely a(n) {enemyType.enemyName} is to spawn based on how many already have been spawned. (Key is number of ${enemyType.enemyName}s/10)");
-                    typeConfiguration.useSpawnFalloff = enemyConfig.Bind(tablename, "UseSpawnFalloff", enemyType.useNumberSpawnedFalloff, $"Whether or not to modify spawn rates based on how many existing {enemyType.enemyName}s there are inside.");
+                    Dictionary<EnemyType, int> enemySpawnRarities = convertToDictionary(level.Enemies);
+                    foreach (EnemyType enemyType in levelInfo.globalInfo.allEnemyTypes)
+                    {
+                        EnemyTypeConfiguration typeConfiguration = new EnemyTypeConfiguration(enemyType);
+                        string tablename = $"EnemyTypes.{enemyType.name}";
 
-                    enemies.enemyTypes.Add(typeConfiguration);
+                        GlobalEnemyTypeConfiguration masterTypeConfig = masterConfig.enemyConfiguration.enemyTypeConfigurations[enemyType];
+
+                        // Store rarity in a separate table for convenience
+                        typeConfiguration.rarity = enemyConfig.BindGlobal(masterTypeConfig.rarity, "Rarity", enemyType.name, enemySpawnRarities.GetValueOrDefault(enemyType, 0), $"Rarity of a(n) {enemyType.enemyName} spawning relative to the total rarity of all other enemy types combined. A higher rarity increases the chance that the enemy will spawn. The default value is {{0}}. This option can inherit from the global config with the value GLOBAL and from the game with the value DEFAULT. If no value or DEFAULT is present in the global config, then this value will be the DEFAULT for this moon.");
+
+                        typeConfiguration.maxEnemyCount = enemyConfig.BindGlobal(masterTypeConfig.maxEnemyCount, tablename, "MaxEnemyCount", enemyType.MaxCount, $"Maximum amount of {enemyType.enemyName}s allowed at once. The default value is {{0}}. This option can inherit from the global config with the value GLOBAL and from the game with the value DEFAULT");
+                        typeConfiguration.powerLevel = enemyConfig.BindGlobal(masterTypeConfig.powerLevel, tablename, "PowerLevel", enemyType.PowerLevel, $"How much a single {enemyType.enemyName} contributes to the maximum power level. The default value is {{0}}. This option can inherit from the global config with the value GLOBAL and from the game with the value DEFAULTT");
+                        typeConfiguration.spawnCurve = enemyConfig.BindGlobal(masterTypeConfig.spawnCurve, tablename, "SpawnChanceCurve", enemyType.probabilityCurve, $"How likely a(n) {enemyType.enemyName} is to spawn as the day progresses. (Key ranges from 0-1 ). The default value is {{0}}. This option can inherit from the global config with the value GLOBAL and from the game with the value DEFAULT");
+                        typeConfiguration.spawnFalloffCurve = enemyConfig.BindGlobal(masterTypeConfig.spawnFalloffCurve, tablename, "SpawnFalloffCurve", enemyType.numberSpawnedFalloff, $"The spawning curve multiplier of how less/more likely a(n) {enemyType.enemyName} is to spawn based on how many already have been spawned. (Key is number of {enemyType.enemyName}s/10). The default value is {{0}}. This option can inherit from the global config with the value GLOBAL and from the game with the value DEFAULT");
+                        typeConfiguration.useSpawnFalloff = enemyConfig.BindGlobal(masterTypeConfig.useSpawnFalloff, tablename, "UseSpawnFalloff", enemyType.useNumberSpawnedFalloff, $"Whether or not to modify spawn rates based on how many existing {enemyType.enemyName}s there are inside. The default value is {{0}}. This option can inherit from the global config with the value GLOBAL and from the game with the value DEFAULT");
+
+                        enemies.enemyTypes.Add(typeConfiguration);
+                    }
+                    enemyConfig.SaveOnConfigSet = true;
+                    enemyConfig.Save();
                 }
-                enemyConfig.SaveOnConfigSet = true;
-                enemyConfig.Save();
             }
 
             // Process daytime enemies
             {
-                ConfigFile enemyConfig = new ConfigFile(Path.Combine(saveDirectory, DAYTIME_ENEMY_CFG_NAME), true);
-                enemyConfig.SaveOnConfigSet = false;
-                daytimeEnemies.enabled = enemyConfig.Bind("General", "Enabled", false, "Enables/disables custom daytime enemy spawn rate modification. Typically enemies like manticoils, locusts, etc.");
-                daytimeEnemies.maxPowerCount = enemyConfig.Bind("General", "MaxPowerCount", level.maxDaytimeEnemyPowerCount, "Maximum total power level allowed for daytime enemies.");
-                daytimeEnemies.spawnAmountCurve = enemyConfig.Bind("General", "SpawnAmountCurve", level.daytimeEnemySpawnChanceThroughDay, "How many enemies can spawn enemy as the day progresses. (Key ranges from 0-1)");
-                daytimeEnemies.spawnAmountRange = enemyConfig.Bind("General", "SpawnAmountRange", level.daytimeEnemiesProbabilityRange, "How many more/less enemies can spawn. A spawn range of 3 means there can be -/+3 enemies.");
+                daytimeEnemies.enabled = levelInfo.mainConfigFile.Bind($"Level.{levelInfo.level.name}", "DaytimeEnemiesEnabled", false, "Enables/disables custom daytime enemy spawn rate modification. Typically enemies like manticoils, locusts, etc.");
 
-                Dictionary<EnemyType, int> enemySpawnRarities = convertToDictionary(level.DaytimeEnemies);
-                foreach (EnemyType enemyType in enemyTypes)
+                if (daytimeEnemies.enabled.Value)
                 {
-                    EnemyTypeConfiguration typeConfiguration = new EnemyTypeConfiguration(enemyType);
-                    string tablename = $"EnemyTypes.{enemyType.name}";
+                    GlobalConfiguration masterConfig = levelInfo.masterConfig;
+                    ConfigFile enemyConfig = new ConfigFile(Path.Combine(levelInfo.levelSaveDir, GlobalConfiguration.DAYTIME_ENEMY_CFG_NAME), true);
+                    enemyConfig.SaveOnConfigSet = false;
+                    daytimeEnemies.maxPowerCount = enemyConfig.BindGlobal(masterConfig.daytimeEnemyConfiguration.maxPowerCount, "General", "MaxPowerCount", level.maxDaytimeEnemyPowerCount, "Maximum total power level allowed for daytime enemies. The default value is {0}");
+                    daytimeEnemies.spawnAmountCurve = enemyConfig.BindGlobal(masterConfig.daytimeEnemyConfiguration.spawnAmountCurve, "General", "SpawnAmountCurve", level.daytimeEnemySpawnChanceThroughDay, "How many enemies can spawn enemy as the day progresses. (Key ranges from 0-1). The default value is {0}");
+                    daytimeEnemies.spawnAmountRange = enemyConfig.BindGlobal(masterConfig.daytimeEnemyConfiguration.spawnAmountRange, "General", "SpawnAmountRange", level.daytimeEnemiesProbabilityRange, "How many more/less enemies can spawn. A spawn range of 3 means there can be -/+3 enemies. The default value is {0}");
 
-                    typeConfiguration.rarity = enemyConfig.Bind(tablename, "Rarity", enemySpawnRarities.GetValueOrDefault(enemyType, 0), $"Rarity of a(n) {enemyType.enemyName} relative to the total rarity of all other enemy types combined. A higher rarity increases the chance that the enemy will spawn.");
-                    typeConfiguration.maxEnemyCount = enemyConfig.Bind(tablename, "MaxEnemyCount", enemyType.MaxCount, $"Maximum amount of {enemyType.enemyName}s allowed at once.");
-                    typeConfiguration.powerLevel = enemyConfig.Bind(tablename, "PowerLevel", enemyType.PowerLevel, $"How much a(n) {enemyType.enemyName} contributes to the maximum power level.");
-                    typeConfiguration.spawnCurve = enemyConfig.Bind(tablename, "SpawnChanceCurve", enemyType.probabilityCurve, $"How likely a(n) {enemyType.enemyName} is to spawn as the day progresses. (Key ranges from 0-1 )");
-                    typeConfiguration.spawnFalloffCurve = enemyConfig.Bind(tablename, "SpawnFalloffCurve", enemyType.numberSpawnedFalloff, $"The spawning curve multiplier of how less/more likely a(n) {enemyType.enemyName} is to spawn based on how many have already been spawned. (Key is number of {enemyType.enemyName}s/10). This does not work for daytime enemies.");
-                    typeConfiguration.useSpawnFalloff = enemyConfig.Bind(tablename, "UseSpawnFalloff", enemyType.useNumberSpawnedFalloff, $"Whether or not to modify spawn rates based on how many existing {enemyType.enemyName}s there are.");
+                    Dictionary<EnemyType, int> enemySpawnRarities = convertToDictionary(level.DaytimeEnemies);
+                    foreach (EnemyType enemyType in levelInfo.globalInfo.allEnemyTypes)
+                    {
+                        DaytimeEnemyTypeConfiguration typeConfiguration = new DaytimeEnemyTypeConfiguration(enemyType);
 
-                    daytimeEnemies.enemyTypes.Add(typeConfiguration);
+                        GlobalDaytimeEnemyTypeConfiguration masterTypeConfig = masterConfig.daytimeEnemyConfiguration.enemyTypeConfigurations[enemyType];
+                        typeConfiguration.rarity = enemyConfig.BindGlobal(masterTypeConfig.rarity, "Rarity", enemyType.name, enemySpawnRarities.GetValueOrDefault(enemyType, 0), $"Rarity of a(n) {enemyType.enemyName} relative to the total rarity of all other enemy types combined. A higher rarity increases the chance that the enemy will spawn. The default value is {{0}}. This option can inherit from the global config with the value GLOBAL and from the game with the value DEFAULT. If no value or DEFAULT is present in the global config, then this value will be the DEFAULT for this moon.");
+
+                        string tablename = $"EnemyTypes.{enemyType.name}";
+                        typeConfiguration.maxEnemyCount = enemyConfig.BindGlobal(masterTypeConfig.maxEnemyCount, tablename, "MaxEnemyCount", enemyType.MaxCount, $"Maximum amount of {enemyType.enemyName}s allowed at once. The default value is {{0}}. This option can inherit from the global config with the value GLOBAL and from the game with the value DEFAULT");
+                        typeConfiguration.powerLevel = enemyConfig.BindGlobal(masterTypeConfig.powerLevel, tablename, "PowerLevel", enemyType.PowerLevel, $"How much a(n) {enemyType.enemyName} contributes to the maximum power level. The default value is {{0}}. This option can inherit from the global config with the value GLOBAL and from the game with the value DEFAULT");
+                        typeConfiguration.spawnCurve = enemyConfig.BindGlobal(masterTypeConfig.spawnCurve, tablename, "SpawnChanceCurve", enemyType.probabilityCurve, $"How likely a(n) {enemyType.enemyName} is to spawn as the day progresses. (Key ranges from 0-1). The default value is {{0}}. This option can inherit from the global config with the value GLOBAL and game with the value DEFAULT");
+                        // Not implemented for daytime enemies
+                        //typeConfiguration.spawnFalloffCurve = enemyConfig.BindGlobal(masterTypeConfig.spawnFalloffCurve, tablename, "SpawnFalloffCurve", enemyType.numberSpawnedFalloff, $"The spawning curve multiplier of how less/more likely a(n) {enemyType.enemyName} is to spawn based on how many have already been spawned. (Key is number of {enemyType.enemyName}s/10). This does not work for daytime enemies. The default value is {{0}}");
+                        //typeConfiguration.useSpawnFalloff = enemyConfig.BindGlobal(masterTypeConfig.useSpawnFalloff, tablename, "UseSpawnFalloff", enemyType.useNumberSpawnedFalloff, $"Whether or not to modify spawn rates based on how many existing {enemyType.enemyName}s there are. The default value is {{0}}");
+
+                        daytimeEnemies.enemyTypes.Add(typeConfiguration);
+                    }
+                    enemyConfig.SaveOnConfigSet = true;
+                    enemyConfig.Save();
                 }
-                enemyConfig.SaveOnConfigSet = true;
-                enemyConfig.Save();
             }
 
             // Process outside enemies
             {
-                ConfigFile enemyConfig = new ConfigFile(Path.Combine(saveDirectory, OUTSIDE_ENEMY_CFG_NAME), true);
-                enemyConfig.SaveOnConfigSet = false;
-                outsideEnemies.enabled = enemyConfig.Bind("General", "Enabled", false, "Enables/disables custom outside enemy spawn rate modification. Typically eyeless dogs, forest giants, etc.");
-                outsideEnemies.maxPowerCount = enemyConfig.Bind("General", "MaxPowerCount", level.maxOutsideEnemyPowerCount, "Maximum total power level allowed for outside enemies.");
-                outsideEnemies.spawnAmountCurve = enemyConfig.Bind("General", "SpawnAmountCurve", level.outsideEnemySpawnChanceThroughDay, "How many enemies can spawn enemy as the day progresses, (Key ranges from 0-1).");
-                outsideEnemies.spawnAmountRange = enemyConfig.Bind("General", "SpawnAmountRange", level.spawnProbabilityRange, "How many more/less enemies can spawn. A spawn range of 3 means there can be -/+3 enemies.");
+                outsideEnemies.enabled = levelInfo.mainConfigFile.Bind($"Level.{levelInfo.level.name}", "OutsideEnemiesEnabled", false, "Enables/disables custom outside enemy spawn rate modification. Typically eyeless dogs, forest giants, etc.");
 
-                Dictionary<EnemyType, int> enemySpawnRarities = convertToDictionary(level.OutsideEnemies);
-                foreach (EnemyType enemyType in enemyTypes)
+                if (outsideEnemies.enabled.Value)
                 {
-                    EnemyTypeConfiguration typeConfiguration = new EnemyTypeConfiguration(enemyType);
-                    string tablename = $"EnemyTypes.{enemyType.name}";
+                    GlobalConfiguration masterConfig = levelInfo.masterConfig;
+                    ConfigFile enemyConfig = new ConfigFile(Path.Combine(levelInfo.levelSaveDir, GlobalConfiguration.OUTSIDE_ENEMY_CFG_NAME), true);
+                    enemyConfig.SaveOnConfigSet = false;
+                    outsideEnemies.maxPowerCount = enemyConfig.BindGlobal(masterConfig.outsideEnemyConfiguration.maxPowerCount, "General", "MaxPowerCount", level.maxOutsideEnemyPowerCount, "Maximum total power level allowed for outside enemies. The default value is {{0}}");
+                    outsideEnemies.spawnAmountCurve = enemyConfig.BindGlobal(masterConfig.outsideEnemyConfiguration.spawnAmountCurve, "General", "SpawnAmountCurve", level.outsideEnemySpawnChanceThroughDay, "How many enemies can spawn enemy as the day progresses, (Key ranges from 0-1). The default value is {{0}}");
+                    // Hardcoded to 3 internally
+                    //outsideEnemies.spawnAmountRange = enemyConfig.BindGlobal("General", "SpawnAmountRange", level.spawnProbabilityRange, "How many more/less enemies can spawn. A spawn range of 3 means there can be -/+3 enemies.");
 
-                    typeConfiguration.rarity = enemyConfig.Bind(tablename, "Rarity", enemySpawnRarities.GetValueOrDefault(enemyType, 0), $"Rarity of a(n) {enemyType.enemyName} relative to the total rarity of all other enemy types combined. A higher rarity increases the chance that the enemy will spawn.");
-                    typeConfiguration.maxEnemyCount = enemyConfig.Bind(tablename, "MaxEnemyCount", enemyType.MaxCount, $"Maximum amount of {enemyType.enemyName}s allowed at once.");
-                    typeConfiguration.powerLevel = enemyConfig.Bind(tablename, "PowerLevel", enemyType.PowerLevel, $"How much a(n) {enemyType.enemyName} contributes to the maximum power level.");
-                    typeConfiguration.spawnCurve = enemyConfig.Bind(tablename, "SpawnChanceCurve", enemyType.probabilityCurve, $"How likely a(n) {enemyType.enemyName} is to spawn as the day progresses, (Key ranges from 0-1).");
-                    typeConfiguration.spawnFalloffCurve = enemyConfig.Bind(tablename, "SpawnFalloffCurve", enemyType.numberSpawnedFalloff, $"The spawning curve multiplier of how less/more likely a(n) {enemyType.enemyName} is to spawn based on how many have already been spawned. (Key is number of {enemyType.enemyName}s/10)");
-                    typeConfiguration.useSpawnFalloff = enemyConfig.Bind(tablename, "UseSpawnFalloff", enemyType.useNumberSpawnedFalloff, $"Whether or not to modify spawn rates based on how many existing {enemyType.enemyName}s there are.");
+                    Dictionary<EnemyType, int> enemySpawnRarities = convertToDictionary(level.OutsideEnemies);
+                    foreach (EnemyType enemyType in levelInfo.globalInfo.allEnemyTypes)
+                    {
+                        EnemyTypeConfiguration typeConfiguration = new EnemyTypeConfiguration(enemyType);
 
-                    outsideEnemies.enemyTypes.Add(typeConfiguration);
+                        GlobalEnemyTypeConfiguration masterTypeConfig = masterConfig.outsideEnemyConfiguration.enemyTypeConfigurations[enemyType];
+                        typeConfiguration.rarity = enemyConfig.BindGlobal(masterTypeConfig.rarity, "Rarity", enemyType.name, enemySpawnRarities.GetValueOrDefault(enemyType, 0), $"Rarity of a(n) {enemyType.enemyName} relative to the total rarity of all other enemy types combined. A higher rarity increases the chance that the enemy will spawn.");
+
+                        string tablename = $"EnemyTypes.{enemyType.name}";
+                        typeConfiguration.maxEnemyCount = enemyConfig.BindGlobal(masterTypeConfig.maxEnemyCount, tablename, "MaxEnemyCount", enemyType.MaxCount, $"Maximum amount of {enemyType.enemyName}s allowed at once. The default value is {{0}}. This option can inherit from the global config with the value GLOBAL and from the game with the value DEFAULT");
+                        typeConfiguration.powerLevel = enemyConfig.BindGlobal(masterTypeConfig.powerLevel, tablename, "PowerLevel", enemyType.PowerLevel, $"How much a(n) {enemyType.enemyName} contributes to the maximum power level. The default value is {{0}}. This option can inherit from the global config with the value GLOBAL and game with the value DEFAULT");
+                        typeConfiguration.spawnCurve = enemyConfig.BindGlobal(masterTypeConfig.spawnCurve, tablename, "SpawnChanceCurve", enemyType.probabilityCurve, $"How likely a(n) {enemyType.enemyName}s allowed at once. The default value is {{0}}. This option can inherit from the global config with the value GLOBAL and from the game with the value DEFAULT");
+                        typeConfiguration.spawnFalloffCurve = enemyConfig.BindGlobal(masterTypeConfig.spawnFalloffCurve, tablename, "SpawnFalloffCurve", enemyType.numberSpawnedFalloff, $"The spawning curve multiplier of how less/more likely a(n) {enemyType.enemyName} is to spawn based on how many have already been spawned. (Key is number of {enemyType.enemyName}s allowed at once. The default value is {{0}}. This option can inherit from the global config with the value GLOBAL and from the game with the value DEFAULT");
+                        typeConfiguration.useSpawnFalloff = enemyConfig.BindGlobal(masterTypeConfig.useSpawnFalloff, tablename, "UseSpawnFalloff", enemyType.useNumberSpawnedFalloff, $"Whether or not to modify spawn rates based on how many existing {enemyType.enemyName}s there are. The default value is {{0}}. This option can inherit from the global config with the value GLOBAL and from the game with the value DEFAULT");
+
+                        outsideEnemies.enemyTypes.Add(typeConfiguration);
+                    }
+                    enemyConfig.SaveOnConfigSet = true;
+                    enemyConfig.Save();
                 }
-                enemyConfig.SaveOnConfigSet = true;
-                enemyConfig.Save();
             }
         }
 
-        private void instantiateScrapConfigs(SelectableLevel level, HashSet<Item> items)
+        private void instantiateScrapConfigs(LevelInformation levelInfo)
         {
+            SelectableLevel level = levelInfo.level;
             {
-                ConfigFile scrapConfig = new ConfigFile(Path.Combine(saveDirectory, SCRAP_CFG_NAME), true);
-                scrapConfig.SaveOnConfigSet = true;
-                scrap.enabled = scrapConfig.Bind("General", "Enabled", false, "Enables/disables custom scrap generation");
-                scrap.maxScrap = scrapConfig.Bind("General", "MaxScrapCount", level.maxScrap, "Maximum total number of scrap generated in the level.");
-                scrap.minScrap = scrapConfig.Bind("General", "MinScrapCount", level.minScrap, "Minimum total number of scrap generated in the level.");
-                scrap.scrapAmountMultiplier = scrapConfig.Bind("General", "ScrapAmountMultiplier", 1f, "Modifier to the total amount of scrap generated in the level.");
-                scrap.scrapValueMultiplier = scrapConfig.Bind("General", "ScrapValueMultiplier", .4f, "Modifier to the total value of scrap generated in the level.");
-                Dictionary<Item, int> itemSpawnRarities = convertToDictionary(level.spawnableScrap);
-                foreach ( Item itemType in items)
+                scrap.enabled = levelInfo.mainConfigFile.Bind($"Level.{levelInfo.level.name}", "ScrapEnabled", false, "Enables/disables custom scrap generation");
+
+                if (scrap.enabled.Value)
                 {
-                    ItemConfiguration configuration;
-                    string tablename;
-                    if (itemType.isScrap)
+                    GlobalConfiguration masterConfig = levelInfo.masterConfig;
+                    ConfigFile scrapConfig = new ConfigFile(Path.Combine(levelInfo.levelSaveDir, GlobalConfiguration.SCRAP_CFG_NAME), true);
+                    scrapConfig.SaveOnConfigSet = true;
+                    scrap.minScrap = scrapConfig.BindGlobal(masterConfig.scrapConfiguration.minScrap, "General", "MinScrapCount", level.minScrap, "Minimum total number of scrap generated in the level. The default value is {{0}}");
+                    scrap.maxScrap = scrapConfig.BindGlobal(masterConfig.scrapConfiguration.maxScrap, "General", "MaxScrapCount", level.maxScrap, "Maximum total number of scrap generated in the level. The default value is {{0}}");
+                    scrap.scrapAmountMultiplier = scrapConfig.BindGlobal(masterConfig.scrapConfiguration.scrapAmountMultiplier, "General", "ScrapAmountMultiplier", 1f, "Modifier to the total amount of scrap generated in the level. Default value is {0}. This option can inherit from the global config with the value GLOBAL and from the game with the value DEFAULT");
+                    scrap.scrapValueMultiplier = scrapConfig.BindGlobal(masterConfig.scrapConfiguration.scrapValueMultiplier, "General", "ScrapValueMultiplier", .4f, "Modifier to the total value of scrap generated in the level. Default value is {0}. This option can inherit from the global config with the value GLOBAL and from the game with the value DEFAULT");
+                    Dictionary<Item, int> itemSpawnRarities = convertToDictionary(level.spawnableScrap);
+                    foreach ( Item itemType in levelInfo.globalInfo.allItems)
                     {
-                        ScrapItemConfiguration itemConfiguration = new ScrapItemConfiguration(itemType);
-                        configuration = itemConfiguration;
-                        tablename = $"ItemType.{itemType.name}";
+                        ItemConfiguration configuration;
+                        if (itemType.isScrap)
+                        {
+                            ScrapItemConfiguration itemConfiguration = new ScrapItemConfiguration(itemType);
+                            configuration = itemConfiguration;
+                            string tablename = $"ItemType.{itemType.name}";
 
-                        itemConfiguration.minValue = scrapConfig.Bind(tablename, "MinValue", itemType.minValue, $"Minimum value of a {itemType.itemName}");
-                        itemConfiguration.maxValue = scrapConfig.Bind(tablename, "MaxValue", itemType.maxValue, $"Maximum value of a {itemType.itemName}");
-                    }
-                    else
-                    {
-                        configuration = new ItemConfiguration(itemType);
-                        tablename = $"StoreItemType.{itemType.name}";
-                    }
+                            GlobalItemScrapConfiguration masterTypeConfig = masterConfig.scrapConfiguration.itemConfigurations[itemType];
+                            itemConfiguration.minValue = scrapConfig.BindGlobal(masterTypeConfig.minValue, tablename, "MinValue", itemType.minValue, $"Minimum value of a {itemType.itemName}. Default value is {{0}}. This option can inherit from the global config with the value GLOBAL and from the game with the value DEFAULT");
+                            itemConfiguration.maxValue = scrapConfig.BindGlobal(masterTypeConfig.maxValue, tablename, "MaxValue", itemType.maxValue, $"Maximum value of a {itemType.itemName}. Default value is {{0}}. This option can inherit from the global config with the value GLOBAL and from the game with the value DEFAULT");
+                        }
+                        else
+                        {
+                            configuration = new ItemConfiguration(itemType);
+                        }
 
-                    configuration.rarity = scrapConfig.Bind(tablename, "Rarity", itemSpawnRarities.GetValueOrDefault(itemType, 0), $"Rarity of a(n) {itemType.itemName} relative to the total rarity of all other item types combined. A higher rarity increases the chance that the item will spawn.");
-                    scrap.scrapRarities.Add(configuration);
+
+                        configuration.rarity = scrapConfig.BindDefaultable("Rarity", itemType.name, itemSpawnRarities.GetValueOrDefault(itemType, 0), $"Rarity of a(n) {itemType.itemName} relative to the total rarity of all other item types combined. A higher rarity increases the chance that the item will spawn. The default value is {{0}}");
+                        scrap.scrapRarities.Add(configuration);
+                    }
+                    scrapConfig.SaveOnConfigSet = true;
+                    scrapConfig.Save();
                 }
-                scrapConfig.SaveOnConfigSet = true;
-                scrapConfig.Save();
             }
         }
 
