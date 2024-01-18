@@ -4,7 +4,7 @@
         <TargetFramework>netstandard2.1</TargetFramework>
         <AssemblyName>LethalQuantities</AssemblyName>
         <Description>Allow more customization of enemy spawning</Description>
-        <Version>1.1.2</Version>
+        <Version>1.1.3</Version>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <LangVersion>latest</LangVersion>
     </PropertyGroup>

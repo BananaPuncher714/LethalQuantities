@@ -45,31 +45,31 @@ namespace LethalQuantities.Objects
             oldEnemies.AddRange(level.Enemies);
             if (levelConfiguration.enemies.enabled.Value)
             {
-                populate(enemies, levelConfiguration.enemies.enemyTypes);
+                populate(level.Enemies, enemies, levelConfiguration.enemies.enemyTypes);
             }
             else if (globalConfiguration.enemyConfiguration.enabled.Value && !globalConfiguration.enemyConfiguration.isDefault())
             {
-                populateGlobal(enemies, globalConfiguration.enemyConfiguration);
+                populateGlobal(level.Enemies,enemies, globalConfiguration.enemyConfiguration);
             }
 
             oldDaytimeEnemies.AddRange(level.DaytimeEnemies);
             if (levelConfiguration.daytimeEnemies.enabled.Value)
             {
-                populate(daytimeEnemies, levelConfiguration.daytimeEnemies.enemyTypes, true, true);
+                populate(level.DaytimeEnemies, daytimeEnemies, levelConfiguration.daytimeEnemies.enemyTypes, true, true);
             }
             else if (globalConfiguration.daytimeEnemyConfiguration.enabled.Value && !globalConfiguration.daytimeEnemyConfiguration.isDefault())
             {
-                populateGlobal(daytimeEnemies, globalConfiguration.daytimeEnemyConfiguration, true, true);
+                populateGlobal(level.DaytimeEnemies, daytimeEnemies, globalConfiguration.daytimeEnemyConfiguration, true, true);
             }
 
             oldOutsideEnemies.AddRange(level.OutsideEnemies);
             if (levelConfiguration.outsideEnemies.enabled.Value)
             {
-                populate(outsideEnemies, levelConfiguration.outsideEnemies.enemyTypes, true);
+                populate(level.OutsideEnemies, outsideEnemies, levelConfiguration.outsideEnemies.enemyTypes, true);
             }
             else if (globalConfiguration.outsideEnemyConfiguration.enabled.Value && !globalConfiguration.outsideEnemyConfiguration.isDefault())
             {
-                populateGlobal(outsideEnemies, globalConfiguration.outsideEnemyConfiguration, true);
+                populateGlobal(level.OutsideEnemies, outsideEnemies, globalConfiguration.outsideEnemyConfiguration, true);
             }
 
             Plugin.LETHAL_LOGGER.LogInfo("Generating spawnable item options");
@@ -134,6 +134,7 @@ namespace LethalQuantities.Objects
             {
                 item.Key.maxValue = item.Value.maxValue;
                 item.Key.minValue = item.Value.minValue;
+                item.Key.isConductiveMetal = item.Value.conductive;
             }
 
             level.Enemies.Clear();
@@ -145,10 +146,10 @@ namespace LethalQuantities.Objects
             level.dungeonFlowTypes = defaultFlowTypes.ToArray();
         }
 
-        private void populate<T>(List<SpawnableEnemyWithRarity> enemiesList, List<T> configs, bool isOutside = false, bool isDaytimeEnemy = false) where T : DaytimeEnemyTypeConfiguration
+        private void populate<T>(List<SpawnableEnemyWithRarity> originals, List<SpawnableEnemyWithRarity> enemiesList, List<T> configs, bool isOutside = false, bool isDaytimeEnemy = false) where T : DaytimeEnemyTypeConfiguration
         {
             Dictionary<EnemyType, int> defaultRarities = new Dictionary<EnemyType, int>();
-            foreach (SpawnableEnemyWithRarity enemy in enemiesList)
+            foreach (SpawnableEnemyWithRarity enemy in originals)
             {
                 defaultRarities.Add(enemy.enemyType, enemy.rarity);
             }
@@ -180,7 +181,10 @@ namespace LethalQuantities.Objects
                     type.isDaytimeEnemy = isDaytimeEnemy;
 
                     EnemyAI ai = instantiateEnemyTypeObject(type);
-                    item.enemyHp.Set(ref ai.enemyHP);
+                    if (ai != null)
+                    {
+                        item.enemyHp.Set(ref ai.enemyHP);
+                    }
 
                     SpawnableEnemyWithRarity spawnable = new SpawnableEnemyWithRarity();
                     spawnable.enemyType = type;
@@ -190,11 +194,11 @@ namespace LethalQuantities.Objects
             }
         }
 
-        private void populateGlobal<T>(List<SpawnableEnemyWithRarity> enemiesList, GlobalOutsideEnemyConfiguration<T> configuration, bool isOutside = false, bool isDaytime = false) where T: GlobalDaytimeEnemyTypeConfiguration
+        private void populateGlobal<T>(List<SpawnableEnemyWithRarity> originals, List<SpawnableEnemyWithRarity> enemiesList, GlobalOutsideEnemyConfiguration<T> configuration, bool isOutside = false, bool isDaytime = false) where T: GlobalDaytimeEnemyTypeConfiguration
         {
             List<SpawnableEnemyWithRarity> spawnableEnemies = new List<SpawnableEnemyWithRarity>();
             Dictionary<EnemyType, int> defaultRarities = new Dictionary<EnemyType, int>();
-            foreach (SpawnableEnemyWithRarity enemy in enemiesList)
+            foreach (SpawnableEnemyWithRarity enemy in originals)
             {
                 defaultRarities.Add(enemy.enemyType, enemy.rarity);
             }
@@ -209,7 +213,7 @@ namespace LethalQuantities.Objects
                 typeConfig.maxEnemyCount.Set(ref maxCount);
                 if (rarity > 0 && maxCount > 0)
                 {
-                    if (!typeConfig.isDefault())
+                    if (!typeConfig.isEnemyTypeDefault())
                     {
                         EnemyType type = Instantiate(enemyType);
                         type.MaxCount = maxCount;
@@ -231,7 +235,10 @@ namespace LethalQuantities.Objects
                         type.isDaytimeEnemy = isDaytime;
 
                         EnemyAI ai = instantiateEnemyTypeObject(type);
-                        typeConfig.enemyHp.Set(ref ai.enemyHP);
+                        if (ai != null)
+                        {
+                            typeConfig.enemyHp.Set(ref ai.enemyHP);
+                        }
 
                         SpawnableEnemyWithRarity spawnable = new SpawnableEnemyWithRarity();
                         spawnable.enemyType = type;
@@ -243,7 +250,7 @@ namespace LethalQuantities.Objects
                         // defaultRarities should always contain an enemyType at this point
                         SpawnableEnemyWithRarity spawnable = new SpawnableEnemyWithRarity();
                         spawnable.enemyType = enemyType;
-                        spawnable.rarity = defaultRarities[enemyType];
+                        spawnable.rarity = rarity;
                         spawnableEnemies.Add(spawnable);
                     }
                 }
@@ -255,10 +262,16 @@ namespace LethalQuantities.Objects
         private EnemyAI instantiateEnemyTypeObject(EnemyType type)
         {
             GameObject obj = type.enemyPrefab;
+            if (obj == null)
+            {
+                Plugin.LETHAL_LOGGER.LogError($"No enemy prefab found for enemy {type.name}!");
+                return null;
+            }
             bool isActive = obj.activeSelf;
             obj.SetActive(false);
 
             GameObject copy = Instantiate(obj, new Vector3(0, -50, 0), Quaternion.identity);
+            copy.name = obj.name;
             modifiedEnemyTypes.Add(copy);
             SceneManager.MoveGameObjectToScene(copy, SceneManager.GetSceneByName("SampleSceneRelay"));
             type.enemyPrefab = copy;

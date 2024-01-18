@@ -1,6 +1,7 @@
 ﻿using BepInEx;
 using BepInEx.Configuration;
 using DunGen.Graph;
+using LethalQuantities.Patches;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -60,7 +61,12 @@ namespace LethalQuantities.Objects
         public virtual bool isDefault()
         {
             return rarity.isDefault()
-                    && maxEnemyCount.isDefault()
+                    && isEnemyTypeDefault();
+        }
+
+        public virtual bool isEnemyTypeDefault()
+        {
+            return maxEnemyCount.isDefault()
                     && powerLevel.isDefault()
                     && spawnCurve.isDefault()
                     && stunTimeMultiplier.isDefault()
@@ -81,9 +87,9 @@ namespace LethalQuantities.Objects
         public CustomEntry<AnimationCurve> spawnFalloffCurve { get; set; }
         public CustomEntry<bool> useSpawnFalloff { get; set; }
 
-        public override bool isDefault()
+        public override bool isEnemyTypeDefault()
         {
-            return base.isDefault() && spawnFalloffCurve.isDefault() && useSpawnFalloff.isDefault();
+            return base.isEnemyTypeDefault() && spawnFalloffCurve.isDefault() && useSpawnFalloff.isDefault();
         }
     }
 
@@ -98,7 +104,7 @@ namespace LethalQuantities.Objects
 
         public virtual bool isDefault()
         {
-            foreach (GlobalItemScrapConfiguration config in itemConfigurations.Values)
+            foreach (GlobalItemConfiguration config in itemConfigurations.Values)
             {
                 if (!config.isDefault())
                 {
@@ -241,29 +247,29 @@ namespace LethalQuantities.Objects
                     enemyConfig.SaveOnConfigSet = false;
                 }
 
-                enemyConfiguration.maxPowerCount = BindEmptyOrNonDefaultable<int>(enemyConfig, "General", "MaxPowerCount", "Maximum total power level allowed for inside enemies. Leave blank or DEFAULT to use the moon's default rarity.");
-                enemyConfiguration.spawnAmountCurve = BindEmptyOrNonDefaultable<AnimationCurve>(enemyConfig, "General", "SpawnAmountCurve", "How many enemies can spawn enemy as the day progresses. (Key ranges from 0-1 ). Leave blank or DEFAULT to use the moon's default rarity.");
-                enemyConfiguration.spawnAmountRange = BindEmptyOrNonDefaultable<float>(enemyConfig, "General", "SpawnAmountRange", "How many more/less enemies can spawn. A spawn range of 3 means there can be -/+3 enemies. Leave blank or DEFAULT to use the moon's default rarity.");
+                enemyConfiguration.maxPowerCount = BindEmptyOrNonDefaultable<int>(enemyConfig, "General", "MaxPowerCount", "Maximum total power level allowed for inside enemies.\nLeave blank or DEFAULT to use the moon's default rarity.");
+                enemyConfiguration.spawnAmountCurve = BindEmptyOrNonDefaultable<AnimationCurve>(enemyConfig, "General", "SpawnAmountCurve", "How many enemies can spawn enemy as the day progresses. (Key ranges from 0-1 ).\nLeave blank or DEFAULT to use the moon's default rarity.");
+                enemyConfiguration.spawnAmountRange = BindEmptyOrNonDefaultable<float>(enemyConfig, "General", "SpawnAmountRange", "How many more/less enemies can spawn. A spawn range of 3 means there can be -/+3 enemies.\nLeave blank or DEFAULT to use the moon's default rarity.");
 
                 foreach (EnemyType enemyType in globalInfo.allEnemyTypes)
                 {
                     GlobalEnemyTypeConfiguration typeConfiguration = new GlobalEnemyTypeConfiguration(enemyType);
 
                     // Use a separate table for rarity
-                    typeConfiguration.rarity = BindEmptyOrNonDefaultable<int>(enemyConfig, "Rarity", enemyType.name, $"Rarity of a(n) {enemyType.enemyName} spawning relative to the total rarity of all other enemy types combined. A higher rarity increases the chance that the enemy will spawn. Leave blank or DEFAULT to use the moon's default rarity.");
+                    typeConfiguration.rarity = BindEmptyOrNonDefaultable<int>(enemyConfig, "Rarity", enemyType.name, $"Rarity of a(n) {enemyType.enemyName} spawning relative to the total rarity of all other enemy types combined. A higher rarity increases the chance that the enemy will spawn.\nLeave blank or DEFAULT to use the moon's default rarity.");
 
                     string tablename = $"EnemyTypes.{enemyType.name}";
-                    typeConfiguration.maxEnemyCount = BindEmptyOrDefaultable(enemyConfig, tablename, "MaxEnemyCount", enemyType.MaxCount, $"Maximum amount of {enemyType.enemyName}s allowed at once. The default value is {{0}}");
-                    typeConfiguration.powerLevel = BindEmptyOrDefaultable(enemyConfig, tablename, "PowerLevel", enemyType.PowerLevel, $"How much a single {enemyType.enemyName} contributes to the maximum power level. The default value is {{0}}");
-                    typeConfiguration.spawnCurve = BindEmptyOrDefaultable(enemyConfig, tablename, "SpawnChanceCurve", enemyType.probabilityCurve, $"How likely a(n) {enemyType.enemyName} is to spawn as the day progresses. (Key ranges from 0-1 ). The default value is {{0}}");
-                    typeConfiguration.stunTimeMultiplier = BindEmptyOrDefaultable(enemyConfig, tablename, "StunTimeMultiplier", enemyType.stunTimeMultiplier, $"The multiplier for how long a(n) {enemyType.enemyName} can be stunned. The default value is {{0}}");
-                    typeConfiguration.doorSpeedMultiplier = BindEmptyOrDefaultable(enemyConfig, tablename, "DoorSpeedMultiplier", enemyType.doorSpeedMultiplier, $"The multiplier for how long it takes a(n) {enemyType.enemyName} to open a door. The default value is {{0}}");
-                    typeConfiguration.stunGameDifficultyMultiplier = BindEmptyOrDefaultable(enemyConfig, tablename, "StunGameDifficultyMultiplier", enemyType.stunGameDifficultyMultiplier, $"I don't know what this does. The default value is {{0}}");
-                    typeConfiguration.stunnable = BindEmptyOrDefaultable(enemyConfig, tablename, "Stunnable", enemyType.canBeStunned, $"Whether or not a(n) {enemyType.enemyName} can be stunned. The default value is {{0}}");
-                    typeConfiguration.killable = BindEmptyOrDefaultable(enemyConfig, tablename, "Killable", enemyType.canDie, $"Whether or not a(n) {enemyType.enemyName} can die. The default value is {{0}}");
-                    typeConfiguration.enemyHp = BindEmptyOrDefaultable(enemyConfig, tablename, "EnemyHp", enemyType.enemyPrefab.GetComponent<EnemyAI>().enemyHP, $"The initial amount of health a(n) {enemyType.enemyName} has. The default value is {{0}}");
-                    typeConfiguration.spawnFalloffCurve = BindEmptyOrDefaultable(enemyConfig, tablename, "SpawnFalloffCurve", enemyType.numberSpawnedFalloff, $"The spawning curve multiplier of how less/more likely a(n) {enemyType.enemyName} is to spawn based on how many already have been spawned. (Key is number of {enemyType.enemyName}s/10). The default value is {{0}}");
-                    typeConfiguration.useSpawnFalloff = BindEmptyOrDefaultable(enemyConfig, tablename, "UseSpawnFalloff", enemyType.useNumberSpawnedFalloff, $"Whether or not to modify spawn rates based on how many existing {enemyType.enemyName}s there are inside. The default value is {{0}}");
+                    typeConfiguration.maxEnemyCount = BindEmptyOrDefaultable(enemyConfig, tablename, "MaxEnemyCount", enemyType.MaxCount, $"Maximum amount of {enemyType.enemyName}s allowed at once.\nAlternate values: DEFAULT");
+                    typeConfiguration.powerLevel = BindEmptyOrDefaultable(enemyConfig, tablename, "PowerLevel", enemyType.PowerLevel, $"How much a single {enemyType.enemyName} contributes to the maximum power level\nAlternate values: DEFAULT");
+                    typeConfiguration.spawnCurve = BindEmptyOrDefaultable(enemyConfig, tablename, "SpawnChanceCurve", enemyType.probabilityCurve, $"How likely a(n) {enemyType.enemyName} is to spawn as the day progresses. (Key ranges from 0-1 )\nAlternate values: DEFAULT");
+                    typeConfiguration.stunTimeMultiplier = BindEmptyOrDefaultable(enemyConfig, tablename, "StunTimeMultiplier", enemyType.stunTimeMultiplier, $"The multiplier for how long a(n) {enemyType.enemyName} can be stunned\nAlternate values: DEFAULT");
+                    typeConfiguration.doorSpeedMultiplier = BindEmptyOrDefaultable(enemyConfig, tablename, "DoorSpeedMultiplier", enemyType.doorSpeedMultiplier, $"The multiplier for how long it takes a(n) {enemyType.enemyName} to open a door\nAlternate values: DEFAULT");
+                    typeConfiguration.stunGameDifficultyMultiplier = BindEmptyOrDefaultable(enemyConfig, tablename, "StunGameDifficultyMultiplier", enemyType.stunGameDifficultyMultiplier, $"I don't know what this does\nAlternate values: DEFAULT");
+                    typeConfiguration.stunnable = BindEmptyOrDefaultable(enemyConfig, tablename, "Stunnable", enemyType.canBeStunned, $"Whether or not a(n) {enemyType.enemyName} can be stunned\nAlternate values: DEFAULT");
+                    typeConfiguration.killable = BindEmptyOrDefaultable(enemyConfig, tablename, "Killable", enemyType.canDie, $"Whether or not a(n) {enemyType.enemyName} can die\nAlternate values: DEFAULT");
+                    typeConfiguration.enemyHp = BindEmptyOrDefaultable(enemyConfig, tablename, "EnemyHp", enemyType.enemyPrefab != null ? enemyType.enemyPrefab.GetComponent<EnemyAI>().enemyHP : 3, $"The initial amount of health a(n) {enemyType.enemyName} has\nAlternate values: DEFAULT");
+                    typeConfiguration.spawnFalloffCurve = BindEmptyOrDefaultable(enemyConfig, tablename, "SpawnFalloffCurve", enemyType.numberSpawnedFalloff, $"The spawning curve multiplier of how less/more likely a(n) {enemyType.enemyName} is to spawn based on how many already have been spawned. (Key is number of {enemyType.enemyName}s/10).\nAlternate values: DEFAULT");
+                    typeConfiguration.useSpawnFalloff = BindEmptyOrDefaultable(enemyConfig, tablename, "UseSpawnFalloff", enemyType.useNumberSpawnedFalloff, $"Whether or not to modify spawn rates based on how many existing {enemyType.enemyName}s there are inside.\nAlternate values: DEFAULT");
 
                     enemyConfiguration.enemyTypeConfigurations.Add(enemyType, typeConfiguration);
                 }
@@ -286,9 +292,9 @@ namespace LethalQuantities.Objects
                     enemyConfig.SaveOnConfigSet = false;
                 }
 
-                daytimeEnemyConfiguration.maxPowerCount = BindEmptyOrNonDefaultable<int>(enemyConfig, "General", "MaxPowerCount", "Maximum total power level allowed for inside enemies. Leave blank or DEFAULT to use the moon's default rarity.");
-                daytimeEnemyConfiguration.spawnAmountCurve = BindEmptyOrNonDefaultable<AnimationCurve>(enemyConfig, "General", "SpawnAmountCurve", "How many enemies can spawn enemy as the day progresses. (Key ranges from 0-1 ). Leave blank or DEFAULT to use the moon's default rarity.");
-                daytimeEnemyConfiguration.spawnAmountRange = BindEmptyOrNonDefaultable<float>(enemyConfig, "General", "SpawnAmountRange", "How many more/less enemies can spawn. A spawn range of 3 means there can be -/+3 enemies. Leave blank or DEFAULT to use the moon's default rarity.");
+                daytimeEnemyConfiguration.maxPowerCount = BindEmptyOrNonDefaultable<int>(enemyConfig, "General", "MaxPowerCount", "Maximum total power level allowed for inside enemies.\nLeave blank or DEFAULT to use the moon's default rarity.");
+                daytimeEnemyConfiguration.spawnAmountCurve = BindEmptyOrNonDefaultable<AnimationCurve>(enemyConfig, "General", "SpawnAmountCurve", "How many enemies can spawn enemy as the day progresses. (Key ranges from 0-1 ).\nLeave blank or DEFAULT to use the moon's default rarity.");
+                daytimeEnemyConfiguration.spawnAmountRange = BindEmptyOrNonDefaultable<float>(enemyConfig, "General", "SpawnAmountRange", "How many more/less enemies can spawn. A spawn range of 3 means there can be -/+3 enemies.\nLeave blank or DEFAULT to use the moon's default rarity.");
 
                 foreach (EnemyType enemyType in globalInfo.allEnemyTypes)
                 {
@@ -296,17 +302,17 @@ namespace LethalQuantities.Objects
                     string tablename = $"EnemyTypes.{enemyType.name}";
 
                     // Use a separate table for rarity
-                    typeConfiguration.rarity = BindEmptyOrNonDefaultable<int>(enemyConfig, "Rarity", enemyType.name, $"Rarity of a(n) {enemyType.enemyName} spawning relative to the total rarity of all other enemy types combined. A higher rarity increases the chance that the enemy will spawn. Leave blank or DEFAULT to use the moon's default rarity.");
+                    typeConfiguration.rarity = BindEmptyOrNonDefaultable<int>(enemyConfig, "Rarity", enemyType.name, $"Rarity of a(n) {enemyType.enemyName} spawning relative to the total rarity of all other enemy types combined. A higher rarity increases the chance that the enemy will spawn.\nLeave blank or DEFAULT to use the moon's default rarity.");
 
-                    typeConfiguration.maxEnemyCount = BindEmptyOrDefaultable(enemyConfig, tablename, "MaxEnemyCount", enemyType.MaxCount, $"Maximum amount of {enemyType.enemyName}s allowed at once. The default value is {{0}}");
-                    typeConfiguration.powerLevel = BindEmptyOrDefaultable(enemyConfig, tablename, "PowerLevel", enemyType.PowerLevel, $"How much a(n) {enemyType.enemyName} contributes to the maximum power level. The default value is {{0}}");
-                    typeConfiguration.spawnCurve = BindEmptyOrDefaultable(enemyConfig, tablename, "SpawnChanceCurve", enemyType.probabilityCurve, $"How likely a(n) {enemyType.enemyName} is to spawn as the day progresses. (Key ranges from 0-1 ). The default value is {{0}}");
-                    typeConfiguration.stunTimeMultiplier = BindEmptyOrDefaultable(enemyConfig, tablename, "StunTimeMultiplier", enemyType.stunTimeMultiplier, $"The multiplier for how long a(n) {enemyType.enemyName} can be stunned. The default value is {{0}}");
-                    typeConfiguration.doorSpeedMultiplier = BindEmptyOrDefaultable(enemyConfig, tablename, "DoorSpeedMultiplier", enemyType.doorSpeedMultiplier, $"The multiplier for how long it takes a(n) {enemyType.enemyName} to open a door. The default value is {{0}}");
-                    typeConfiguration.stunGameDifficultyMultiplier = BindEmptyOrDefaultable(enemyConfig, tablename, "StunGameDifficultyMultiplier", enemyType.stunGameDifficultyMultiplier, $"I don't know what this does. The default value is {{0}}");
-                    typeConfiguration.stunnable = BindEmptyOrDefaultable(enemyConfig, tablename, "Stunnable", enemyType.canBeStunned, $"Whether or not a(n) {enemyType.enemyName} can be stunned. The default value is {{0}}");
-                    typeConfiguration.killable = BindEmptyOrDefaultable(enemyConfig, tablename, "Killable", enemyType.canDie, $"Whether or not a(n) {enemyType.enemyName} can die. The default value is {{0}}");
-                    typeConfiguration.enemyHp = BindEmptyOrDefaultable(enemyConfig, tablename, "EnemyHp", enemyType.enemyPrefab.GetComponent<EnemyAI>().enemyHP, $"The initial amount of health a(n) {enemyType.enemyName} has. The default value is {{0}}");
+                    typeConfiguration.maxEnemyCount = BindEmptyOrDefaultable(enemyConfig, tablename, "MaxEnemyCount", enemyType.MaxCount, $"Maximum amount of {enemyType.enemyName}s allowed at once\nAlternate values: DEFAULT");
+                    typeConfiguration.powerLevel = BindEmptyOrDefaultable(enemyConfig, tablename, "PowerLevel", enemyType.PowerLevel, $"How much a(n) {enemyType.enemyName} contributes to the maximum power level\nAlternate values: DEFAULT");
+                    typeConfiguration.spawnCurve = BindEmptyOrDefaultable(enemyConfig, tablename, "SpawnChanceCurve", enemyType.probabilityCurve, $"How likely a(n) {enemyType.enemyName} is to spawn as the day progresses. (Key ranges from 0-1 )\nAlternate values: DEFAULT");
+                    typeConfiguration.stunTimeMultiplier = BindEmptyOrDefaultable(enemyConfig, tablename, "StunTimeMultiplier", enemyType.stunTimeMultiplier, $"The multiplier for how long a(n) {enemyType.enemyName} can be stunned\nAlternate values: DEFAULT");
+                    typeConfiguration.doorSpeedMultiplier = BindEmptyOrDefaultable(enemyConfig, tablename, "DoorSpeedMultiplier", enemyType.doorSpeedMultiplier, $"The multiplier for how long it takes a(n) {enemyType.enemyName} to open a door\nAlternate values: DEFAULT");
+                    typeConfiguration.stunGameDifficultyMultiplier = BindEmptyOrDefaultable(enemyConfig, tablename, "StunGameDifficultyMultiplier", enemyType.stunGameDifficultyMultiplier, $"I don't know what this does\nAlternate values: DEFAULT");
+                    typeConfiguration.stunnable = BindEmptyOrDefaultable(enemyConfig, tablename, "Stunnable", enemyType.canBeStunned, $"Whether or not a(n) {enemyType.enemyName} can be stunned\nAlternate values: DEFAULT");
+                    typeConfiguration.killable = BindEmptyOrDefaultable(enemyConfig, tablename, "Killable", enemyType.canDie, $"Whether or not a(n) {enemyType.enemyName} can die\nAlternate values: DEFAULT");
+                    typeConfiguration.enemyHp = BindEmptyOrDefaultable(enemyConfig, tablename, "EnemyHp", enemyType.enemyPrefab != null ? enemyType.enemyPrefab.GetComponent<EnemyAI>().enemyHP : 3, $"The initial amount of health a(n) {enemyType.enemyName} has\nAlternate values: DEFAULT");
                     // No spawn curve falloff is implemented for daytime enemies
                     //typeConfiguration.spawnFalloffCurve = BindEmptyOrDefaultable(enemyConfig, tablename, "SpawnFalloffCurve", enemyType.numberSpawnedFalloff, $"The spawning curve multiplier of how less/more likely a(n) {enemyType.enemyName} is to spawn based on how many have already been spawned. (Key is number of {enemyType.enemyName}s/10). This does not work for daytime enemies.");
                     //typeConfiguration.useSpawnFalloff = BindEmptyOrDefaultable(enemyConfig, tablename, "UseSpawnFalloff", enemyType.useNumberSpawnedFalloff, $"Whether or not to modify spawn rates based on how many existing {enemyType.enemyName}s there are.");
@@ -332,8 +338,8 @@ namespace LethalQuantities.Objects
                     enemyConfig.SaveOnConfigSet = false;
                 }
 
-                outsideEnemyConfiguration.maxPowerCount = BindEmptyOrNonDefaultable<int>(enemyConfig, "General", "MaxPowerCount", "Maximum total power level allowed for inside enemies. Leave blank or DEFAULT to use the moon's default rarity.");
-                outsideEnemyConfiguration.spawnAmountCurve = BindEmptyOrNonDefaultable<AnimationCurve>(enemyConfig, "General", "SpawnAmountCurve", "How many enemies can spawn enemy as the day progresses. (Key ranges from 0-1 ). Leave blank or DEFAULT to use the moon's default rarity.");
+                outsideEnemyConfiguration.maxPowerCount = BindEmptyOrNonDefaultable<int>(enemyConfig, "General", "MaxPowerCount", "Maximum total power level allowed for inside enemies.\nLeave blank or DEFAULT to use the moon's default rarity.");
+                outsideEnemyConfiguration.spawnAmountCurve = BindEmptyOrNonDefaultable<AnimationCurve>(enemyConfig, "General", "SpawnAmountCurve", "How many enemies can spawn enemy as the day progresses. (Key ranges from 0-1 ).\nLeave blank or DEFAULT to use the moon's default rarity.");
 
                 foreach (EnemyType enemyType in globalInfo.allEnemyTypes)
                 {
@@ -341,19 +347,19 @@ namespace LethalQuantities.Objects
                     string tablename = $"EnemyTypes.{enemyType.name}";
 
                     // Use a separate table for rarity
-                    typeConfiguration.rarity = BindEmptyOrNonDefaultable<int>(enemyConfig, "Rarity", enemyType.name, $"Rarity of a(n) {enemyType.enemyName} spawning relative to the total rarity of all other enemy types combined. A higher rarity increases the chance that the enemy will spawn. Leave blank or DEFAULT to use the moon's default rarity.");
+                    typeConfiguration.rarity = BindEmptyOrNonDefaultable<int>(enemyConfig, "Rarity", enemyType.name, $"Rarity of a(n) {enemyType.enemyName} spawning relative to the total rarity of all other enemy types combined. A higher rarity increases the chance that the enemy will spawn.\nLeave blank or DEFAULT to use the moon's default rarity.");
 
-                    typeConfiguration.maxEnemyCount = BindEmptyOrDefaultable(enemyConfig, tablename, "MaxEnemyCount", enemyType.MaxCount, $"Maximum amount of {enemyType.enemyName}s allowed at once. The default value is {{0}}");
-                    typeConfiguration.powerLevel = BindEmptyOrDefaultable(enemyConfig, tablename, "PowerLevel", enemyType.PowerLevel, $"How much a(n) {enemyType.enemyName} contributes to the maximum power level. The default value is {{0}}");
-                    typeConfiguration.spawnCurve = BindEmptyOrDefaultable(enemyConfig, tablename, "SpawnChanceCurve", enemyType.probabilityCurve, $"How likely a(n) {enemyType.enemyName} is to spawn as the day progresses, (Key ranges from 0-1). The default value is {{0}}");
-                    typeConfiguration.stunTimeMultiplier = BindEmptyOrDefaultable(enemyConfig, tablename, "StunTimeMultiplier", enemyType.stunTimeMultiplier, $"The multiplier for how long a(n) {enemyType.enemyName} can be stunned. The default value is {{0}}");
-                    typeConfiguration.doorSpeedMultiplier = BindEmptyOrDefaultable(enemyConfig, tablename, "DoorSpeedMultiplier", enemyType.doorSpeedMultiplier, $"The multiplier for how long it takes a(n) {enemyType.enemyName} to open a door. The default value is {{0}}");
-                    typeConfiguration.stunGameDifficultyMultiplier = BindEmptyOrDefaultable(enemyConfig, tablename, "StunGameDifficultyMultiplier", enemyType.stunGameDifficultyMultiplier, $"I don't know what this does. The default value is {{0}}");
-                    typeConfiguration.stunnable = BindEmptyOrDefaultable(enemyConfig, tablename, "Stunnable", enemyType.canBeStunned, $"Whether or not a(n) {enemyType.enemyName} can be stunned. The default value is {{0}}");
-                    typeConfiguration.killable = BindEmptyOrDefaultable(enemyConfig, tablename, "Killable", enemyType.canDie, $"Whether or not a(n) {enemyType.enemyName} can die. The default value is {{0}}");
-                    typeConfiguration.enemyHp = BindEmptyOrDefaultable(enemyConfig, tablename, "EnemyHp", enemyType.enemyPrefab.GetComponent<EnemyAI>().enemyHP, $"The initial amount of health a(n) {enemyType.enemyName} has. The default value is {{0}}");
-                    typeConfiguration.spawnFalloffCurve = BindEmptyOrDefaultable(enemyConfig, tablename, "SpawnFalloffCurve", enemyType.numberSpawnedFalloff, $"The spawning curve multiplier of how less/more likely a(n) {enemyType.enemyName} is to spawn based on how many have already been spawned. (Key is number of {enemyType.enemyName}s/10). The default value is {{0}}");
-                    typeConfiguration.useSpawnFalloff = BindEmptyOrDefaultable(enemyConfig, tablename, "UseSpawnFalloff", enemyType.useNumberSpawnedFalloff, $"Whether or not to modify spawn rates based on how many existing {enemyType.enemyName}s there are. The default value is {{0}}");
+                    typeConfiguration.maxEnemyCount = BindEmptyOrDefaultable(enemyConfig, tablename, "MaxEnemyCount", enemyType.MaxCount, $"Maximum amount of {enemyType.enemyName}s allowed at once\nAlternate values: DEFAULT");
+                    typeConfiguration.powerLevel = BindEmptyOrDefaultable(enemyConfig, tablename, "PowerLevel", enemyType.PowerLevel, $"How much a(n) {enemyType.enemyName} contributes to the maximum power level\nAlternate values: DEFAULT");
+                    typeConfiguration.spawnCurve = BindEmptyOrDefaultable(enemyConfig, tablename, "SpawnChanceCurve", enemyType.probabilityCurve, $"How likely a(n) {enemyType.enemyName} is to spawn as the day progresses, (Key ranges from 0-1)\nAlternate values: DEFAULT");
+                    typeConfiguration.stunTimeMultiplier = BindEmptyOrDefaultable(enemyConfig, tablename, "StunTimeMultiplier", enemyType.stunTimeMultiplier, $"The multiplier for how long a(n) {enemyType.enemyName} can be stunned\nAlternate values: DEFAULT");
+                    typeConfiguration.doorSpeedMultiplier = BindEmptyOrDefaultable(enemyConfig, tablename, "DoorSpeedMultiplier", enemyType.doorSpeedMultiplier, $"The multiplier for how long it takes a(n) {enemyType.enemyName} to open a door\nAlternate values: DEFAULT");
+                    typeConfiguration.stunGameDifficultyMultiplier = BindEmptyOrDefaultable(enemyConfig, tablename, "StunGameDifficultyMultiplier", enemyType.stunGameDifficultyMultiplier, $"I don't know what this does\nAlternate values: DEFAULT");
+                    typeConfiguration.stunnable = BindEmptyOrDefaultable(enemyConfig, tablename, "Stunnable", enemyType.canBeStunned, $"Whether or not a(n) {enemyType.enemyName} can be stunned\nAlternate values: DEFAULT");
+                    typeConfiguration.killable = BindEmptyOrDefaultable(enemyConfig, tablename, "Killable", enemyType.canDie, $"Whether or not a(n) {enemyType.enemyName} can die\nAlternate values: DEFAULT");
+                    typeConfiguration.enemyHp = BindEmptyOrDefaultable(enemyConfig, tablename, "EnemyHp", enemyType.enemyPrefab != null ? enemyType.enemyPrefab.GetComponent<EnemyAI>().enemyHP : 3, $"The initial amount of health a(n) {enemyType.enemyName} has\nAlternate values: DEFAULT");
+                    typeConfiguration.spawnFalloffCurve = BindEmptyOrDefaultable(enemyConfig, tablename, "SpawnFalloffCurve", enemyType.numberSpawnedFalloff, $"The spawning curve multiplier of how less/more likely a(n) {enemyType.enemyName} is to spawn based on how many have already been spawned. (Key is number of {enemyType.enemyName}s/10)\nAlternate values: DEFAULT");
+                    typeConfiguration.useSpawnFalloff = BindEmptyOrDefaultable(enemyConfig, tablename, "UseSpawnFalloff", enemyType.useNumberSpawnedFalloff, $"Whether or not to modify spawn rates based on how many existing {enemyType.enemyName}s there are\nAlternate values: DEFAULT");
 
                     outsideEnemyConfiguration.enemyTypeConfigurations.Add(enemyType, typeConfiguration);
                 }
@@ -377,10 +383,10 @@ namespace LethalQuantities.Objects
                 scrapConfig.SaveOnConfigSet = false;
             }
 
-            scrapConfiguration.minScrap = BindEmptyOrNonDefaultable<int>(scrapConfig, "General", "MinScrapCount", "Minimum total number of scrap generated in the level. Leave blank or DEFAULT to use the moon's default min scrap count.");
-            scrapConfiguration.maxScrap = BindEmptyOrNonDefaultable<int>(scrapConfig, "General", "MaxScrapCount", "Maximum total number of scrap generated in the level. Leave blank or DEFAULT to use the moon's default max scrap count.");
-            scrapConfiguration.scrapAmountMultiplier = BindEmptyOrDefaultable(scrapConfig, "General", "ScrapAmountMultiplier", RoundManager.Instance.scrapAmountMultiplier, "Modifier to the total amount of scrap generated in the level. The default value is {0}");
-            scrapConfiguration.scrapValueMultiplier = BindEmptyOrDefaultable(scrapConfig, "General", "ScrapValueMultiplier", RoundManager.Instance.scrapValueMultiplier, "Modifier to the total value of scrap generated in the level. The default value is {0}");
+            scrapConfiguration.minScrap = BindEmptyOrNonDefaultable<int>(scrapConfig, "General", "MinScrapCount", "Minimum total number of scrap generated in the level.\nLeave blank or DEFAULT to use the moon's default min scrap count.");
+            scrapConfiguration.maxScrap = BindEmptyOrNonDefaultable<int>(scrapConfig, "General", "MaxScrapCount", "Maximum total number of scrap generated in the level.\nLeave blank or DEFAULT to use the moon's default max scrap count.");
+            scrapConfiguration.scrapAmountMultiplier = BindEmptyOrDefaultable(scrapConfig, "General", "ScrapAmountMultiplier", RoundManager.Instance.scrapAmountMultiplier, "Modifier to the total amount of scrap generated in the level.\nAlternate values: DEFAULT");
+            scrapConfiguration.scrapValueMultiplier = BindEmptyOrDefaultable(scrapConfig, "General", "ScrapValueMultiplier", RoundManager.Instance.scrapValueMultiplier, "Modifier to the total value of scrap generated in the level.\nAlternate values: DEFAULT");
             foreach (Item itemType in globalInfo.allItems)
             {
                 GlobalItemConfiguration itemConfiguration;
@@ -390,17 +396,17 @@ namespace LethalQuantities.Objects
                     GlobalItemScrapConfiguration configuration = new GlobalItemScrapConfiguration(itemType);
                     itemConfiguration = configuration;
 
-                    configuration.minValue = BindEmptyOrDefaultable(scrapConfig, tablename, "MinValue", itemType.minValue, $"Minimum value of a {itemType.itemName}. The default value is {{0}}");
-                    configuration.maxValue = BindEmptyOrDefaultable(scrapConfig, tablename, "MaxValue", itemType.maxValue, $"Maximum value of a {itemType.itemName}. The default value is {{0}}");
+                    configuration.minValue = BindEmptyOrDefaultable(scrapConfig, tablename, "MinValue", itemType.minValue, $"Minimum value of a {itemType.itemName}\nAlternate values: DEFAULT");
+                    configuration.maxValue = BindEmptyOrDefaultable(scrapConfig, tablename, "MaxValue", itemType.maxValue, $"Maximum value of a {itemType.itemName}\nAlternate values: DEFAULT");
                 } else
                 {
                     itemConfiguration = new GlobalItemConfiguration(itemType);
                 }
 
-                itemConfiguration.rarity = BindEmptyOrNonDefaultable<int>(scrapConfig, "Rarity", itemType.name, $"Rarity of a(n) {itemType.itemName} relative to the total rarity of all other item types combined. A higher rarity increases the chance that the item will spawn. Leave blank or DEFAULT to use the moon's default rarity.");
+                itemConfiguration.rarity = BindEmptyOrNonDefaultable<int>(scrapConfig, "Rarity", itemType.name, $"Rarity of a(n) {itemType.itemName} relative to the total rarity of all other item types combined. A higher rarity increases the chance that the item will spawn.\nLeave blank or DEFAULT to use the moon's default rarity.");
 
-                itemConfiguration.weight = BindEmptyOrDefaultable(scrapConfig, tablename, "Weight", itemType.weight, $"The weight of a(n) {itemType.itemName}. The default value is {{0}}. The in-game weight can be found by the formula: pounds = (value - 1) * 100. For example, a value of 1.18 means the object weighs 18lbs. This option can only be set in the global config.");
-                itemConfiguration.conductive = BindEmptyOrDefaultable(scrapConfig, tablename, "Conductive", itemType.isConductiveMetal, $"Whether or not {itemType.itemName} is conductive(can be struck by lightning). The default value is {{0}}.");
+                itemConfiguration.weight = BindEmptyOrDefaultable(scrapConfig, tablename, "Weight", itemType.weight, $"The weight of a(n) {itemType.itemName}. The in-game weight can be found by the formula: pounds = (value - 1) * 100. For example, a value of 1.18 means the object weighs 18lbs. This option can only be set in the global config.\nAlternate values: DEFAULT");
+                itemConfiguration.conductive = BindEmptyOrDefaultable(scrapConfig, tablename, "Conductive", itemType.isConductiveMetal, $"Whether or not {itemType.itemName} is conductive(can be struck by lightning).\nAlternate values: DEFAULT");
 
                 scrapConfiguration.itemConfigurations.Add(itemType, itemConfiguration);
             }
@@ -423,14 +429,14 @@ namespace LethalQuantities.Objects
                 dungeonFile.SaveOnConfigSet = false;
             }
 
-            dungeonConfiguration.mapSizeMultiplier = BindEmptyOrDefaultable(dungeonFile, "General", "MapSizeMultiplier", RoundManager.Instance.mapSizeMultiplier, "The multiplier to use for determining the size of the dungeon. The default value is {0}");
+            dungeonConfiguration.mapSizeMultiplier = BindEmptyOrDefaultable(dungeonFile, "General", "MapSizeMultiplier", RoundManager.Instance.mapSizeMultiplier, "The multiplier to use for determining the size of the dungeon.\nAlternate values: DEFAULT");
             foreach (DungeonFlow flow in globalInfo.allDungeonFlows)
             {
                 GlobalDungeonFlowConfiguration configuration = new GlobalDungeonFlowConfiguration();
-                configuration.rarity = BindEmptyOrNonDefaultable<int>(dungeonFile, "Rarity", flow.name, $"Rarity of a moon using a {flow.name} dungeon generator as the interior. A higher rarity increases the chance that the moon will use this dungeon flow. Leave blank or DEFAULT to use the moon's default rarity.");
+                configuration.rarity = BindEmptyOrNonDefaultable<int>(dungeonFile, "Rarity", flow.name, $"Rarity of a moon using a {flow.name} dungeon generator as the interior. A higher rarity increases the chance that the moon will use this dungeon flow.\nLeave blank or DEFAULT to use the moon's default rarity.");
 
                 string tablename = $"DungeonFlow." + flow.name;
-                configuration.factorySizeMultiplier = BindEmptyOrNonDefaultable<float>(dungeonFile, tablename, "FactorySizeMultiplier", $"Size of the dungeon when using this dungeon flow. Leave blank or DEFAULT to use the moon's default factory size multiplier.");
+                configuration.factorySizeMultiplier = BindEmptyOrNonDefaultable<float>(dungeonFile, tablename, "FactorySizeMultiplier", $"Size of the dungeon when using this dungeon flow.\nLeave blank or DEFAULT to use the moon's default factory size multiplier.\nAlternate values: DEFAULT");
 
                 dungeonConfiguration.dungeonFlowConfigurations.Add(flow.name, configuration);
             }
@@ -469,34 +475,30 @@ namespace LethalQuantities.Objects
 
     public static class ConfigEntryExtension
     {
-        public static GlobalConfigEntry<T> BindGlobal<T>(this ConfigFile file, ConfigEntry<T> parent, string tablename, string name, T defaultValue, string description)
-        {
-            TypeConverter converter = TomlTypeConverter.GetConverter(typeof(T));
-            string defaultVal = converter.ConvertToString(defaultValue, typeof(T));
-
-            ConfigEntry<string> entry = file.Bind(tablename, name, GlobalConfigEntry<T>.GLOBAL_OPTION, string.Format(description, defaultVal));
-
-            return new GlobalConfigEntry<T>(parent, entry, defaultValue, converter);
-        }
-
         public static GlobalConfigEntry<T> BindGlobal<T>(this ConfigFile file, CustomEntry<T> parent, string tablename, string name, T defaultValue, string description)
         {
             TypeConverter converter = TomlTypeConverter.GetConverter(typeof(T));
-            string defaultVal = converter.ConvertToString(defaultValue, typeof(T));
 
-            ConfigEntry<string> entry = file.Bind(tablename, name, GlobalConfigEntry<T>.GLOBAL_OPTION, string.Format(description, defaultVal));
+            ConfigEntry<string> entry = file.Bind(tablename, name, GlobalConfigEntry<T>.GLOBAL_OPTION, description);
 
-            return new GlobalConfigEntry<T>(parent, entry, defaultValue, converter);
+            GlobalConfigEntry<T> globalEntry = new GlobalConfigEntry<T>(parent, entry, defaultValue, converter);
+
+            ConfigEntryBasePatch.entries.Add(entry, globalEntry);
+
+            return globalEntry;
         }
 
         public static DefaultableConfigEntry<T> BindDefaultable<T>(this ConfigFile file, string tablename, string name, T defaultValue, string description)
         {
             TypeConverter converter = TomlTypeConverter.GetConverter(typeof(T));
-            string defaultVal = converter.ConvertToString(defaultValue, typeof(T));
 
-            ConfigEntry<string> entry = file.Bind(tablename, name, DefaultableConfigEntry<T>.DEFAULT_OPTION, string.Format(description, defaultVal));
+            ConfigEntry<string> entry = file.Bind(tablename, name, DefaultableConfigEntry<T>.DEFAULT_OPTION, description);
 
-            return new DefaultableConfigEntry<T>(entry, defaultValue, converter);
+            DefaultableConfigEntry<T> defaultEntry = new DefaultableConfigEntry<T>(entry, defaultValue, converter);
+
+            ConfigEntryBasePatch.entries.Add(entry, defaultEntry);
+
+            return defaultEntry;
         }
 
         public static NonDefaultableConfigEntry<T> BindNonDefaultable<T>(this ConfigFile file, string tablename, string name, string description)
@@ -505,7 +507,11 @@ namespace LethalQuantities.Objects
 
             ConfigEntry<string> entry = file.Bind(tablename, name, NonDefaultableConfigEntry<T>.DEFAULT_OPTION, description);
 
-            return new NonDefaultableConfigEntry<T>(entry, converter);
+            NonDefaultableConfigEntry<T> nonDefaultableEntry = new NonDefaultableConfigEntry<T>(entry, converter);
+
+            ConfigEntryBasePatch.entries.Add(entry, nonDefaultableEntry);
+
+            return nonDefaultableEntry;
         }
     }
 }

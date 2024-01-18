@@ -4,12 +4,29 @@ using System;
 
 namespace LethalQuantities.Objects
 {
-    public abstract class CustomEntry<T>
+    public abstract class BaseEntry
+    {
+        public abstract Type SettingType();
+        public virtual bool hasDefault()
+        {
+            return false;
+        }
+        public virtual string DefaultString()
+        {
+            return "";
+        }
+    }
+
+    public abstract class CustomEntry<T> : BaseEntry
     {
         // Get the value of this entry. The parameter passed is the current value.
         public abstract T Value(T value);
         public abstract bool isDefault();
         public abstract bool Set(ref T value);
+        public override Type SettingType()
+        {
+            return typeof(T);
+        }
     }
 
     public class EmptyEntry<T> : CustomEntry<T>
@@ -52,28 +69,14 @@ namespace LethalQuantities.Objects
         public static readonly string DEFAULT_OPTION = "DEFAULT";
         public static readonly string GLOBAL_OPTION = "GLOBAL";
 
-        Func<T, T> globalGetter;
+        CustomEntry<T> parentEntry;
         ConfigEntry<string> entry;
         TypeConverter converter;
         T defaultValue;
 
         public GlobalConfigEntry(CustomEntry<T> globalEntry, ConfigEntry<string> entry, T defaultValue, TypeConverter converter)
         {
-
-            globalGetter = globalEntry.Value;
-            this.entry = entry;
-            this.defaultValue = defaultValue;
-            this.converter = converter;
-
-            if (isGlobal())
-            {
-                entry.Value = "";
-            }
-        }
-
-        public GlobalConfigEntry(ConfigEntry<T> globalEntry, ConfigEntry<string> entry, T defaultValue, TypeConverter converter)
-        {
-            globalGetter = (v) => globalEntry.Value;
+            parentEntry = globalEntry;
             this.entry = entry;
             this.defaultValue = defaultValue;
             this.converter = converter;
@@ -93,7 +96,7 @@ namespace LethalQuantities.Objects
             }
             else if (val.ToUpper() == GLOBAL_OPTION || entry.Value.IsNullOrWhiteSpace())
             {
-                return globalGetter(defaultValue);
+                return parentEntry.Value(defaultValue);
             }
             else
             {
@@ -120,6 +123,16 @@ namespace LethalQuantities.Objects
                 value = current;
             }
             return same;
+        }
+
+        public override bool hasDefault()
+        {
+            return true;
+        }
+
+        public override string DefaultString()
+        {
+            return converter.ConvertToString(defaultValue, typeof(T));
         }
     }
 
@@ -169,6 +182,16 @@ namespace LethalQuantities.Objects
                 value = current;
             }
             return same;
+        }
+
+        public override bool hasDefault()
+        {
+            return true;
+        }
+
+        public override string DefaultString()
+        {
+            return converter.ConvertToString(defaultValue, typeof(T));
         }
     }
 

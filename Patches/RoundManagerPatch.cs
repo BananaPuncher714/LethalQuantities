@@ -92,7 +92,11 @@ namespace LethalQuantities.Patches
                     Dictionary<Item, int> defaultRarities = new Dictionary<Item, int>();
                     foreach (SpawnableItemWithRarity item in newLevel.spawnableScrap)
                     {
-                        defaultRarities.Add(item.spawnableItem, item.rarity);
+                        if (!defaultRarities.TryAdd(item.spawnableItem, item.rarity))
+                        {
+                            Plugin.LETHAL_LOGGER.LogWarning($"{newLevel.name} has a duplicate spawnable scrap item: {item.spawnableItem.name}");
+                            defaultRarities[item.spawnableItem] += item.rarity;
+                        }
                     }
 
                     newLevel.spawnableScrap.Clear();
@@ -127,7 +131,11 @@ namespace LethalQuantities.Patches
                     Dictionary<Item, int> defaultRarities = new Dictionary<Item, int>();
                     foreach (SpawnableItemWithRarity item in newLevel.spawnableScrap)
                     {
-                        defaultRarities.Add(item.spawnableItem, item.rarity);
+                        if (!defaultRarities.TryAdd(item.spawnableItem, item.rarity))
+                        {
+                            Plugin.LETHAL_LOGGER.LogWarning($"{newLevel.name} has a duplicate spawnable scrap item: {item.spawnableItem.name}");
+                            defaultRarities[item.spawnableItem] += item.rarity;
+                        }
                     }
 
                     newLevel.spawnableScrap.Clear();

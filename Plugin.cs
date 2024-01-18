@@ -9,6 +9,7 @@ using LethalQuantities.Objects;
 using System.IO;
 using LethalQuantities.Patches;
 using DunGen.Graph;
+using System.Linq;
 
 namespace LethalQuantities
 {
@@ -46,6 +47,7 @@ namespace LethalQuantities
             _harmony.PatchAll(typeof(RoundManagerPatch));
             _harmony.PatchAll(typeof(ObjectPatch));
             _harmony.PatchAll(typeof(DungeonPatch));
+            _harmony.PatchAll(typeof(ConfigEntryBasePatch));
 
             SceneManager.sceneLoaded += OnSceneLoaded;
         }
@@ -57,59 +59,53 @@ namespace LethalQuantities
                 StartOfRound instance = StartOfRound.Instance;
                 GlobalInformation globalInfo = new GlobalInformation(GLOBAL_SAVE_DIR, LEVEL_SAVE_DIR);
 
-                // Get all enemy and item types
-                globalInfo.allEnemyTypes.AddRange(Resources.FindObjectsOfTypeAll<EnemyType>());
-                globalInfo.allItems.AddRange(Resources.FindObjectsOfTypeAll<Item>());
-                globalInfo.allSelectableLevels.AddRange(instance.levels);
+                // Get all enemy, item and dungeon flows
+                // Filter out any potentially "fake" enemy types that might have been added by other mods
+                HashSet<string> addedEnemyTypes = new HashSet<string>();
+                globalInfo.allEnemyTypes.AddRange(Resources.FindObjectsOfTypeAll<EnemyType>().Where(type => {
+                    if (type.enemyPrefab == null)
+                    {
+                        LETHAL_LOGGER.LogWarning($"Enemy type {type.name} is missing prefab! Perhaps another mod has removed it? Some default values in the config may not be correct.");
+                    }
+                    else if (addedEnemyTypes.Contains(type.name))
+                    {
+                        LETHAL_LOGGER.LogWarning($"Enemy type {type.name} was found twice! Perhaps another mod has added it? Some default values in the config may not be correct.");
+                    }
+                    else
+                    {
+                        addedEnemyTypes.Add(type.name);
+                        return true;
+                    }
+                    return false;
+                }));
+                HashSet<string> addedItems = new HashSet<string>();
+                globalInfo.allItems.AddRange(Resources.FindObjectsOfTypeAll<Item>().Where(type => {
+                    if (type.spawnPrefab == null)
+                    {
+                        LETHAL_LOGGER.LogWarning($"Item {type.name} is missing prefab! Perhaps another mod has removed it? Some default values in the config may not be correct.");
+                    }
+                    else if (addedItems.Contains(type.name))
+                    {
+                        LETHAL_LOGGER.LogWarning($"Item {type.name} was found twice! Perhaps another mod has added it? Some default values in the config may not be correct.");
+                    }
+                    else
+                    {
+                        addedItems.Add(type.name);
+                        return true;
+                    }
+                    return false;
+                }));
+
+                globalInfo.allSelectableLevels.AddRange(Resources.FindObjectsOfTypeAll<SelectableLevel>());
                 globalInfo.allDungeonFlows.AddRange(Resources.FindObjectsOfTypeAll<DungeonFlow>());
                 globalInfo.sortData();
 
+                LETHAL_LOGGER.LogInfo("Loading global configuration");
                 configuration = new GlobalConfiguration(globalInfo);
-
-                LETHAL_LOGGER.LogInfo("Printing out default moon info");
-                foreach (var level in instance.levels)
-                {
-                    LETHAL_LOGGER.LogInfo("\tName: " + level.name);
-                    LETHAL_LOGGER.LogInfo("\tPlanet Name: " + level.PlanetName);
-                    LETHAL_LOGGER.LogInfo("\tMax enemy power count: " + level.maxEnemyPowerCount);
-                    LETHAL_LOGGER.LogInfo("\tMax daytime enemy power count: " + level.maxDaytimeEnemyPowerCount);
-                    LETHAL_LOGGER.LogInfo("\tMax outside enemy power count: " + level.maxOutsideEnemyPowerCount);
-                    LETHAL_LOGGER.LogInfo("\tSpawn probability range: " + level.spawnProbabilityRange);
-                    LETHAL_LOGGER.LogInfo("\tDaytime spawn probability range: " + level.daytimeEnemiesProbabilityRange);
-                    LETHAL_LOGGER.LogInfo("\tEnemy spawn curve:");
-                    PrintAnimationCurve(level.enemySpawnChanceThroughoutDay);
-                    LETHAL_LOGGER.LogInfo("\tDaytime enemy spawn curve:");
-                    PrintAnimationCurve(level.daytimeEnemySpawnChanceThroughDay);
-                    LETHAL_LOGGER.LogInfo("\tOutside enemy spawn curve:");
-                    PrintAnimationCurve(level.outsideEnemySpawnChanceThroughDay);
-                    LETHAL_LOGGER.LogInfo("\tEnemy spawn info:");
-                    PrintEnemySpawnTypes(level.Enemies);
-                    LETHAL_LOGGER.LogInfo("\tDaytime enemy spawn info:");
-                    PrintEnemySpawnTypes(level.DaytimeEnemies);
-                    LETHAL_LOGGER.LogInfo("\tOutside nemy spawn info:");
-                    PrintEnemySpawnTypes(level.OutsideEnemies);
-                    LETHAL_LOGGER.LogInfo("\tLevel size multiplier: " + level.factorySizeMultiplier);
-                    LETHAL_LOGGER.LogInfo("\tScrap item info:");
-                    PrintItemTypes(level.spawnableScrap);
-                }
-
-                LETHAL_LOGGER.LogInfo("Printing out default enemy info:");
-                foreach (var enemyType in globalInfo.allEnemyTypes)
-                {
-                    LETHAL_LOGGER.LogInfo("\tEnemy: " + enemyType.enemyName);
-                    LETHAL_LOGGER.LogInfo("\t\tEnemy max count: " + enemyType.MaxCount);
-                    LETHAL_LOGGER.LogInfo("\t\tEnemy power level: " + enemyType.PowerLevel);
-                    LETHAL_LOGGER.LogInfo("\t\tEnemy spawn curve:");
-                    PrintAnimationCurve(enemyType.probabilityCurve);
-                    LETHAL_LOGGER.LogInfo("\t\tEnemy spawn falloff curve: " + enemyType.useNumberSpawnedFalloff);
-                    PrintAnimationCurve(enemyType.numberSpawnedFalloff);
-                }
-
-                // TODO Change max ship capacity
-                // TODO 
 
                 configInitialized = true;
 
+                LETHAL_LOGGER.LogInfo("Inserting missing dungeon flows into the RoundManager");
                 // Not very good, but for each dungeon flow, add it to the RoundManager if it isn't already there
                 List<DungeonFlow> flows = new List<DungeonFlow>(RoundManager.Instance.dungeonFlowTypes);
                 foreach (DungeonFlow flow in globalInfo.allDungeonFlows)
@@ -127,6 +123,7 @@ namespace LethalQuantities
                     if (index == -1)
                     {
                         // Not added, so add it now
+                        LETHAL_LOGGER.LogWarning($"Did not find dungeon flow {flow.name} in the global list of dungeon flows. Adding it now.");
                         flows.Add(flow);
                     }
                 }
@@ -135,12 +132,14 @@ namespace LethalQuantities
                 // Set some global options here
                 if (configuration.scrapConfiguration.enabled.Value)
                 {
+                    LETHAL_LOGGER.LogInfo("Setting custom item weight values");
                     foreach (Item item in globalInfo.allItems)
                     {
                         GlobalItemConfiguration itemConfig = configuration.scrapConfiguration.itemConfigurations[item];
                         itemConfig.weight.Set(ref item.weight);
                     }
                 }
+                LETHAL_LOGGER.LogInfo("Done configuring LethalQuantities");
             }
             else
             {
@@ -161,32 +160,6 @@ namespace LethalQuantities
                         state.initialize(level);
                     }
                 }
-            }
-        }
-
-        static void PrintAnimationCurve(AnimationCurve curve)
-        {
-            int i = 0;
-            foreach (var frame in curve.GetKeys())
-            {
-                LETHAL_LOGGER.LogInfo("\t\tFrame " + i++ + ": " + frame.m_Time + "\t" + frame.m_Value);
-            }
-        }
-
-        static void PrintEnemySpawnTypes(List<SpawnableEnemyWithRarity> enemies)
-        {
-            foreach (var enemy in enemies)
-            {
-                EnemyType enemyType = enemy.enemyType;
-                LETHAL_LOGGER.LogInfo("\t\tEnemy: " + enemyType.enemyName + ": " + enemy.rarity);
-            }
-        }
-
-        static void PrintItemTypes(List<SpawnableItemWithRarity> items)
-        {
-            foreach (var item in items)
-            {
-                LETHAL_LOGGER.LogInfo("\t\tItem: " + item.spawnableItem + ": " + item.rarity);
             }
         }
     }

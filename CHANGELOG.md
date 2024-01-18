@@ -1,4 +1,10 @@
 ## Changelog
+### 1.1.3
+- Fixed stuck screen when loading into certain moons
+- Fixed unknown scrap amount default value
+- Fixed improperly named enemy types for compatibility with Skinwalkers
+- Fixed EGypt and any other LethalLevelLoader moon incompatabilities
+- Formatted the config options to be slightly more readable
 ### 1.1.2
 - Added factory size multipler per dungeon flow
 - Sort some entries alphabetically to make them easier to locate, such as rarities
