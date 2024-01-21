@@ -8,10 +8,12 @@ A flexible customization mod that works with other mods. **All configs are disab
 - Works with custom levels
 - Works with custom items
 - Works with custom enemies
+- Works with custom traps
 - Works with custom dungeon flows
 - Should work with custom events and other mods that change enemy spawn settings
-## Bugs
-- May or may not play nicely with other mods that forcefully change spawning behavior
+## Known Incompatibilities
+- LethalLevelLoader - Partial incompatibility with custom dungeon flows
+  - This mod has the ability to change the rarity of dungeon flows per moon. If the dungeon generation option is enabled, and the rarity for any custom flow is manually set(to a value other than DEFAULT or GLOBAL), then LethalLevelLoader will not be able to modify the rarity of that specific dungeon flow. To use LethalLevelLoader or other mods' dungeon flow rarity options, do not set the rarity here.
 ## Configuration
 You must host or join a game at least once to generate the configuration files. Any missing or deleted files will be generated with the default options. By default, the only file that is generated is `Configuration.cfg`. You must enable global config files and individual moon config files in order to modify anything.
 - `Configuration.cfg` - Enable/disable other configuration files here
@@ -119,6 +121,21 @@ These configuration values are set per moon. They should theoretically support c
   - `FactorySizeMultiplier` - A multiplier for how large the dungeon generation should be for this flow.
 - Rarity
   - `<dungeon flow name>` - The weight of this flow, relative to the total weight of all flows. A higher rarity increases the chances for this flow to be used.
+ </details>
+
+ <details>
+ <summary>Trap Spawning</summary>
+
+ There is 1 trap configuration file
+ - `Traps.cfg` - Responsible for configuring how many traps can spawn inside
+
+
+These configuration values are set per moon. They support custom traps.
+
+
+**Options**
+- Trap - There is one section for each trap type
+  - `SpawnAmount` - The amount of this trap to spawn. This is an AnimationCurve, where 'Y Axis is the amount to be spawned; X axis should be from 0 to 1 and is randomly picked from.'
  </details>
 
 ## Spawn Logic

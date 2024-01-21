@@ -4,16 +4,105 @@ using LethalQuantities.Objects;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection.Emit;
 using UnityEngine;
 
 namespace LethalQuantities.Patches
 {
     internal class RoundManagerPatch
     {
+        //[HarmonyPatch(typeof(RoundManager), "Start")]
+        //[HarmonyPriority(200)]
+        //[HarmonyPostfix]
+        // TODO Determine whether or not to use this
+        private static void onStartPostfix(RoundManager __instance)
+        {
+            if (!__instance.IsServer || Plugin.INSTANCE.configInitialized)
+            {
+                return;
+            }
+            StartOfRound instance = StartOfRound.Instance;
+            GlobalInformation globalInfo = new GlobalInformation(Plugin.GLOBAL_SAVE_DIR, Plugin.LEVEL_SAVE_DIR);
+
+            // Get all enemy, item and dungeon flows
+            // Filter out any potentially "fake" enemy types that might have been added by other mods
+            HashSet<string> addedEnemyTypes = new HashSet<string>();
+            globalInfo.allEnemyTypes.AddRange(Resources.FindObjectsOfTypeAll<EnemyType>().Where(type => {
+                if (type.enemyPrefab == null || addedEnemyTypes.Contains(type.name))
+                {
+                    return false;
+                }
+                else
+                {
+                    addedEnemyTypes.Add(type.name);
+                    return true;
+                }
+            }));
+            HashSet<string> addedItems = new HashSet<string>();
+            globalInfo.allItems.AddRange(Resources.FindObjectsOfTypeAll<Item>().Where(type => {
+                if (type.spawnPrefab == null || addedItems.Contains(type.name))
+                {
+                    return false;
+                }
+                else
+                {
+                    addedItems.Add(type.name);
+                    return true;
+                }
+            }));
+
+            globalInfo.allSelectableLevels.AddRange(Resources.FindObjectsOfTypeAll<SelectableLevel>());
+            globalInfo.allDungeonFlows.AddRange(Resources.FindObjectsOfTypeAll<DungeonFlow>());
+            globalInfo.sortData();
+
+            Plugin.LETHAL_LOGGER.LogInfo("Loading global configuration");
+            GlobalConfiguration configuration = new GlobalConfiguration(globalInfo);
+
+            Plugin.INSTANCE.configuration = configuration;
+            Plugin.INSTANCE.configInitialized = true;
+
+            Plugin.LETHAL_LOGGER.LogInfo("Inserting missing dungeon flows into the RoundManager");
+            // Not very good, but for each dungeon flow, add it to the RoundManager if it isn't already there
+            List<DungeonFlow> flows = new List<DungeonFlow>(RoundManager.Instance.dungeonFlowTypes);
+            foreach (DungeonFlow flow in globalInfo.allDungeonFlows)
+            {
+                int index = -1;
+                for (int i = 0; i < flows.Count; i++)
+                {
+                    if (flows[i] == flow)
+                    {
+                        index = i;
+                        break;
+                    }
+                }
+
+                if (index == -1)
+                {
+                    // Not added, so add it now
+                    Plugin.LETHAL_LOGGER.LogWarning($"Did not find dungeon flow {flow.name} in the global list of dungeon flows. Adding it now.");
+                    flows.Add(flow);
+                }
+            }
+            RoundManager.Instance.dungeonFlowTypes = flows.ToArray();
+
+            // Set some global options here
+            if (configuration.scrapConfiguration.enabled.Value)
+            {
+                Plugin.LETHAL_LOGGER.LogInfo("Setting custom item weight values");
+                foreach (Item item in globalInfo.allItems)
+                {
+                    GlobalItemConfiguration itemConfig = configuration.scrapConfiguration.itemConfigurations[item];
+                    itemConfig.weight.Set(ref item.weight);
+                }
+            }
+            Plugin.LETHAL_LOGGER.LogInfo("Done configuring LethalQuantities");
+        }
+
         [HarmonyPatch(typeof(RoundManager), nameof(RoundManager.LoadNewLevel))]
-        [HarmonyPriority(Priority.First)]
+        // Keep it at an acceptable priority level, so that if some other mod has an urgent need to modify anything before us, they can
+        [HarmonyPriority(100)]
         [HarmonyPrefix]
+        // Attempt to set the various level variables before other mods, since this should serve as the "base" for level information.
+        // Values set by this mod are meant to be overwritten, especially by mods that add events, or varying changes.
         private static void onLoadNewLevelPrefix(RoundManager __instance, ref SelectableLevel newLevel)
         {
             if (!__instance.IsServer)
@@ -113,8 +202,15 @@ namespace LethalQuantities.Patches
                             if (item is ScrapItemConfiguration)
                             {
                                 ScrapItemConfiguration scrapItem = item as ScrapItemConfiguration;
-                                scrapItem.minValue.Set(ref newItem.spawnableItem.minValue);
-                                scrapItem.maxValue.Set(ref newItem.spawnableItem.maxValue);
+
+                                int minValue = newItem.spawnableItem.minValue;
+                                int maxValue = newItem.spawnableItem.maxValue;
+
+                                scrapItem.minValue.Set(ref minValue);
+                                scrapItem.maxValue.Set(ref maxValue);
+
+                                newItem.spawnableItem.minValue = Math.Max(minValue, maxValue);
+                                newItem.spawnableItem.maxValue = Math.Max(minValue, maxValue);
                             }
                             newLevel.spawnableScrap.Add(newItem);
                         }
@@ -145,7 +241,7 @@ namespace LethalQuantities.Patches
                         GlobalItemConfiguration globalItemConfiguration = item.Value;
                         if (!globalItemConfiguration.isDefault())
                         {
-                            int rarity = defaultRarities[type];
+                            int rarity = defaultRarities.GetValueOrDefault(type, 0);
                             globalItemConfiguration.rarity.Set(ref rarity);
                             if (rarity > 0)
                             {
@@ -159,8 +255,14 @@ namespace LethalQuantities.Patches
                                 {
                                     GlobalItemScrapConfiguration scrapConfig = globalItemConfiguration as GlobalItemScrapConfiguration;
 
-                                    scrapConfig.minValue.Set(ref type.minValue);
-                                    scrapConfig.maxValue.Set(ref type.maxValue);
+                                    int minValue = type.minValue;
+                                    int maxValue = type.maxValue;
+
+                                    scrapConfig.minValue.Set(ref minValue);
+                                    scrapConfig.maxValue.Set(ref maxValue);
+
+                                    type.minValue = Math.Max(minValue, maxValue);
+                                    type.maxValue = Math.Max(minValue, maxValue);
                                 }
                             }
                         }
@@ -181,7 +283,7 @@ namespace LethalQuantities.Patches
                     Dictionary<string, int> flows = new Dictionary<string, int>();
                     foreach (IntWithRarity entry in newLevel.dungeonFlowTypes)
                     {
-                        flows.Add(__instance.dungeonFlowTypes[entry.id].name, entry.rarity);
+                        flows.TryAdd(__instance.dungeonFlowTypes[entry.id].name, entry.rarity);
                     }
                     foreach (var item in state.levelConfiguration.dungeon.dungeonFlowConfigurations)
                     {
@@ -201,7 +303,7 @@ namespace LethalQuantities.Patches
                     Dictionary<string, int> flows = new Dictionary<string, int>();
                     foreach (IntWithRarity entry in newLevel.dungeonFlowTypes)
                     {
-                        flows.Add(__instance.dungeonFlowTypes[entry.id].name, entry.rarity);
+                        flows.TryAdd(__instance.dungeonFlowTypes[entry.id].name, entry.rarity);
                     }
                     foreach (var item in state.globalConfiguration.dungeonConfiguration.dungeonFlowConfigurations)
                     {
@@ -213,6 +315,60 @@ namespace LethalQuantities.Patches
                         flows[name] = originalRarity;
                     }
                     newLevel.dungeonFlowTypes = __instance.ConvertToDungeonFlowArray(flows);
+                }
+
+                // TODO Should really reduce the amount of repetition that occurs here
+                if (state.levelConfiguration.trap.enabled.Value)
+                {
+                    Plugin.LETHAL_LOGGER.LogInfo("Changing interior trap spawn amounts");
+                    Dictionary<GameObject, AnimationCurve> defaultSpawnableMapObjects = new Dictionary<GameObject, AnimationCurve>();
+                    foreach (SpawnableMapObject obj in newLevel.spawnableMapObjects)
+                    {
+                        defaultSpawnableMapObjects.TryAdd(obj.prefabToSpawn, obj.numberToSpawn);
+                    }
+                    List<SpawnableMapObject> newMapObjects = new List<SpawnableMapObject>();
+                    foreach (var item in state.levelConfiguration.trap.traps)
+                    {
+                        GameObject obj = item.Key;
+                        SpawnableMapObjectConfiguration config = item.Value;
+
+                        AnimationCurve curve = defaultSpawnableMapObjects.GetValueOrDefault(obj, new AnimationCurve());
+                        config.numberToSpawn.Set(ref curve);
+
+                        SpawnableMapObject spawnableObj = new SpawnableMapObject();
+                        spawnableObj.prefabToSpawn = obj;
+                        spawnableObj.numberToSpawn = curve;
+                        spawnableObj.spawnFacingAwayFromWall = config.spawnableObject.faceAwayFromWall;
+
+                        newMapObjects.Add(spawnableObj);
+                    }
+                    newLevel.spawnableMapObjects = newMapObjects.ToArray();
+                }
+                else if (state.globalConfiguration.trapConfiguration.enabled.Value && !state.globalConfiguration.trapConfiguration.isDefault())
+                {
+                    Plugin.LETHAL_LOGGER.LogInfo("Changing interior trap spawn amounts based on the global config");
+                    Dictionary<GameObject, AnimationCurve> defaultSpawnableMapObjects = new Dictionary<GameObject, AnimationCurve>();
+                    foreach (SpawnableMapObject obj in newLevel.spawnableMapObjects)
+                    {
+                        defaultSpawnableMapObjects.TryAdd(obj.prefabToSpawn, obj.numberToSpawn);
+                    }
+                    List<SpawnableMapObject> newMapObjects = new List<SpawnableMapObject>();
+                    foreach (var item in state.globalConfiguration.trapConfiguration.traps)
+                    {
+                        GameObject obj = item.Key;
+                        GlobalSpawnableMapObjectConfiguration config = item.Value;
+
+                        AnimationCurve curve = defaultSpawnableMapObjects.GetValueOrDefault(obj, new AnimationCurve());
+                        config.numberToSpawn.Set(ref curve);
+
+                        SpawnableMapObject spawnableObj = new SpawnableMapObject();
+                        spawnableObj.prefabToSpawn = obj;
+                        spawnableObj.numberToSpawn = curve;
+                        spawnableObj.spawnFacingAwayFromWall = config.spawnableObj.faceAwayFromWall;
+
+                        newMapObjects.Add(spawnableObj);
+                    }
+                    newLevel.spawnableMapObjects = newMapObjects.ToArray();
                 }
             }
         }

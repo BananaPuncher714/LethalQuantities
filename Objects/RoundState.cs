@@ -1,5 +1,4 @@
-﻿using BepInEx.Configuration;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -27,7 +26,10 @@ namespace LethalQuantities.Objects
         public float defaultScrapValueMultiplier = .4f;
         public float defaultMapSizeMultiplier = 1f;
         public List<IntWithRarity> defaultFlowTypes = new List<IntWithRarity>();
-        public Dictionary<Item, ItemInformation> defaultItems = new Dictionary<Item, ItemInformation>();
+        public List<SpawnableItemWithRarity> defaultItems = new List<SpawnableItemWithRarity>();
+        public Dictionary<Item, ItemInformation> defaultItemInformation = new Dictionary<Item, ItemInformation>();
+
+        public List<SpawnableMapObject> defaultSpawnableMapObjects = new List<SpawnableMapObject>();
 
         public void setData(Scene scene, GlobalConfiguration config)
         {
@@ -73,11 +75,12 @@ namespace LethalQuantities.Objects
             }
 
             Plugin.LETHAL_LOGGER.LogInfo("Generating spawnable item options");
+            defaultItems.AddRange(level.spawnableScrap);
             if (levelConfiguration.scrap.enabled.Value)
             {
                 defaultScrapAmountMultiplier = RoundManager.Instance.scrapAmountMultiplier;
                 defaultScrapValueMultiplier = RoundManager.Instance.scrapValueMultiplier;
-                copyDefaultItems(defaultItems, levelConfiguration.scrap.scrapRarities);
+                copyDefaultItems(defaultItemInformation, levelConfiguration.scrap.scrapRarities);
             }
             else if (globalConfiguration.scrapConfiguration.enabled.Value)
             {
@@ -93,7 +96,7 @@ namespace LethalQuantities.Objects
                 {
                     if (!config.isDefault())
                     {
-                        defaultItems.Add(config.item, new ItemInformation(config.item.minValue, config.item.maxValue, config.item.isConductiveMetal));
+                        defaultItemInformation.Add(config.item, new ItemInformation(config.item.minValue, config.item.maxValue, config.item.isConductiveMetal));
                     }
                 }
             }
@@ -103,10 +106,12 @@ namespace LethalQuantities.Objects
             {
                 defaultMapSizeMultiplier = RoundManager.Instance.mapSizeMultiplier;
             }
-            else if(!globalConfiguration.dungeonConfiguration.enabled.Value && !globalConfiguration.dungeonConfiguration.isDefault())
+            else if(globalConfiguration.dungeonConfiguration.enabled.Value && !globalConfiguration.dungeonConfiguration.isDefault())
             {
                 defaultMapSizeMultiplier = RoundManager.Instance.mapSizeMultiplier;
             }
+
+            defaultSpawnableMapObjects.AddRange(level.spawnableMapObjects);
         }
 
         public void OnDestroy()
@@ -130,7 +135,7 @@ namespace LethalQuantities.Objects
                 RoundManager.Instance.mapSizeMultiplier = defaultMapSizeMultiplier;
             }
 
-            foreach (var item in defaultItems)
+            foreach (var item in defaultItemInformation)
             {
                 item.Key.maxValue = item.Value.maxValue;
                 item.Key.minValue = item.Value.minValue;
@@ -144,6 +149,9 @@ namespace LethalQuantities.Objects
             level.OutsideEnemies.Clear();
             level.OutsideEnemies.AddRange(oldOutsideEnemies);
             level.dungeonFlowTypes = defaultFlowTypes.ToArray();
+            level.spawnableScrap.Clear();
+            level.spawnableScrap.AddRange(defaultItems);
+            level.spawnableMapObjects = defaultSpawnableMapObjects.ToArray();
         }
 
         private void populate<T>(List<SpawnableEnemyWithRarity> originals, List<SpawnableEnemyWithRarity> enemiesList, List<T> configs, bool isOutside = false, bool isDaytimeEnemy = false) where T : DaytimeEnemyTypeConfiguration

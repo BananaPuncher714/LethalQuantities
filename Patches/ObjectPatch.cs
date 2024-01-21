@@ -7,7 +7,8 @@ namespace LethalQuantities.Patches
     internal class ObjectPatch
     {
         [HarmonyPatch(typeof(Object), nameof(Object.Instantiate), [typeof(GameObject), typeof(Vector3), typeof(Quaternion)])]
-        [HarmonyPriority(Priority.First)]
+        // This patch really should run first, since it's attempting to restore vanilla behavior(that is, unhide objects that shouldn't be hidden and setting them active)
+        [HarmonyPriority(50)]
         [HarmonyPrefix]
         static void onInstantiatePrefix(GameObject original)
         {

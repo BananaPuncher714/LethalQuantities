@@ -8,7 +8,7 @@ namespace LethalQuantities.Patches
     internal class DungeonPatch
     {
         [HarmonyPatch(typeof(RuntimeDungeon), nameof(RuntimeDungeon.Generate))]
-        [HarmonyPriority(Priority.First)]
+        [HarmonyPriority(300)]
         [HarmonyPrefix]
         static void onDungeonGenerate(RuntimeDungeon __instance)
         {

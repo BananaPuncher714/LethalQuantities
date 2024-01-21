@@ -10,23 +10,24 @@ using System.IO;
 using LethalQuantities.Patches;
 using DunGen.Graph;
 using System.Linq;
+using Unity.Netcode;
 
 namespace LethalQuantities
 {
     [BepInPlugin(PluginInfo.PLUGIN_GUID, PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION)]
     public class Plugin : BaseUnityPlugin
     {
-        private static readonly string GLOBAL_SAVE_DIR = Path.Combine(Paths.ConfigPath, PluginInfo.PLUGIN_NAME, "Global");
-        private static readonly string LEVEL_SAVE_DIR = Path.Combine(Paths.ConfigPath, PluginInfo.PLUGIN_NAME, "Moons");
+        internal static readonly string GLOBAL_SAVE_DIR = Path.Combine(Paths.ConfigPath, PluginInfo.PLUGIN_NAME, "Global");
+        internal static readonly string LEVEL_SAVE_DIR = Path.Combine(Paths.ConfigPath, PluginInfo.PLUGIN_NAME, "Moons");
 
         public static Plugin INSTANCE { get; private set; }
 
         public static ManualLogSource LETHAL_LOGGER { get; private set; }
 
-        private GlobalConfiguration configuration;
+        internal GlobalConfiguration configuration;
 
         private Harmony _harmony;
-        private bool configInitialized = false;
+        internal bool configInitialized = false;
 
         private void Awake()
         {
@@ -56,6 +57,7 @@ namespace LethalQuantities
         {
             if (scene.name == "SampleSceneRelay" && !configInitialized)
             {
+                // The purpose for this segment below is to save the vanilla information, before any mods change any values
                 StartOfRound instance = StartOfRound.Instance;
                 GlobalInformation globalInfo = new GlobalInformation(GLOBAL_SAVE_DIR, LEVEL_SAVE_DIR);
 
@@ -97,6 +99,27 @@ namespace LethalQuantities
                 }));
 
                 globalInfo.allSelectableLevels.AddRange(Resources.FindObjectsOfTypeAll<SelectableLevel>());
+                Dictionary<GameObject, DirectionalSpawnableMapObject> uniqueMapObjects = new Dictionary<GameObject, DirectionalSpawnableMapObject>();
+                // Keep track of added objects, try to make sure we don't add the same one twice
+                HashSet<string> addedTraps = new HashSet<string>();
+                foreach (SelectableLevel level in globalInfo.allSelectableLevels)
+                {
+                    foreach (SpawnableMapObject spawnableObject in level.spawnableMapObjects)
+                    {
+                        GameObject prefab = spawnableObject.prefabToSpawn;
+                        if (!addedTraps.Contains(prefab.name))
+                        {
+                            // Only add the prefab if it looks like a real game object
+                            if (prefab.GetComponent<NetworkObject>() != null)
+                            {
+                                addedTraps.Add(prefab.name);
+                                uniqueMapObjects.TryAdd(prefab, new DirectionalSpawnableMapObject(prefab, spawnableObject.spawnFacingAwayFromWall));
+                            }
+                        }
+                    }
+                }
+                globalInfo.allSpawnableMapObjects.AddRange(uniqueMapObjects.Values);
+
                 globalInfo.allDungeonFlows.AddRange(Resources.FindObjectsOfTypeAll<DungeonFlow>());
                 globalInfo.sortData();
 
@@ -107,6 +130,8 @@ namespace LethalQuantities
 
                 LETHAL_LOGGER.LogInfo("Inserting missing dungeon flows into the RoundManager");
                 // Not very good, but for each dungeon flow, add it to the RoundManager if it isn't already there
+                // Only add dungeon flows whos default rarity is greater than 0, so if the user doesn't enable
+                // any custom flows, they won't get added
                 List<DungeonFlow> flows = new List<DungeonFlow>(RoundManager.Instance.dungeonFlowTypes);
                 foreach (DungeonFlow flow in globalInfo.allDungeonFlows)
                 {
@@ -120,7 +145,25 @@ namespace LethalQuantities
                         }
                     }
 
-                    if (index == -1)
+                    bool used = false;
+                    foreach (LevelConfiguration levelConfig in configuration.levelConfigs.Values)
+                    {
+                        // Check if the rarity for this flow is set in any moons, and if so, then add it to the array of dungeon flows
+                        if (levelConfig.dungeon.enabled.Value && levelConfig.dungeon.dungeonFlowConfigurations[flow.name].rarity.isUnset())
+                        {
+                            used = true;
+                            break;
+                        }
+                    }
+                    if (!used && configuration.dungeonConfiguration.enabled.Value)
+                    {
+                        if (!configuration.dungeonConfiguration.dungeonFlowConfigurations[flow.name].rarity.isDefault())
+                        {
+                            used = true;
+                        }
+                    }
+
+                    if (index == -1 && used)
                     {
                         // Not added, so add it now
                         LETHAL_LOGGER.LogWarning($"Did not find dungeon flow {flow.name} in the global list of dungeon flows. Adding it now.");

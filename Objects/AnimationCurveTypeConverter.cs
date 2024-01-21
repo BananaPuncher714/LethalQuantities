@@ -49,7 +49,7 @@ namespace LethalQuantities.Objects
                 Keyframe[] frames = curve.GetKeys();
                 if (frames.Length == 0)
                 {
-                    return "";
+                    return "0";
                 }
                 else if (frames.Length == 1)
                 {

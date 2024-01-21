@@ -114,6 +114,11 @@ namespace LethalQuantities.Objects
             return entry.Value.ToUpper() == GLOBAL_OPTION || entry.Value.IsNullOrWhiteSpace();
         }
 
+        public virtual bool isUnset()
+        {
+            return isDefault() || (isGlobal() && (parentEntry.isDefault() || (parentEntry is GlobalConfigEntry<T> && (parentEntry as GlobalConfigEntry<T>).isUnset())));
+        }
+
         public override bool Set(ref T value)
         {
             T current = Value(value);

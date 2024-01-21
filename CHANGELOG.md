@@ -1,4 +1,9 @@
 ## Changelog
+### 1.1.4
+- Fixed invalid global scrap config
+- Fixed incompatibilty with LethalLevelLoader configs by only adding dungeon flows if set in the dungeon generation config
+- Added trap config for interior map objects(turrets, landmines, etc)
+- Changed enemy and moon config names to be more user friendly(like Eyeless dogs instead of MouthDog, 220 Assurance instead of AssuranceLevel)
 ### 1.1.3
 - Fixed stuck screen when loading into certain moons
 - Fixed unknown scrap amount default value

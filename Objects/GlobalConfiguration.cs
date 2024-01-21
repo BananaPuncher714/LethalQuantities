@@ -180,6 +180,40 @@ namespace LethalQuantities.Objects
         }
     }
 
+    public class GlobalTrapConfiguration
+    {
+        public ConfigEntry<bool> enabled { get; set; }
+        public Dictionary<GameObject, GlobalSpawnableMapObjectConfiguration> traps { get; private set; } = new Dictionary<GameObject, GlobalSpawnableMapObjectConfiguration>();
+
+        public virtual bool isDefault()
+        {
+            foreach (GlobalSpawnableMapObjectConfiguration config in traps.Values)
+            {
+                if (!config.isDefault())
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+
+    public class GlobalSpawnableMapObjectConfiguration
+    {
+        public DirectionalSpawnableMapObject spawnableObj { get; private set; }
+        public CustomEntry<AnimationCurve> numberToSpawn { get; set; }
+
+        public GlobalSpawnableMapObjectConfiguration(DirectionalSpawnableMapObject obj)
+        {
+            spawnableObj = obj;
+        }
+
+        public virtual bool isDefault()
+        {
+            return numberToSpawn.isDefault();
+        }
+    }
+
     public class GlobalConfiguration
     {
         public static readonly string ENEMY_CFG_NAME = "Enemies.cfg";
@@ -187,6 +221,7 @@ namespace LethalQuantities.Objects
         public static readonly string OUTSIDE_ENEMY_CFG_NAME = "OutsideEnemies.cfg";
         public static readonly string SCRAP_CFG_NAME = "Scrap.cfg";
         public static readonly string DUNGEON_GENERATION_CFG_NAME = "DungeonGeneration.cfg";
+        public static readonly string TRAP_CFG_NAME = "Traps.cfg";
         public static readonly string FILES_CFG_NAME = "Configuration.cfg";
 
         public GlobalEnemyConfiguration<GlobalEnemyTypeConfiguration> enemyConfiguration { get; private set; }
@@ -194,6 +229,7 @@ namespace LethalQuantities.Objects
         public GlobalOutsideEnemyConfiguration<GlobalEnemyTypeConfiguration> outsideEnemyConfiguration { get; private set; }
         public GlobalScrapConfiguration scrapConfiguration { get; private set; }
         public GlobalDungeonGenerationConfiguration dungeonConfiguration { get; private set; }
+        public GlobalTrapConfiguration trapConfiguration { get; private set; }
 
         public Dictionary<string, LevelConfiguration> levelConfigs { get; } = new Dictionary<string, LevelConfiguration>();
 
@@ -204,6 +240,7 @@ namespace LethalQuantities.Objects
             outsideEnemyConfiguration = new GlobalOutsideEnemyConfiguration<GlobalEnemyTypeConfiguration>();
             scrapConfiguration = new GlobalScrapConfiguration();
             dungeonConfiguration = new GlobalDungeonGenerationConfiguration();
+            trapConfiguration = new GlobalTrapConfiguration();
 
             instantiateConfigs(globalInfo);
         }
@@ -216,6 +253,7 @@ namespace LethalQuantities.Objects
             instantiateEnemyConfigs(globalInfo, fileConfigFile);
             instantiateScrapConfigs(globalInfo, fileConfigFile);
             instantiateDungeonConfigs(globalInfo, fileConfigFile);
+            instantiateTrapConfigs(globalInfo, fileConfigFile);
             instantiateMoonConfig(globalInfo, fileConfigFile);
 
             fileConfigFile.SaveOnConfigSet = true;
@@ -445,6 +483,33 @@ namespace LethalQuantities.Objects
             {
                 dungeonFile.SaveOnConfigSet = true;
                 dungeonFile.Save();
+            }
+        }
+
+        private void instantiateTrapConfigs(GlobalInformation globalInfo, ConfigFile fileConfigFile)
+        {
+            trapConfiguration.enabled = fileConfigFile.Bind("Global", "TrapEnabled", false, "Whether or not to enable the global config for all trap generation");
+
+            ConfigFile trapFile = null;
+            if (trapConfiguration.enabled.Value)
+            {
+                trapFile = new ConfigFile(Path.Combine(globalInfo.configSaveDir, TRAP_CFG_NAME), true);
+                trapFile.SaveOnConfigSet = false;
+            }
+
+            foreach (DirectionalSpawnableMapObject mapObject in globalInfo.allSpawnableMapObjects)
+            {
+                GlobalSpawnableMapObjectConfiguration configuration = new GlobalSpawnableMapObjectConfiguration(mapObject);
+                string tablename = $"Trap.{mapObject.obj.name}";
+                configuration.numberToSpawn = BindEmptyOrNonDefaultable<AnimationCurve>(trapFile, tablename, "SpawnAmount", $"The amount of this trap to spawn. 'Y Axis is the amount to be spawned; X axis should be from 0 to 1 and is randomly picked from.'\nAlternate values: DEFAULT");
+
+                trapConfiguration.traps.Add(mapObject.obj, configuration);
+            }
+
+            if (trapConfiguration.enabled.Value)
+            {
+                trapFile.SaveOnConfigSet = true;
+                trapFile.Save();
             }
         }
 
