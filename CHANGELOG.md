@@ -1,4 +1,6 @@
 ## Changelog
+### 1.1.5
+- Fixed invalid global dungeon generation config preventing the level from loading
 ### 1.1.4
 - Fixed invalid global scrap config
 - Fixed incompatibilty with LethalLevelLoader configs by only adding dungeon flows if set in the dungeon generation config

@@ -18,9 +18,8 @@ namespace LethalQuantities.Patches
                 if (state.levelConfiguration.dungeon.enabled.Value)
                 {
                     string name = __instance.Generator.DungeonFlow.name;
-                    if (state.levelConfiguration.dungeon.dungeonFlowConfigurations.ContainsKey(name))
+                    if (state.levelConfiguration.dungeon.dungeonFlowConfigurations.TryGetValue(name, out DungeonFlowConfiguration config))
                     {
-                        DungeonFlowConfiguration config = state.levelConfiguration.dungeon.dungeonFlowConfigurations[name];
                         config.factorySizeMultiplier.Set(ref RoundManager.Instance.currentLevel.factorySizeMultiplier);
 
                         __instance.Generator.LengthMultiplier = RoundManager.Instance.mapSizeMultiplier * RoundManager.Instance.currentLevel.factorySizeMultiplier;
@@ -29,9 +28,8 @@ namespace LethalQuantities.Patches
                 else if (state.globalConfiguration.dungeonConfiguration.enabled.Value && !state.globalConfiguration.dungeonConfiguration.isDefault())
                 {
                     string name = __instance.Generator.DungeonFlow.name;
-                    if (state.globalConfiguration.dungeonConfiguration.dungeonFlowConfigurations.ContainsKey(name))
+                    if (state.globalConfiguration.dungeonConfiguration.dungeonFlowConfigurations.TryGetValue(name, out GlobalDungeonFlowConfiguration config))
                     {
-                        DungeonFlowConfiguration config = state.levelConfiguration.dungeon.dungeonFlowConfigurations[name];
                         config.factorySizeMultiplier.Set(ref RoundManager.Instance.currentLevel.factorySizeMultiplier);
 
                         __instance.Generator.LengthMultiplier = RoundManager.Instance.mapSizeMultiplier * RoundManager.Instance.currentLevel.factorySizeMultiplier;
