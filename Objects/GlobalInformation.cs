@@ -18,13 +18,32 @@ namespace LethalQuantities.Objects
         }
     }
 
+    public class GenericLevelInformation
+    {
+        public int price { get; set; }
+    }
+
     public class GlobalInformation
     {
+        public static readonly Comparison<string> STRING_SORTER = (a, b) =>
+        {
+            if (a.ToUpper() == b.ToUpper())
+            {
+                return a.CompareTo(b);
+            }
+            else
+            {
+                return a.ToUpper().CompareTo(b.ToUpper());
+            }
+        };
+        public static readonly Comparison<ScriptableObject> SCRIPTABLE_OBJECT_SORTER = (a, b) => STRING_SORTER(a.name, b.name);
+
         public List<EnemyType> allEnemyTypes { get; } = new List<EnemyType>();
         public List<Item> allItems { get; } = new List<Item>();
         public List<DungeonFlow> allDungeonFlows { get; } = new List<DungeonFlow>();
-        public List<SelectableLevel> allSelectableLevels { get; } = new List<SelectableLevel>();
+        public Dictionary<SelectableLevel, GenericLevelInformation> allSelectableLevels { get; } = new Dictionary<SelectableLevel, GenericLevelInformation>();
         public List<DirectionalSpawnableMapObject> allSpawnableMapObjects { get; } = new List<DirectionalSpawnableMapObject>();
+        public RoundManager manager;
 
         public string configSaveDir { get; private set; }
         public string moonSaveDir { get; private set; }
@@ -37,32 +56,10 @@ namespace LethalQuantities.Objects
 
         public void sortData()
         {
-            Comparison<string> semiAlphabeticalComparison = (a, b) =>
-            {
-                if (a.ToUpper() == b.ToUpper())
-                {
-                    return a.CompareTo(b);
-                }
-                else
-                {
-                    return a.ToUpper().CompareTo(b.ToUpper());
-                }
-            };
-            Comparison<ScriptableObject> sortOfAlphabeticalComparison = (a, b) =>
-            {
-                return semiAlphabeticalComparison(a.name, b.name);
-            };
-
-            Comparison<DirectionalSpawnableMapObject> anotherSortOfAlphabeticalComparison = (a, b) =>
-            {
-                return semiAlphabeticalComparison(a.obj.name, b.obj.name);
-            };
-
-            allEnemyTypes.Sort(sortOfAlphabeticalComparison);
-            allItems.Sort(sortOfAlphabeticalComparison);
-            allDungeonFlows.Sort(sortOfAlphabeticalComparison);
-            allSelectableLevels.Sort(sortOfAlphabeticalComparison);
-            allSpawnableMapObjects.Sort(anotherSortOfAlphabeticalComparison);
+            allEnemyTypes.Sort(SCRIPTABLE_OBJECT_SORTER);
+            allItems.Sort(SCRIPTABLE_OBJECT_SORTER);
+            allDungeonFlows.Sort(SCRIPTABLE_OBJECT_SORTER);
+            allSpawnableMapObjects.Sort((a, b) => STRING_SORTER(a.obj.name, b.obj.name));
         }
     }
 

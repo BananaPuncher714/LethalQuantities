@@ -12,7 +12,7 @@ namespace LethalQuantities.Patches
         [HarmonyPrefix]
         static void onInstantiatePrefix(GameObject original)
         {
-            RoundState state = getRoundState();
+            RoundState state = Plugin.getRoundState();
             if (state != null)
             {
                 if (state.modifiedEnemyTypes.Contains(original) && !original.activeSelf)
@@ -28,7 +28,7 @@ namespace LethalQuantities.Patches
         [HarmonyPostfix]
         static void onInstantiatePostfix(GameObject original)
         {
-            RoundState state = getRoundState();
+            RoundState state = Plugin.getRoundState();
             if (state != null)
             {
                 if (state.modifiedEnemyTypes.Contains(original) && original.activeSelf)
@@ -37,16 +37,6 @@ namespace LethalQuantities.Patches
                     original.SetActive(false);
                 }
             }
-        }
-
-        private static RoundState getRoundState()
-        {
-            GameObject obj = GameObject.Find("LevelModifier");
-            if (obj != null)
-            {
-                return obj.GetComponent<RoundState>();
-            }
-            return null;
         }
     }
 }

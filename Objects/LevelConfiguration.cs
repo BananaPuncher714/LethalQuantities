@@ -3,40 +3,87 @@ using DunGen.Graph;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEngine;
 
 namespace LethalQuantities.Objects
 {
-    public class OutsideEnemyConfiguration<T> where T: DaytimeEnemyTypeConfiguration
+    public interface IEnableConfigurable
     {
         public ConfigEntry<bool> enabled { get; set; }
-        public GlobalConfigEntry<int> maxPowerCount { get; set; }
-        public GlobalConfigEntry<AnimationCurve> spawnAmountCurve { get; set; }
-        public List<T> enemyTypes { get; } = new List<T>();
+    }
+
+    public interface IDefaultable
+    {
+        public bool isDefault();
+    }
+
+    public interface IValidatableConfiguration : IEnableConfigurable, IDefaultable
+    {
+        public virtual bool isValid()
+        {
+            return enabled.Value && !isDefault();
+        }
+    }
+
+    public class OutsideEnemyConfiguration<T> : IValidatableConfiguration where T: DaytimeEnemyTypeConfiguration
+    {
+        public ConfigEntry<bool> enabled { get; set; }
+        public CustomEntry<int> maxPowerCount { get; set; }
+        public CustomEntry<AnimationCurve> spawnAmountCurve { get; set; }
+        public Dictionary<EnemyType, T> enemyTypes { get; } = new Dictionary<EnemyType, T>();
+
+        public virtual bool isDefault()
+        {
+            return enemyTypes.isDefault() && maxPowerCount.isDefault() && spawnAmountCurve.isDefault();
+        }
     }
 
     public class EnemyConfiguration<T> : OutsideEnemyConfiguration<T> where T: DaytimeEnemyTypeConfiguration 
     {
-        public GlobalConfigEntry<float> spawnAmountRange { get; set; }
+        public CustomEntry<float> spawnAmountRange { get; set; }
+
+        public override bool isDefault()
+        {
+            return base.isDefault() && spawnAmountRange.isDefault();
+        }
     }
 
-    public class DaytimeEnemyTypeConfiguration
+    public class DaytimeEnemyTypeConfiguration : IDefaultable
     {
         public EnemyType type { get; protected set; }
         public DaytimeEnemyTypeConfiguration(EnemyType type)
         {
             this.type = type;
         }
-        public GlobalConfigEntry<int> rarity { get; set; }
-        public GlobalConfigEntry<int> maxEnemyCount { get; set; }
-        public GlobalConfigEntry<int> powerLevel { get; set; }
-        public GlobalConfigEntry<AnimationCurve> spawnCurve { get; set; }
-        public GlobalConfigEntry<float> stunTimeMultiplier { get; set; }
-        public GlobalConfigEntry<float> doorSpeedMultiplier { get; set; }
-        public GlobalConfigEntry<float> stunGameDifficultyMultiplier { get; set; }
-        public GlobalConfigEntry<bool> stunnable { get; set; }
-        public GlobalConfigEntry<bool> killable { get; set; }
-        public GlobalConfigEntry<int> enemyHp { get; set; }
+        public CustomEntry<int> rarity { get; set; }
+        public CustomEntry<int> maxEnemyCount { get; set; }
+        public CustomEntry<int> powerLevel { get; set; }
+        public CustomEntry<AnimationCurve> spawnCurve { get; set; }
+        public CustomEntry<float> stunTimeMultiplier { get; set; }
+        public CustomEntry<float> doorSpeedMultiplier { get; set; }
+        public CustomEntry<float> stunGameDifficultyMultiplier { get; set; }
+        public CustomEntry<bool> stunnable { get; set; }
+        public CustomEntry<bool> killable { get; set; }
+        public CustomEntry<int> enemyHp { get; set; }
+
+        public virtual bool isDefault()
+        {
+            return rarity.isDefault() && isEnemyTypeDefault();
+        }
+
+        public virtual bool isEnemyTypeDefault()
+        {
+            return maxEnemyCount.isDefault()
+                    && powerLevel.isDefault()
+                    && spawnCurve.isDefault()
+                    && stunTimeMultiplier.isDefault()
+                    && doorSpeedMultiplier.isDefault()
+                    && stunGameDifficultyMultiplier.isDefault()
+                    && stunnable.isDefault()
+                    && killable.isDefault()
+                    && enemyHp.isDefault();
+        }
     }
 
     public class EnemyTypeConfiguration : DaytimeEnemyTypeConfiguration
@@ -45,21 +92,31 @@ namespace LethalQuantities.Objects
         {
         }
 
-        public GlobalConfigEntry<AnimationCurve> spawnFalloffCurve { get; set; }
-        public GlobalConfigEntry<bool> useSpawnFalloff { get; set; }
+        public CustomEntry<AnimationCurve> spawnFalloffCurve { get; set; }
+        public CustomEntry<bool> useSpawnFalloff { get; set; }
+
+        public override bool isEnemyTypeDefault()
+        {
+            return base.isEnemyTypeDefault() && spawnFalloffCurve.isDefault() && useSpawnFalloff.isDefault();
+        }
     }
 
-    public class ScrapConfiguration
+    public class ScrapConfiguration : IValidatableConfiguration
     {
         public ConfigEntry<bool> enabled { get; set; }
-        public GlobalConfigEntry<int> minScrap { get; set; }
-        public GlobalConfigEntry<int> maxScrap { get; set; }
-        public GlobalConfigEntry<float> scrapValueMultiplier { get; set; }
-        public GlobalConfigEntry<float> scrapAmountMultiplier { get; set; }
-        public List<ItemConfiguration> scrapRarities { get; } = new List<ItemConfiguration>();
+        public CustomEntry<int> minScrap { get; set; }
+        public CustomEntry<int> maxScrap { get; set; }
+        public CustomEntry<float> scrapValueMultiplier { get; set; }
+        public CustomEntry<float> scrapAmountMultiplier { get; set; }
+        public Dictionary<Item, ItemConfiguration> items { get; } = new Dictionary<Item, ItemConfiguration>();
+
+        public virtual bool isDefault()
+        {
+            return items.isDefault() && minScrap.isDefault() && maxScrap.isDefault() && scrapAmountMultiplier.isDefault() && scrapValueMultiplier.isDefault();
+        }
     }
 
-    public class ItemConfiguration
+    public class ItemConfiguration : IDefaultable
     {
         public Item item { get; protected set; }
         internal ItemConfiguration(Item item)
@@ -67,47 +124,100 @@ namespace LethalQuantities.Objects
             this.item = item;
         }
 
-        public GlobalConfigEntry<int> rarity { get; set; }
-        public GlobalConfigEntry<bool> conductive { get; set; }
+        public CustomEntry<int> rarity { get; set; }
+        public CustomEntry<bool> conductive { get; set; }
+
+        public virtual bool isDefault()
+        {
+            // The weight of the item don't count towards being default or not since they are global options and not set per round
+            return rarity.isDefault() && conductive.isDefault();
+        }
     }
 
-    public class ScrapItemConfiguration : ItemConfiguration
+    public interface IScrappableConfiguration
+    {
+        public CustomEntry<int> minValue { get; set; }
+        public CustomEntry<int> maxValue { get; set; }
+    }
+
+    public class ScrapItemConfiguration : ItemConfiguration, IScrappableConfiguration, IDefaultable
     {
         internal ScrapItemConfiguration(Item item) : base(item)
         {
         }
 
-        public GlobalConfigEntry<int> maxValue { get; set; }
-        public GlobalConfigEntry<int> minValue { get; set; }
+        public CustomEntry<int> maxValue { get; set; }
+        public CustomEntry<int> minValue { get; set; }
+
+        public override bool isDefault()
+        {
+            return base.isDefault() && maxValue.isDefault() && minValue.isDefault();
+        }
     }
 
-    public class DungeonGenerationConfiguration
+    public class DungeonGenerationConfiguration : IValidatableConfiguration
     {
         public ConfigEntry<bool> enabled { get; set; }
-        public GlobalConfigEntry<float> mapSizeMultiplier { get; set; }
+        public CustomEntry<float> mapSizeMultiplier { get; set; }
         public Dictionary<string, DungeonFlowConfiguration> dungeonFlowConfigurations { get; private set; } = new Dictionary<string, DungeonFlowConfiguration>();
+
+        public virtual bool isDefault()
+        {
+            return dungeonFlowConfigurations.isDefault() && mapSizeMultiplier.isDefault();
+        }
     }
 
-    public class DungeonFlowConfiguration
+    public class DungeonFlowConfiguration : IDefaultable
     {
-        public GlobalConfigEntry<int> rarity { get; set; }
-        public GlobalConfigEntry<float> factorySizeMultiplier { get; set; }
+        public CustomEntry<int> rarity { get; set; }
+        public CustomEntry<float> factorySizeMultiplier { get; set; }
+
+        public virtual bool isDefault()
+        {
+            return rarity.isDefault();
+        }
     }
 
-    public class TrapConfiguration
+    public class TrapConfiguration : IValidatableConfiguration
     {
         public ConfigEntry<bool> enabled { get; set; }
         public Dictionary<GameObject, SpawnableMapObjectConfiguration> traps { get; private set; } = new Dictionary<GameObject, SpawnableMapObjectConfiguration>();
+
+        public virtual bool isDefault()
+        {
+            return traps.isDefault();
+        }
     }
 
-    public class SpawnableMapObjectConfiguration
+    public class SpawnableMapObjectConfiguration : IDefaultable
     {
         public DirectionalSpawnableMapObject spawnableObject { get; }
-        public GlobalConfigEntry<AnimationCurve> numberToSpawn { get; set; }
+        public CustomEntry<AnimationCurve> numberToSpawn { get; set; }
 
         public SpawnableMapObjectConfiguration(DirectionalSpawnableMapObject obj)
         {
             spawnableObject = obj;
+        }
+
+        public virtual bool isDefault()
+        {
+            return numberToSpawn.isDefault();
+        }
+    }
+    public class PriceConfiguration
+    {
+        public ConfigEntry<bool> enabled { get; set; }
+        public Dictionary<string, MoonPriceConfiguration> moons { get; } = new Dictionary<string, MoonPriceConfiguration>();
+    }
+
+    public class MoonPriceConfiguration
+    {
+        public string name { get; protected set; }
+        public CustomEntry<int> price { get; set; }
+
+        public MoonPriceConfiguration(string name)
+        {
+            this.name = name;
         }
     }
 
@@ -119,6 +229,7 @@ namespace LethalQuantities.Objects
         public ScrapConfiguration scrap { get; } = new ScrapConfiguration();
         public DungeonGenerationConfiguration dungeon { get; } = new DungeonGenerationConfiguration();
         public TrapConfiguration trap { get; } = new TrapConfiguration();
+        public PriceConfiguration price { get; } = new PriceConfiguration();
 
         public LevelConfiguration(LevelInformation levelInfo)
         {
@@ -131,6 +242,7 @@ namespace LethalQuantities.Objects
             instantiateScrapConfigs(levelInfo);
             instantiateDungeonConfigs(levelInfo);
             instantiateTrapConfigs(levelInfo);
+            instantiatePriceConfigs(levelInfo);
         }
 
         private void instantiateEnemyConfigs(LevelInformation levelInfo)
@@ -153,11 +265,11 @@ namespace LethalQuantities.Objects
                     Dictionary<EnemyType, int> enemySpawnRarities = convertToDictionary(level.Enemies);
                     foreach (EnemyType enemyType in levelInfo.globalInfo.allEnemyTypes)
                     {
+                        EnemyTypeConfiguration masterTypeConfig = masterConfig.enemyConfiguration.enemyTypes[enemyType];
                         EnemyTypeConfiguration typeConfiguration = new EnemyTypeConfiguration(enemyType);
                         string tablename = $"EnemyTypes.{enemyType.name}";
                         string friendlyName = enemyType.getFriendlyName();
 
-                        GlobalEnemyTypeConfiguration masterTypeConfig = masterConfig.enemyConfiguration.enemyTypeConfigurations[enemyType];
 
                         // Store rarity in a separate table for convenience
                         typeConfiguration.rarity = enemyConfig.BindGlobal(masterTypeConfig.rarity, "Rarity", enemyType.name, enemySpawnRarities.GetValueOrDefault(enemyType, 0), $"Rarity of a(n) {friendlyName} spawning relative to the total rarity of all other enemy types combined. A higher rarity increases the chance that the enemy will spawn.\nAlternate values: DEFAULT, GLOBAL");
@@ -174,7 +286,7 @@ namespace LethalQuantities.Objects
                         typeConfiguration.spawnFalloffCurve = enemyConfig.BindGlobal(masterTypeConfig.spawnFalloffCurve, tablename, "SpawnFalloffCurve", enemyType.numberSpawnedFalloff, $"The spawning curve multiplier of how less/more likely a(n) {friendlyName} is to spawn based on how many already have been spawned. (Key is number of {friendlyName}/10).\nAlternate values: DEFAULT, GLOBAL");
                         typeConfiguration.useSpawnFalloff = enemyConfig.BindGlobal(masterTypeConfig.useSpawnFalloff, tablename, "UseSpawnFalloff", enemyType.useNumberSpawnedFalloff, $"Whether or not to modify spawn rates based on how many existing {friendlyName} there are inside.\nAlternate values: DEFAULT, GLOBAL");
 
-                        enemies.enemyTypes.Add(typeConfiguration);
+                        enemies.enemyTypes.Add(enemyType, typeConfiguration);
                     }
                     enemyConfig.SaveOnConfigSet = true;
                     enemyConfig.Save();
@@ -197,9 +309,9 @@ namespace LethalQuantities.Objects
                     Dictionary<EnemyType, int> enemySpawnRarities = convertToDictionary(level.DaytimeEnemies);
                     foreach (EnemyType enemyType in levelInfo.globalInfo.allEnemyTypes)
                     {
+                        DaytimeEnemyTypeConfiguration masterTypeConfig = masterConfig.daytimeEnemyConfiguration.enemyTypes[enemyType];
                         DaytimeEnemyTypeConfiguration typeConfiguration = new DaytimeEnemyTypeConfiguration(enemyType);
 
-                        GlobalDaytimeEnemyTypeConfiguration masterTypeConfig = masterConfig.daytimeEnemyConfiguration.enemyTypeConfigurations[enemyType];
                         string friendlyName = enemyType.getFriendlyName();
                         typeConfiguration.rarity = enemyConfig.BindGlobal(masterTypeConfig.rarity, "Rarity", enemyType.name, enemySpawnRarities.GetValueOrDefault(enemyType, 0), $"Rarity of a(n) {friendlyName} relative to the total rarity of all other enemy types combined. A higher rarity increases the chance that the enemy will spawn.\nAlternate values: DEFAULT, GLOBAL");
 
@@ -217,7 +329,7 @@ namespace LethalQuantities.Objects
                         //typeConfiguration.spawnFalloffCurve = enemyConfig.BindGlobal(masterTypeConfig.spawnFalloffCurve, tablename, "SpawnFalloffCurve", enemyType.numberSpawnedFalloff, $"The spawning curve multiplier of how less/more likely a(n) {friendlyName} is to spawn based on how many have already been spawned. (Key is number of {enemyType.enemyName}/10). This does not work for daytime enemies. The default value is {{0}}");
                         //typeConfiguration.useSpawnFalloff = enemyConfig.BindGlobal(masterTypeConfig.useSpawnFalloff, tablename, "UseSpawnFalloff", enemyType.useNumberSpawnedFalloff, $"Whether or not to modify spawn rates based on how many existing {friendlyName} there are. The default value is {{0}}");
 
-                        daytimeEnemies.enemyTypes.Add(typeConfiguration);
+                        daytimeEnemies.enemyTypes.Add(enemyType, typeConfiguration);
                     }
                     enemyConfig.SaveOnConfigSet = true;
                     enemyConfig.Save();
@@ -241,9 +353,9 @@ namespace LethalQuantities.Objects
                     Dictionary<EnemyType, int> enemySpawnRarities = convertToDictionary(level.OutsideEnemies);
                     foreach (EnemyType enemyType in levelInfo.globalInfo.allEnemyTypes)
                     {
+                        EnemyTypeConfiguration masterTypeConfig = masterConfig.outsideEnemyConfiguration.enemyTypes[enemyType];
                         EnemyTypeConfiguration typeConfiguration = new EnemyTypeConfiguration(enemyType);
 
-                        GlobalEnemyTypeConfiguration masterTypeConfig = masterConfig.outsideEnemyConfiguration.enemyTypeConfigurations[enemyType];
                         string friendlyName = enemyType.getFriendlyName();
                         typeConfiguration.rarity = enemyConfig.BindGlobal(masterTypeConfig.rarity, "Rarity", enemyType.name, enemySpawnRarities.GetValueOrDefault(enemyType, 0), $"Rarity of a(n) {friendlyName} relative to the total rarity of all other enemy types combined. A higher rarity increases the chance that the enemy will spawn.\nAlternate values: DEFAULT, GLOBAL");
 
@@ -260,7 +372,7 @@ namespace LethalQuantities.Objects
                         typeConfiguration.spawnFalloffCurve = enemyConfig.BindGlobal(masterTypeConfig.spawnFalloffCurve, tablename, "SpawnFalloffCurve", enemyType.numberSpawnedFalloff, $"The spawning curve multiplier of how less/more likely a(n) {friendlyName} is to spawn based on how many have already been spawned. (Key is number of {friendlyName} allowed at once.\nAlternate values: DEFAULT, GLOBAL");
                         typeConfiguration.useSpawnFalloff = enemyConfig.BindGlobal(masterTypeConfig.useSpawnFalloff, tablename, "UseSpawnFalloff", enemyType.useNumberSpawnedFalloff, $"Whether or not to modify spawn rates based on how many existing {friendlyName} there are.\nAlternate values: DEFAULT, GLOBAL");
 
-                        outsideEnemies.enemyTypes.Add(typeConfiguration);
+                        outsideEnemies.enemyTypes.Add(enemyType, typeConfiguration);
                     }
                     enemyConfig.SaveOnConfigSet = true;
                     enemyConfig.Save();
@@ -279,24 +391,24 @@ namespace LethalQuantities.Objects
                     GlobalConfiguration masterConfig = levelInfo.masterConfig;
                     ConfigFile scrapConfig = new ConfigFile(Path.Combine(levelInfo.levelSaveDir, GlobalConfiguration.SCRAP_CFG_NAME), true);
                     scrapConfig.SaveOnConfigSet = false;
-                    scrap.minScrap = scrapConfig.BindGlobal(masterConfig.scrapConfiguration.minScrap, "General", "MinScrapCount", level.minScrap, "Minimum total number of scrap generated in the level\nAlternate values: DEFAULT, GLOBAL");
-                    scrap.maxScrap = scrapConfig.BindGlobal(masterConfig.scrapConfiguration.maxScrap, "General", "MaxScrapCount", level.maxScrap, "Maximum total number of scrap generated in the level\nAlternate values: DEFAULT, GLOBAL");
-                    scrap.scrapAmountMultiplier = scrapConfig.BindGlobal(masterConfig.scrapConfiguration.scrapAmountMultiplier, "General", "ScrapAmountMultiplier", RoundManager.Instance.scrapAmountMultiplier, "Modifier to the total amount of scrap generated in the level.\nAlternate values: DEFAULT, GLOBAL");
-                    scrap.scrapValueMultiplier = scrapConfig.BindGlobal(masterConfig.scrapConfiguration.scrapValueMultiplier, "General", "ScrapValueMultiplier", RoundManager.Instance.scrapValueMultiplier, "Modifier to the total value of scrap generated in the level.\nAlternate values: DEFAULT, GLOBAL");
+                    scrap.minScrap = scrapConfig.BindGlobal(masterConfig.scrapConfiguration.minScrap, "General", "MinScrapCount", level.minScrap, "Minimum total number of scrap generated in the level, inclusive.\nAlternate values: DEFAULT, GLOBAL");
+                    scrap.maxScrap = scrapConfig.BindGlobal(masterConfig.scrapConfiguration.maxScrap, "General", "MaxScrapCount", level.maxScrap, "Maximum total number of scrap generated in the level, exclusive.\nAlternate values: DEFAULT, GLOBAL");
+                    scrap.scrapAmountMultiplier = scrapConfig.BindGlobal(masterConfig.scrapConfiguration.scrapAmountMultiplier, "General", "ScrapAmountMultiplier", levelInfo.globalInfo.manager.scrapAmountMultiplier, "Modifier to the total amount of scrap generated in the level.\nAlternate values: DEFAULT, GLOBAL");
+                    scrap.scrapValueMultiplier = scrapConfig.BindGlobal(masterConfig.scrapConfiguration.scrapValueMultiplier, "General", "ScrapValueMultiplier", levelInfo.globalInfo.manager.scrapValueMultiplier, "Modifier to the total value of scrap generated in the level.\nAlternate values: DEFAULT, GLOBAL");
                     Dictionary<Item, int> itemSpawnRarities = convertToDictionary(level.spawnableScrap);
                     foreach (Item itemType in levelInfo.globalInfo.allItems)
                     {
                         ItemConfiguration configuration;
                         string tablename = $"ItemType.{itemType.name}";
-                        GlobalItemConfiguration mainItemConfig = masterConfig.scrapConfiguration.itemConfigurations[itemType];
-                        if (mainItemConfig is GlobalItemScrapConfiguration)
+                        ItemConfiguration mainItemConfig = masterConfig.scrapConfiguration.items[itemType];
+                        if (mainItemConfig is IScrappableConfiguration)
                         {
-                            GlobalItemScrapConfiguration masterTypeConfig = mainItemConfig as GlobalItemScrapConfiguration;
+                            IScrappableConfiguration masterTypeConfig = mainItemConfig as IScrappableConfiguration;
                             ScrapItemConfiguration itemConfiguration = new ScrapItemConfiguration(itemType);
                             configuration = itemConfiguration;
 
-                            itemConfiguration.minValue = scrapConfig.BindGlobal(masterTypeConfig.minValue, tablename, "MinValue", Math.Min(itemType.minValue, itemType.maxValue), $"Minimum value of a {itemType.itemName}.\nAlternate values: DEFAULT, GLOBAL");
-                            itemConfiguration.maxValue = scrapConfig.BindGlobal(masterTypeConfig.maxValue, tablename, "MaxValue", Math.Max(itemType.minValue, itemType.maxValue), $"Maximum value of a {itemType.itemName}.\nAlternate values: DEFAULT, GLOBAL");
+                            itemConfiguration.minValue = scrapConfig.BindGlobal(masterTypeConfig.minValue, tablename, "MinValue", Math.Min(itemType.minValue, itemType.maxValue), $"Minimum value of a {itemType.itemName}, inclusive.\nAlternate values: DEFAULT, GLOBAL");
+                            itemConfiguration.maxValue = scrapConfig.BindGlobal(masterTypeConfig.maxValue, tablename, "MaxValue", Math.Max(itemType.minValue, itemType.maxValue), $"Maximum value of a {itemType.itemName}, exclusive.\nAlternate values: DEFAULT, GLOBAL");
                         }
                         else
                         {
@@ -306,7 +418,7 @@ namespace LethalQuantities.Objects
                         configuration.rarity = scrapConfig.BindGlobal(mainItemConfig.rarity, "Rarity", itemType.name, itemSpawnRarities.GetValueOrDefault(itemType, 0), $"Rarity of a(n) {itemType.itemName} relative to the total rarity of all other item types combined. A higher rarity increases the chance that the item will spawn.\nAlternate values: DEFAULT, GLOBAL");
 
                         configuration.conductive = scrapConfig.BindGlobal(mainItemConfig.conductive, tablename, "Conductive", itemType.isConductiveMetal, $"Whether or not {itemType.itemName} is conductive(can be struck by lightning).\nAlternate values: DEFAULT, GLOBAL");
-                        scrap.scrapRarities.Add(configuration);
+                        scrap.items.Add(itemType, configuration);
                     }
                     scrapConfig.SaveOnConfigSet = true;
                     scrapConfig.Save();
@@ -324,16 +436,16 @@ namespace LethalQuantities.Objects
                 GlobalConfiguration masterConfig = levelInfo.masterConfig;
                 ConfigFile dungeonConfig = new ConfigFile(Path.Combine(levelInfo.levelSaveDir, GlobalConfiguration.DUNGEON_GENERATION_CFG_NAME), true);
                 dungeonConfig.SaveOnConfigSet = false;
-                dungeon.mapSizeMultiplier = dungeonConfig.BindGlobal(masterConfig.dungeonConfiguration.mapSizeMultiplier, "General", "MapSizeMultiplier", RoundManager.Instance.mapSizeMultiplier, "Size modifier of the dungeon generated.\nAlternate values: DEFAULT, GLOBAL");
+                dungeon.mapSizeMultiplier = dungeonConfig.BindGlobal(masterConfig.dungeonConfiguration.mapSizeMultiplier, "General", "MapSizeMultiplier", levelInfo.globalInfo.manager.mapSizeMultiplier, "Size modifier of the dungeon generated.\nAlternate values: DEFAULT, GLOBAL");
                 Dictionary<DungeonFlow, int> flowRarities = new Dictionary<DungeonFlow, int>();
                 foreach (IntWithRarity flow in level.dungeonFlowTypes)
                 {
-                    flowRarities.TryAdd(RoundManager.Instance.dungeonFlowTypes[flow.id], flow.rarity);
+                    flowRarities.TryAdd(levelInfo.globalInfo.manager.dungeonFlowTypes[flow.id], flow.rarity);
                 }
 
                 foreach (DungeonFlow flow in levelInfo.globalInfo.allDungeonFlows)
                 {
-                    GlobalDungeonFlowConfiguration masterFlowConfig = masterConfig.dungeonConfiguration.dungeonFlowConfigurations[flow.name];
+                    DungeonFlowConfiguration masterFlowConfig = masterConfig.dungeonConfiguration.dungeonFlowConfigurations[flow.name];
                     DungeonFlowConfiguration dungeonFlowConfig = new DungeonFlowConfiguration();
 
                     dungeonFlowConfig.rarity = dungeonConfig.BindGlobal(masterFlowConfig.rarity, "Rarity", flow.name, flowRarities.GetValueOrDefault(flow, 0), $"Rarity of creating a dungeon using {flow.name} as the generator.\nAlternate values: DEFAULT, GLOBAL");
@@ -365,7 +477,7 @@ namespace LethalQuantities.Objects
                 }
                 foreach (DirectionalSpawnableMapObject mapObject in levelInfo.globalInfo.allSpawnableMapObjects)
                 {
-                    GlobalSpawnableMapObjectConfiguration masterTrapConfig = masterConfig.trapConfiguration.traps[mapObject.obj];
+                    SpawnableMapObjectConfiguration masterTrapConfig = masterConfig.trapConfiguration.traps[mapObject.obj];
                     SpawnableMapObjectConfiguration configuration = new SpawnableMapObjectConfiguration(mapObject);
 
                     string tablename = $"Trap.{mapObject.obj.name}";
@@ -376,8 +488,42 @@ namespace LethalQuantities.Objects
                 trapConfig.SaveOnConfigSet = true;
                 trapConfig.Save();
             }
-
         }
+        private void instantiatePriceConfigs(LevelInformation levelInfo)
+        {
+            SelectableLevel level = levelInfo.level;
+            price.enabled = levelInfo.mainConfigFile.Bind($"Level.{level.name}", "PriceEnabled", false, $"Enables/disables unique moon pricing when on {level.PlanetName}");
+
+            if (price.enabled.Value)
+            {
+                GlobalConfiguration masterConfig = levelInfo.masterConfig;
+                ConfigFile priceConfig = new ConfigFile(Path.Combine(levelInfo.levelSaveDir, GlobalConfiguration.PRICES_CFG_NAME), true);
+                priceConfig.SaveOnConfigSet = false;
+
+                List<SelectableLevel> levelList = levelInfo.globalInfo.allSelectableLevels.Keys.ToList();
+                levelList.Sort(GlobalInformation.SCRIPTABLE_OBJECT_SORTER);
+                foreach (SelectableLevel moon in levelList)
+                {
+                    MoonPriceConfiguration config = new MoonPriceConfiguration(level.name);
+                    MoonPriceConfiguration masterPriceConfig = masterConfig.priceConfiguration.moons[moon.name];
+                    string tablename = $"Level.{moon.name}";
+
+                    string priceDescription = $"The amount of credits it costs to travel to ${moon.PlanetName} from {level.PlanetName}";
+                    if (moon == level)
+                    {
+                        priceDescription = $"The amount of credits it costs to travel to {moon.PlanetName}. Does not do anything except display the price when they try to travel.\nAlternate values: DEFAULT, GLOBAL";
+                    }
+
+                    config.price = priceConfig.BindGlobal(masterPriceConfig.price, tablename, "TravelCost", masterPriceConfig.price.DefaultValue(), priceDescription);
+
+                    price.moons.Add(moon.name, config);
+                }
+
+                priceConfig.SaveOnConfigSet = true;
+                priceConfig.Save();
+            }
+        }
+
         private static Dictionary<EnemyType, int> convertToDictionary(List<SpawnableEnemyWithRarity> enemies)
         {
             Dictionary<EnemyType, int> enemySpawnRarities = new Dictionary<EnemyType, int>();
@@ -402,6 +548,33 @@ namespace LethalQuantities.Objects
                 }
             }
             return (itemSpawnRarities);
+        }
+    }
+
+    public static class IEnumerableDefaultableExtension
+    {
+        public static bool isDefault<T>(this IEnumerable<T> enumerable) where T : IDefaultable
+        {
+            foreach (T def in enumerable)
+            {
+                if (!def.isDefault())
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public static bool isDefault<K, V>(this IEnumerable<KeyValuePair<K, V>> enumerable) where V : IDefaultable
+        {
+            foreach (var def in enumerable)
+            {
+                if (!def.Value.isDefault())
+                {
+                    return false;
+                }
+            }
+            return true;
         }
     }
 }

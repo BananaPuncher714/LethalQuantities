@@ -1,217 +1,44 @@
 ﻿using BepInEx;
 using BepInEx.Configuration;
 using DunGen.Graph;
+using HarmonyLib;
 using LethalQuantities.Patches;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEngine;
 
 namespace LethalQuantities.Objects
 {
-    public class GlobalOutsideEnemyConfiguration<T> where T: GlobalDaytimeEnemyTypeConfiguration
+    public interface IWeightConfigurable
     {
-        public ConfigEntry<bool> enabled { get; set; }
-        public CustomEntry<int> maxPowerCount { get; set; }
-        public CustomEntry<AnimationCurve> spawnAmountCurve { get; set; }
-        public Dictionary<EnemyType, T> enemyTypeConfigurations { get; private set; } = new Dictionary<EnemyType, T>();
-
-        public virtual bool isDefault()
-        {
-            foreach (T config in enemyTypeConfigurations.Values)
-            {
-                if (!config.isDefault())
-                {
-                    return false;
-                }
-            }
-            return maxPowerCount.isDefault() && spawnAmountCurve.isDefault();
-        }
+        public CustomEntry<float> weight { get; set; }
     }
 
-    public class GlobalEnemyConfiguration<T> : GlobalOutsideEnemyConfiguration<T> where T : GlobalDaytimeEnemyTypeConfiguration
-    {
-        public CustomEntry<float> spawnAmountRange { get; set; }
-
-        public override bool isDefault()
-        {
-            return base.isDefault() && spawnAmountRange.isDefault();
-        }
-    }
-
-    public class GlobalDaytimeEnemyTypeConfiguration
-    {
-        public EnemyType type { get; protected set; }
-        public GlobalDaytimeEnemyTypeConfiguration(EnemyType type)
-        {
-            this.type = type;
-        }
-
-        public CustomEntry<int> rarity { get; set; }
-        public CustomEntry<int> maxEnemyCount { get; set; }
-        public CustomEntry<int> powerLevel { get; set; }
-        public CustomEntry<AnimationCurve> spawnCurve { get; set; }
-        public CustomEntry<float> stunTimeMultiplier { get; set; }
-        public CustomEntry<float> doorSpeedMultiplier { get; set; }
-        public CustomEntry<float> stunGameDifficultyMultiplier { get; set; }
-        public CustomEntry<bool> stunnable { get; set; }
-        public CustomEntry<bool> killable { get; set; }
-        public CustomEntry<int> enemyHp { get; set; }
-
-        public virtual bool isDefault()
-        {
-            return rarity.isDefault()
-                    && isEnemyTypeDefault();
-        }
-
-        public virtual bool isEnemyTypeDefault()
-        {
-            return maxEnemyCount.isDefault()
-                    && powerLevel.isDefault()
-                    && spawnCurve.isDefault()
-                    && stunTimeMultiplier.isDefault()
-                    && doorSpeedMultiplier.isDefault()
-                    && stunGameDifficultyMultiplier.isDefault()
-                    && stunnable.isDefault()
-                    && killable.isDefault()
-                    && enemyHp.isDefault();
-        }
-    }
-
-    public class GlobalEnemyTypeConfiguration : GlobalDaytimeEnemyTypeConfiguration
-    {
-        public GlobalEnemyTypeConfiguration(EnemyType type) : base(type)
-        {
-        }
-
-        public CustomEntry<AnimationCurve> spawnFalloffCurve { get; set; }
-        public CustomEntry<bool> useSpawnFalloff { get; set; }
-
-        public override bool isEnemyTypeDefault()
-        {
-            return base.isEnemyTypeDefault() && spawnFalloffCurve.isDefault() && useSpawnFalloff.isDefault();
-        }
-    }
-
-    public class GlobalScrapConfiguration
-    {
-        public ConfigEntry<bool> enabled { get; set; }
-        public CustomEntry<int> minScrap { get; set; }
-        public CustomEntry<int> maxScrap { get; set; }
-        public CustomEntry<float> scrapAmountMultiplier { get; set; }
-        public CustomEntry<float> scrapValueMultiplier { get; set; }
-        public Dictionary<Item, GlobalItemConfiguration> itemConfigurations { get; } = new Dictionary<Item, GlobalItemConfiguration>();
-
-        public virtual bool isDefault()
-        {
-            foreach (GlobalItemConfiguration config in itemConfigurations.Values)
-            {
-                if (!config.isDefault())
-                {
-                    return false;
-                }
-            }
-            return minScrap.isDefault() && maxScrap.isDefault() && scrapAmountMultiplier.isDefault() && scrapValueMultiplier.isDefault();
-        }
-    }
-
-    public class GlobalItemScrapConfiguration : GlobalItemConfiguration
+    public class GlobalItemScrapConfiguration : GlobalItemConfiguration, IScrappableConfiguration
     {
         public GlobalItemScrapConfiguration(Item item) : base(item)
         {
         }
 
-        public CustomEntry<int> maxValue { get; set; }
         public CustomEntry<int> minValue { get; set; }
+        public CustomEntry<int> maxValue { get; set; }
 
         public override bool isDefault()
         {
-            return base.isDefault() && maxValue.isDefault() && minValue.isDefault();
+            return base.isDefault() && minValue.isDefault() && maxValue.isDefault();
         }
     }
 
-    public class GlobalItemConfiguration
+    public class GlobalItemConfiguration : ItemConfiguration, IWeightConfigurable
     {
-        public Item item { get; protected set; }
-
-        public GlobalItemConfiguration(Item item)
+        public GlobalItemConfiguration(Item item) : base(item)
         {
             this.item = item;
         }
 
-        public CustomEntry<int> rarity { get; set; }
         public CustomEntry<float> weight { get; set; }
-        public CustomEntry<bool> conductive { get; set; }
-
-        public virtual bool isDefault()
-        {
-            // The weight and conductivity of the item don't count towards being default or not since they are global options and not set per round
-            return rarity.isDefault();
-        }
-    }
-
-    public class GlobalDungeonGenerationConfiguration
-    {
-        public ConfigEntry<bool> enabled { get; set; }
-        public CustomEntry<float> mapSizeMultiplier { get; set; }
-        public Dictionary<string, GlobalDungeonFlowConfiguration> dungeonFlowConfigurations { get; private set; } = new Dictionary<string, GlobalDungeonFlowConfiguration>();
-
-        public virtual bool isDefault()
-        {
-            foreach (GlobalDungeonFlowConfiguration config in dungeonFlowConfigurations.Values)
-            {
-                if (!config.isDefault())
-                {
-                    return false;
-                }
-            }
-            return mapSizeMultiplier.isDefault();
-        }
-    }
-
-    public class GlobalDungeonFlowConfiguration
-    {
-        public CustomEntry<int> rarity { get; set; }
-        public CustomEntry<float> factorySizeMultiplier { get; set; }
-
-        public virtual bool isDefault()
-        {
-            return rarity.isDefault();
-        }
-    }
-
-    public class GlobalTrapConfiguration
-    {
-        public ConfigEntry<bool> enabled { get; set; }
-        public Dictionary<GameObject, GlobalSpawnableMapObjectConfiguration> traps { get; private set; } = new Dictionary<GameObject, GlobalSpawnableMapObjectConfiguration>();
-
-        public virtual bool isDefault()
-        {
-            foreach (GlobalSpawnableMapObjectConfiguration config in traps.Values)
-            {
-                if (!config.isDefault())
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-    }
-
-    public class GlobalSpawnableMapObjectConfiguration
-    {
-        public DirectionalSpawnableMapObject spawnableObj { get; private set; }
-        public CustomEntry<AnimationCurve> numberToSpawn { get; set; }
-
-        public GlobalSpawnableMapObjectConfiguration(DirectionalSpawnableMapObject obj)
-        {
-            spawnableObj = obj;
-        }
-
-        public virtual bool isDefault()
-        {
-            return numberToSpawn.isDefault();
-        }
     }
 
     public class GlobalConfiguration
@@ -222,26 +49,20 @@ namespace LethalQuantities.Objects
         public static readonly string SCRAP_CFG_NAME = "Scrap.cfg";
         public static readonly string DUNGEON_GENERATION_CFG_NAME = "DungeonGeneration.cfg";
         public static readonly string TRAP_CFG_NAME = "Traps.cfg";
+        public static readonly string PRICES_CFG_NAME = "Prices.cfg";
         public static readonly string FILES_CFG_NAME = "Configuration.cfg";
 
-        public GlobalEnemyConfiguration<GlobalEnemyTypeConfiguration> enemyConfiguration { get; private set; }
-        public GlobalEnemyConfiguration<GlobalDaytimeEnemyTypeConfiguration> daytimeEnemyConfiguration { get; private set; }
-        public GlobalOutsideEnemyConfiguration<GlobalEnemyTypeConfiguration> outsideEnemyConfiguration { get; private set; }
-        public GlobalScrapConfiguration scrapConfiguration { get; private set; }
-        public GlobalDungeonGenerationConfiguration dungeonConfiguration { get; private set; }
-        public GlobalTrapConfiguration trapConfiguration { get; private set; }
-
+        public EnemyConfiguration<EnemyTypeConfiguration> enemyConfiguration { get; private set; } = new EnemyConfiguration<EnemyTypeConfiguration>();
+        public EnemyConfiguration<DaytimeEnemyTypeConfiguration> daytimeEnemyConfiguration { get; private set; } = new EnemyConfiguration<DaytimeEnemyTypeConfiguration>();
+        public OutsideEnemyConfiguration<EnemyTypeConfiguration> outsideEnemyConfiguration { get; private set; } = new OutsideEnemyConfiguration<EnemyTypeConfiguration>();
+        public ScrapConfiguration scrapConfiguration { get; private set; } = new ScrapConfiguration();
+        public DungeonGenerationConfiguration dungeonConfiguration { get; private set; } = new DungeonGenerationConfiguration();
+        public TrapConfiguration trapConfiguration { get; private set; } = new TrapConfiguration();
+        public PriceConfiguration priceConfiguration { get; private set; } = new PriceConfiguration();
         public Dictionary<string, LevelConfiguration> levelConfigs { get; } = new Dictionary<string, LevelConfiguration>();
 
         public GlobalConfiguration(GlobalInformation globalInfo)
         {
-            enemyConfiguration = new GlobalEnemyConfiguration<GlobalEnemyTypeConfiguration>();
-            daytimeEnemyConfiguration = new GlobalEnemyConfiguration<GlobalDaytimeEnemyTypeConfiguration>();
-            outsideEnemyConfiguration = new GlobalOutsideEnemyConfiguration<GlobalEnemyTypeConfiguration>();
-            scrapConfiguration = new GlobalScrapConfiguration();
-            dungeonConfiguration = new GlobalDungeonGenerationConfiguration();
-            trapConfiguration = new GlobalTrapConfiguration();
-
             instantiateConfigs(globalInfo);
         }
 
@@ -254,6 +75,7 @@ namespace LethalQuantities.Objects
             instantiateScrapConfigs(globalInfo, fileConfigFile);
             instantiateDungeonConfigs(globalInfo, fileConfigFile);
             instantiateTrapConfigs(globalInfo, fileConfigFile);
+            instantiatePriceConfigs(globalInfo, fileConfigFile);
             instantiateMoonConfig(globalInfo, fileConfigFile);
 
             fileConfigFile.SaveOnConfigSet = true;
@@ -263,7 +85,7 @@ namespace LethalQuantities.Objects
         private void instantiateMoonConfig(GlobalInformation globalInfo, ConfigFile fileConfigFile)
         {
             // Config file for enabling/disabling individual moon config files
-            foreach (SelectableLevel level in globalInfo.allSelectableLevels)
+            foreach (SelectableLevel level in globalInfo.allSelectableLevels.Keys)
             {
                 string levelSaveDir = Path.Combine(globalInfo.moonSaveDir, level.name);
                 LevelInformation levelInfo = new LevelInformation(this, globalInfo, level, levelSaveDir, fileConfigFile);
@@ -291,7 +113,7 @@ namespace LethalQuantities.Objects
 
                 foreach (EnemyType enemyType in globalInfo.allEnemyTypes)
                 {
-                    GlobalEnemyTypeConfiguration typeConfiguration = new GlobalEnemyTypeConfiguration(enemyType);
+                    EnemyTypeConfiguration typeConfiguration = new EnemyTypeConfiguration(enemyType);
 
                     // Use a separate table for rarity
                     typeConfiguration.rarity = BindEmptyOrNonDefaultable<int>(enemyConfig, "Rarity", enemyType.name, $"Rarity of a(n) {enemyType.enemyName} spawning relative to the total rarity of all other enemy types combined. A higher rarity increases the chance that the enemy will spawn.\nLeave blank or DEFAULT to use the moon's default rarity.");
@@ -309,7 +131,7 @@ namespace LethalQuantities.Objects
                     typeConfiguration.spawnFalloffCurve = BindEmptyOrDefaultable(enemyConfig, tablename, "SpawnFalloffCurve", enemyType.numberSpawnedFalloff, $"The spawning curve multiplier of how less/more likely a(n) {enemyType.enemyName} is to spawn based on how many already have been spawned. (Key is number of {enemyType.enemyName}s/10).\nAlternate values: DEFAULT");
                     typeConfiguration.useSpawnFalloff = BindEmptyOrDefaultable(enemyConfig, tablename, "UseSpawnFalloff", enemyType.useNumberSpawnedFalloff, $"Whether or not to modify spawn rates based on how many existing {enemyType.enemyName}s there are inside.\nAlternate values: DEFAULT");
 
-                    enemyConfiguration.enemyTypeConfigurations.Add(enemyType, typeConfiguration);
+                    enemyConfiguration.enemyTypes.Add(enemyType, typeConfiguration);
                 }
 
                 if (enemyConfiguration.enabled.Value)
@@ -336,7 +158,7 @@ namespace LethalQuantities.Objects
 
                 foreach (EnemyType enemyType in globalInfo.allEnemyTypes)
                 {
-                    GlobalDaytimeEnemyTypeConfiguration typeConfiguration = new GlobalDaytimeEnemyTypeConfiguration(enemyType);
+                    DaytimeEnemyTypeConfiguration typeConfiguration = new DaytimeEnemyTypeConfiguration(enemyType);
                     string tablename = $"EnemyTypes.{enemyType.name}";
 
                     // Use a separate table for rarity
@@ -355,7 +177,7 @@ namespace LethalQuantities.Objects
                     //typeConfiguration.spawnFalloffCurve = BindEmptyOrDefaultable(enemyConfig, tablename, "SpawnFalloffCurve", enemyType.numberSpawnedFalloff, $"The spawning curve multiplier of how less/more likely a(n) {enemyType.enemyName} is to spawn based on how many have already been spawned. (Key is number of {enemyType.enemyName}s/10). This does not work for daytime enemies.");
                     //typeConfiguration.useSpawnFalloff = BindEmptyOrDefaultable(enemyConfig, tablename, "UseSpawnFalloff", enemyType.useNumberSpawnedFalloff, $"Whether or not to modify spawn rates based on how many existing {enemyType.enemyName}s there are.");
 
-                    daytimeEnemyConfiguration.enemyTypeConfigurations.Add(enemyType, typeConfiguration);
+                    daytimeEnemyConfiguration.enemyTypes.Add(enemyType, typeConfiguration);
                 }
 
                 if (daytimeEnemyConfiguration.enabled.Value)
@@ -381,7 +203,7 @@ namespace LethalQuantities.Objects
 
                 foreach (EnemyType enemyType in globalInfo.allEnemyTypes)
                 {
-                    GlobalEnemyTypeConfiguration typeConfiguration = new GlobalEnemyTypeConfiguration(enemyType);
+                    EnemyTypeConfiguration typeConfiguration = new EnemyTypeConfiguration(enemyType);
                     string tablename = $"EnemyTypes.{enemyType.name}";
 
                     // Use a separate table for rarity
@@ -399,7 +221,7 @@ namespace LethalQuantities.Objects
                     typeConfiguration.spawnFalloffCurve = BindEmptyOrDefaultable(enemyConfig, tablename, "SpawnFalloffCurve", enemyType.numberSpawnedFalloff, $"The spawning curve multiplier of how less/more likely a(n) {enemyType.enemyName} is to spawn based on how many have already been spawned. (Key is number of {enemyType.enemyName}s/10)\nAlternate values: DEFAULT");
                     typeConfiguration.useSpawnFalloff = BindEmptyOrDefaultable(enemyConfig, tablename, "UseSpawnFalloff", enemyType.useNumberSpawnedFalloff, $"Whether or not to modify spawn rates based on how many existing {enemyType.enemyName}s there are\nAlternate values: DEFAULT");
 
-                    outsideEnemyConfiguration.enemyTypeConfigurations.Add(enemyType, typeConfiguration);
+                    outsideEnemyConfiguration.enemyTypes.Add(enemyType, typeConfiguration);
                 }
 
                 if (outsideEnemyConfiguration.enabled.Value)
@@ -421,10 +243,10 @@ namespace LethalQuantities.Objects
                 scrapConfig.SaveOnConfigSet = false;
             }
 
-            scrapConfiguration.minScrap = BindEmptyOrNonDefaultable<int>(scrapConfig, "General", "MinScrapCount", "Minimum total number of scrap generated in the level.\nLeave blank or DEFAULT to use the moon's default min scrap count.");
-            scrapConfiguration.maxScrap = BindEmptyOrNonDefaultable<int>(scrapConfig, "General", "MaxScrapCount", "Maximum total number of scrap generated in the level.\nLeave blank or DEFAULT to use the moon's default max scrap count.");
-            scrapConfiguration.scrapAmountMultiplier = BindEmptyOrDefaultable(scrapConfig, "General", "ScrapAmountMultiplier", RoundManager.Instance.scrapAmountMultiplier, "Modifier to the total amount of scrap generated in the level.\nAlternate values: DEFAULT");
-            scrapConfiguration.scrapValueMultiplier = BindEmptyOrDefaultable(scrapConfig, "General", "ScrapValueMultiplier", RoundManager.Instance.scrapValueMultiplier, "Modifier to the total value of scrap generated in the level.\nAlternate values: DEFAULT");
+            scrapConfiguration.minScrap = BindEmptyOrNonDefaultable<int>(scrapConfig, "General", "MinScrapCount", "Minimum total number of scrap generated in the level, inclusive.\nLeave blank or DEFAULT to use the moon's default min scrap count.");
+            scrapConfiguration.maxScrap = BindEmptyOrNonDefaultable<int>(scrapConfig, "General", "MaxScrapCount", "Maximum total number of scrap generated in the level, exclusive.\nLeave blank or DEFAULT to use the moon's default max scrap count.");
+            scrapConfiguration.scrapAmountMultiplier = BindEmptyOrDefaultable(scrapConfig, "General", "ScrapAmountMultiplier", globalInfo.manager.scrapAmountMultiplier, "Modifier to the total amount of scrap generated in the level.\nAlternate values: DEFAULT");
+            scrapConfiguration.scrapValueMultiplier = BindEmptyOrDefaultable(scrapConfig, "General", "ScrapValueMultiplier", globalInfo.manager.scrapValueMultiplier, "Modifier to the total value of scrap generated in the level.\nAlternate values: DEFAULT");
             foreach (Item itemType in globalInfo.allItems)
             {
                 GlobalItemConfiguration itemConfiguration;
@@ -434,8 +256,8 @@ namespace LethalQuantities.Objects
                     GlobalItemScrapConfiguration configuration = new GlobalItemScrapConfiguration(itemType);
                     itemConfiguration = configuration;
 
-                    configuration.minValue = BindEmptyOrDefaultable(scrapConfig, tablename, "MinValue", itemType.minValue, $"Minimum value of a {itemType.itemName}\nAlternate values: DEFAULT");
-                    configuration.maxValue = BindEmptyOrDefaultable(scrapConfig, tablename, "MaxValue", itemType.maxValue, $"Maximum value of a {itemType.itemName}\nAlternate values: DEFAULT");
+                    configuration.minValue = BindEmptyOrDefaultable(scrapConfig, tablename, "MinValue", Math.Min(itemType.minValue, itemType.maxValue), $"Minimum value of a {itemType.itemName}, inclusive.\nAlternate values: DEFAULT");
+                    configuration.maxValue = BindEmptyOrDefaultable(scrapConfig, tablename, "MaxValue", Math.Max(itemType.minValue, itemType.maxValue), $"Maximum value of a {itemType.itemName}, exclusive.\nAlternate values: DEFAULT");
                 } else
                 {
                     itemConfiguration = new GlobalItemConfiguration(itemType);
@@ -446,7 +268,7 @@ namespace LethalQuantities.Objects
                 itemConfiguration.weight = BindEmptyOrDefaultable(scrapConfig, tablename, "Weight", itemType.weight, $"The weight of a(n) {itemType.itemName}. The in-game weight can be found by the formula: pounds = (value - 1) * 100. For example, a value of 1.18 means the object weighs 18lbs. This option can only be set in the global config.\nAlternate values: DEFAULT");
                 itemConfiguration.conductive = BindEmptyOrDefaultable(scrapConfig, tablename, "Conductive", itemType.isConductiveMetal, $"Whether or not {itemType.itemName} is conductive(can be struck by lightning).\nAlternate values: DEFAULT");
 
-                scrapConfiguration.itemConfigurations.Add(itemType, itemConfiguration);
+                scrapConfiguration.items.Add(itemType, itemConfiguration);
             }
 
             if (scrapConfiguration.enabled.Value)
@@ -467,10 +289,10 @@ namespace LethalQuantities.Objects
                 dungeonFile.SaveOnConfigSet = false;
             }
 
-            dungeonConfiguration.mapSizeMultiplier = BindEmptyOrDefaultable(dungeonFile, "General", "MapSizeMultiplier", RoundManager.Instance.mapSizeMultiplier, "The multiplier to use for determining the size of the dungeon.\nAlternate values: DEFAULT");
+            dungeonConfiguration.mapSizeMultiplier = BindEmptyOrDefaultable(dungeonFile, "General", "MapSizeMultiplier", globalInfo.manager.mapSizeMultiplier, "The multiplier to use for determining the size of the dungeon.\nAlternate values: DEFAULT");
             foreach (DungeonFlow flow in globalInfo.allDungeonFlows)
             {
-                GlobalDungeonFlowConfiguration configuration = new GlobalDungeonFlowConfiguration();
+                DungeonFlowConfiguration configuration = new DungeonFlowConfiguration();
                 configuration.rarity = BindEmptyOrNonDefaultable<int>(dungeonFile, "Rarity", flow.name, $"Rarity of a moon using a {flow.name} dungeon generator as the interior. A higher rarity increases the chance that the moon will use this dungeon flow.\nLeave blank or DEFAULT to use the moon's default rarity.");
 
                 string tablename = $"DungeonFlow." + flow.name;
@@ -499,7 +321,7 @@ namespace LethalQuantities.Objects
 
             foreach (DirectionalSpawnableMapObject mapObject in globalInfo.allSpawnableMapObjects)
             {
-                GlobalSpawnableMapObjectConfiguration configuration = new GlobalSpawnableMapObjectConfiguration(mapObject);
+                SpawnableMapObjectConfiguration configuration = new SpawnableMapObjectConfiguration(mapObject);
                 string tablename = $"Trap.{mapObject.obj.name}";
                 configuration.numberToSpawn = BindEmptyOrNonDefaultable<AnimationCurve>(trapFile, tablename, "SpawnAmount", $"The amount of this trap to spawn. 'Y Axis is the amount to be spawned; X axis should be from 0 to 1 and is randomly picked from.'\nAlternate values: DEFAULT");
 
@@ -510,6 +332,39 @@ namespace LethalQuantities.Objects
             {
                 trapFile.SaveOnConfigSet = true;
                 trapFile.Save();
+            }
+        }
+
+        private void instantiatePriceConfigs(GlobalInformation globalInfo, ConfigFile fileConfigFile)
+        {
+            priceConfiguration.enabled = fileConfigFile.Bind("Global", "PriceEnabled", false, "Whether or not to enable the global config for all moon pricing");
+
+            ConfigFile priceFile = null;
+            if (priceConfiguration.enabled.Value)
+            {
+                priceFile = new ConfigFile(Path.Combine(globalInfo.configSaveDir, PRICES_CFG_NAME), true);
+                priceFile.SaveOnConfigSet = false;
+            }
+
+            List<SelectableLevel> levelList = globalInfo.allSelectableLevels.Keys.ToList();
+            levelList.Sort(GlobalInformation.SCRIPTABLE_OBJECT_SORTER);
+            foreach (SelectableLevel level in levelList)
+            {
+                if (globalInfo.allSelectableLevels.TryGetValue(level, out GenericLevelInformation info))
+                {
+                    MoonPriceConfiguration config = new MoonPriceConfiguration(level.name);
+                    string tablename = $"Level.{level.name}";
+
+                    config.price = BindEmptyOrDefaultable(priceFile, tablename, "TravelCost", info.price, $"How many credits it costs to travel to {level.PlanetName}.\nAlternate values: DEFAULT");
+
+                    priceConfiguration.moons.Add(level.name, config);
+                }
+            }
+
+            if (priceConfiguration.enabled.Value)
+            {
+                priceFile.SaveOnConfigSet = true;
+                priceFile.Save();
             }
         }
 

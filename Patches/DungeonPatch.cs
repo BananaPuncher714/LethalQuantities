@@ -12,23 +12,13 @@ namespace LethalQuantities.Patches
         [HarmonyPrefix]
         static void onDungeonGenerate(RuntimeDungeon __instance)
         {
-            RoundState state = getRoundState();
+            RoundState state = Plugin.getRoundState();
             if (state != null)
             {
-                if (state.levelConfiguration.dungeon.enabled.Value)
+                if (state.getValidDungeonGenerationConfiguration(out DungeonGenerationConfiguration configuration))
                 {
                     string name = __instance.Generator.DungeonFlow.name;
-                    if (state.levelConfiguration.dungeon.dungeonFlowConfigurations.TryGetValue(name, out DungeonFlowConfiguration config))
-                    {
-                        config.factorySizeMultiplier.Set(ref RoundManager.Instance.currentLevel.factorySizeMultiplier);
-
-                        __instance.Generator.LengthMultiplier = RoundManager.Instance.mapSizeMultiplier * RoundManager.Instance.currentLevel.factorySizeMultiplier;
-                    }
-                }
-                else if (state.globalConfiguration.dungeonConfiguration.enabled.Value && !state.globalConfiguration.dungeonConfiguration.isDefault())
-                {
-                    string name = __instance.Generator.DungeonFlow.name;
-                    if (state.globalConfiguration.dungeonConfiguration.dungeonFlowConfigurations.TryGetValue(name, out GlobalDungeonFlowConfiguration config))
+                    if (configuration.dungeonFlowConfigurations.TryGetValue(name, out DungeonFlowConfiguration config))
                     {
                         config.factorySizeMultiplier.Set(ref RoundManager.Instance.currentLevel.factorySizeMultiplier);
 
@@ -36,16 +26,6 @@ namespace LethalQuantities.Patches
                     }
                 }
             }
-        }
-
-        private static RoundState getRoundState()
-        {
-            GameObject obj = GameObject.Find("LevelModifier");
-            if (obj != null)
-            {
-                return obj.GetComponent<RoundState>();
-            }
-            return null;
         }
     }
 }

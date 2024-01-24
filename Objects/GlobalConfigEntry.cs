@@ -7,25 +7,35 @@ namespace LethalQuantities.Objects
     public abstract class BaseEntry
     {
         public abstract Type SettingType();
+
         public virtual bool hasDefault()
         {
             return false;
         }
         public virtual string DefaultString()
         {
-            return "";
+            throw new NotImplementedException();
         }
     }
 
-    public abstract class CustomEntry<T> : BaseEntry
+    public abstract class CustomEntry<T> : BaseEntry, IDefaultable
     {
         // Get the value of this entry. The parameter passed is the current value.
         public abstract T Value(T value);
         public abstract bool isDefault();
+        public virtual bool isUnset()
+        {
+            return isDefault();
+        }
         public abstract bool Set(ref T value);
         public override Type SettingType()
         {
             return typeof(T);
+        }
+
+        public virtual T DefaultValue()
+        {
+            throw new NotImplementedException();
         }
     }
 
@@ -61,6 +71,11 @@ namespace LethalQuantities.Objects
         public override bool Set(ref T value)
         {
             return true;
+        }
+
+        public override T DefaultValue()
+        {
+            return defaultValue(default(T));
         }
     }
 
@@ -114,7 +129,7 @@ namespace LethalQuantities.Objects
             return entry.Value.ToUpper() == GLOBAL_OPTION || entry.Value.IsNullOrWhiteSpace();
         }
 
-        public virtual bool isUnset()
+        public override bool isUnset()
         {
             return isDefault() || (isGlobal() && (parentEntry.isDefault() || (parentEntry is GlobalConfigEntry<T> && (parentEntry as GlobalConfigEntry<T>).isUnset())));
         }
@@ -138,6 +153,11 @@ namespace LethalQuantities.Objects
         public override string DefaultString()
         {
             return converter.ConvertToString(defaultValue, typeof(T));
+        }
+
+        public override T DefaultValue()
+        {
+            return defaultValue;
         }
     }
 
@@ -197,6 +217,11 @@ namespace LethalQuantities.Objects
         public override string DefaultString()
         {
             return converter.ConvertToString(defaultValue, typeof(T));
+        }
+
+        public override T DefaultValue()
+        {
+            return defaultValue;
         }
     }
 

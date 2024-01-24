@@ -1,4 +1,7 @@
 ## Changelog
+### 1.1.6
+- Fixed scrap always defaulting to the maximum value
+- Added custom travel cost per moon, for all moons
 ### 1.1.5
 - Fixed invalid global dungeon generation config preventing the level from loading
 ### 1.1.4

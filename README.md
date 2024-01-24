@@ -10,10 +10,12 @@ A flexible customization mod that works with other mods. **All configs are disab
 - Works with custom enemies
 - Works with custom traps
 - Works with custom dungeon flows
+- Works with per-moon prices to travel to other moons
+  - Make travel cheaper between certain moons to emulate star maps!
 - Should work with custom events and other mods that change enemy spawn settings
 ## Known Incompatibilities
 - LethalLevelLoader - Partial incompatibility with custom dungeon flows
-  - This mod has the ability to change the rarity of dungeon flows per moon. If the dungeon generation option is enabled, and the rarity for any custom flow is manually set(to a value other than DEFAULT or GLOBAL), then LethalLevelLoader will not be able to modify the rarity of that specific dungeon flow. To use LethalLevelLoader or other mods' dungeon flow rarity options, do not set the rarity here.
+  - LethalLevelLoader prevents this mod from being able to change custom dungeon flow rarities. While vanilla dungeon flows work fine, you will need to edit the mod's config which adds the custom dungeon flow specifically.
 ## Configuration
 You must host or join a game at least once to generate the configuration files. Any missing or deleted files will be generated with the default options. By default, the only file that is generated is `Configuration.cfg`. You must enable global config files and individual moon config files in order to modify anything.
 - `Configuration.cfg` - Enable/disable other configuration files here
@@ -90,13 +92,13 @@ These configuration values can be set per moon. Store items and items share the 
 
 **Options**
 - General
-  - `MaxScrapCount` - Maximum total number of scrap items generated in a level. 
-  - `MinScrapCount` - Minimum total number of scrap items generated in a level. 
+  - `MaxScrapCount` - Maximum total number of scrap items generated in a level, inclusive.
+  - `MinScrapCount` - Minimum total number of scrap items generated in a level, exclusive.
   - `ScrapValueMultiplier` - Multiplies the value of a scrap item by this multiplier.
   - `ScrapAmountMultiplier` - Multiplies the total number of scrap on a level by this multiplier.
 - ItemType - There is one section for each item.
-  - `MinValue` - The minimum value of this item. Only available for scrap items
-  - `MaxValue` - The maximum value of this item. Only available for scrap items
+  - `MinValue` - The minimum value of this item, inclusive. Only available for scrap items.
+  - `MaxValue` - The maximum value of this item, exclusive. Only available for scrap items.
   - `Weight` - The weight of the item. The real in-game weight can be calculated with the formula: `pounds = (value - 1) * 100`. For example, a value of 1.18 is 18lbs. Can only be set in the global scrap config.
   - `Conductive` - Whether or not the item can be struck by lightning.
 - Rarity
@@ -136,6 +138,21 @@ These configuration values are set per moon. They support custom traps.
 **Options**
 - Trap - There is one section for each trap type
   - `SpawnAmount` - The amount of this trap to spawn. This is an AnimationCurve, where 'Y Axis is the amount to be spawned; X axis should be from 0 to 1 and is randomly picked from.'
+ </details>
+
+ <details>
+ <summary>Prices</summary>
+
+ There is 1 price configuration file
+ - `Prices.cfg` - Responsible for configuring pricing per moon
+
+
+ These configuration files are set per moon. They support custom moons.
+
+
+ **Options**
+- Level - There is one section for each moon
+  - `TravelCost` - The amount in credits that it costs to travel to this moon. Note that you cannot travel to the moon you are currently on, so it has no real effect. You _can_ charge to go to The Company Building, but it does not display until you confirm.
  </details>
 
 ## Spawn Logic
