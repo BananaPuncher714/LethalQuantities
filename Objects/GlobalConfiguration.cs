@@ -355,7 +355,7 @@ namespace LethalQuantities.Objects
                     MoonPriceConfiguration config = new MoonPriceConfiguration(level.name);
                     string tablename = $"Level.{level.name}";
 
-                    config.price = BindEmptyOrDefaultable(priceFile, tablename, "TravelCost", info.price, $"How many credits it costs to travel to {level.PlanetName}.\nAlternate values: DEFAULT");
+                    config.price = BindEmptyOrDefaultable(priceFile, tablename, "TravelCost", info.price, $"How many credits it costs to travel to {level.name}({level.PlanetName}).\nAlternate values: DEFAULT");
 
                     priceConfiguration.moons.Add(level.name, config);
                 }

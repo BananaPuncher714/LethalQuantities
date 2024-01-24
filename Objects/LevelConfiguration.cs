@@ -508,10 +508,10 @@ namespace LethalQuantities.Objects
                     MoonPriceConfiguration masterPriceConfig = masterConfig.priceConfiguration.moons[moon.name];
                     string tablename = $"Level.{moon.name}";
 
-                    string priceDescription = $"The amount of credits it costs to travel to ${moon.PlanetName} from {level.PlanetName}";
+                    string priceDescription = $"The amount of credits it costs to travel to {moon.name}({moon.PlanetName}) from {level.name}({level.PlanetName})";
                     if (moon == level)
                     {
-                        priceDescription = $"The amount of credits it costs to travel to {moon.PlanetName}. Does not do anything except display the price when they try to travel.\nAlternate values: DEFAULT, GLOBAL";
+                        priceDescription = $"The amount of credits it costs to travel to {moon.name}({moon.PlanetName}). Does not do anything except display the price when they try to travel.\nAlternate values: DEFAULT, GLOBAL";
                     }
 
                     config.price = priceConfig.BindGlobal(masterPriceConfig.price, tablename, "TravelCost", masterPriceConfig.price.DefaultValue(), priceDescription);

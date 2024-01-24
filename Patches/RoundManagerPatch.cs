@@ -70,17 +70,13 @@ namespace LethalQuantities.Patches
 
                         int levelId = confirm.buyRerouteToMoon;
 
-                        foreach (SelectableLevel travellableMoon in globalInfo.allSelectableLevels.Keys)
+                        if (level.levelID == confirm.buyRerouteToMoon)
                         {
-                            if (travellableMoon.levelID == confirm.buyRerouteToMoon)
-                            {
-                                genericInfo.price = confirm.itemCost;
-                                found = true;
-                                goto foundMoonLabel;
-                            }
+                            genericInfo.price = confirm.itemCost;
+                            found = true;
+                            break;
                         }
                     }
-                    foundMoonLabel:
                     if (!found)
                     {
                         Plugin.LETHAL_LOGGER.LogWarning($"Unable to find price of {level.name}({level.PlanetName})");
