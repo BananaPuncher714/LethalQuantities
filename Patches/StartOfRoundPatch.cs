@@ -1,12 +1,15 @@
 ﻿using HarmonyLib;
 using LethalQuantities.Objects;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace LethalQuantities.Patches
 {
     internal class StartOfRoundPatch
     {
+        private static Dictionary<CompatibleNoun, int> defaultPrices = new Dictionary<CompatibleNoun, int>();
+
         [HarmonyPatch(typeof(StartOfRound), nameof(StartOfRound.ChangePlanet))]
         [HarmonyPriority(200)]
         [HarmonyPrefix]
@@ -34,28 +37,50 @@ namespace LethalQuantities.Patches
                 return;
             }
 
-            foreach (CompatibleNoun noun in routeWord.compatibleNouns)
+            bool wasDefault = defaultPrices.Count() == 0;
+            if (priceConfig.enabled.Value)
             {
-                TerminalNode result = noun.result;
-                TerminalNode confirm = result.terminalOptions.First(n => n.noun.word.ToLower() == "confirm").result;
-
-                int levelId = confirm.buyRerouteToMoon;
-                if (StartOfRound.Instance.getLevelById(levelId, out SelectableLevel matched))
+                foreach (CompatibleNoun noun in routeWord.compatibleNouns)
                 {
-                    if (priceConfig.moons.TryGetValue(matched.name, out MoonPriceConfiguration moonConfig))
-                    {
-                        // Get the default value for that moon. Always return a value.
-                        CustomEntry<int> priceEntry = moonConfig.price;
-                        int price = priceConfig.moons[matched.name].price.Value(priceEntry.DefaultValue());
+                    TerminalNode result = noun.result;
+                    TerminalNode confirm = result.terminalOptions.First(n => n.noun.word.ToLower() == "confirm").result;
 
-                        result.itemCost = price;
-                        confirm.itemCost = price;
+                    if (wasDefault)
+                    {
+                        defaultPrices.Add(noun, result.itemCost);
+                    }
+
+                    int levelId = confirm.buyRerouteToMoon;
+                    if (StartOfRound.Instance.getLevelById(levelId, out SelectableLevel matched))
+                    {
+                        if (priceConfig.moons.TryGetValue(matched.name, out MoonPriceConfiguration moonConfig))
+                        {
+                            // Get the default value for that moon. Always return a value.
+                            CustomEntry<int> priceEntry = moonConfig.price;
+                            int price = priceConfig.moons[matched.name].price.Value(priceEntry.DefaultValue());
+
+                            result.itemCost = price;
+                            confirm.itemCost = price;
+                        }
+                    }
+                    else
+                    {
+                        Plugin.LETHAL_LOGGER.LogWarning($"Unable to find moon for level {levelId}");
                     }
                 }
-                else
+            }
+            else if (!wasDefault)
+            {
+                // Reset the moons to their vanilla values, for this level
+                foreach (var item in defaultPrices)
                 {
-                    Plugin.LETHAL_LOGGER.LogWarning($"Unable to find moon for level {levelId}");
+                    CompatibleNoun noun = item.Key;
+                    int price = item.Value;
+
+                    noun.result.itemCost = item.Value;
+                    noun.result.terminalOptions.First(n => n.noun.word.ToLower() == "confirm").result.itemCost = price;
                 }
+                defaultPrices.Clear();
             }
         }
     }

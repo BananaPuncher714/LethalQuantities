@@ -1,4 +1,6 @@
 ## Changelog
+### 1.1.7
+- Fixed moon prices being set no matter what
 ### 1.1.6
 - Fixed scrap always defaulting to the maximum value
 - Added custom travel cost per moon, for all moons

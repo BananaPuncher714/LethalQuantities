@@ -16,6 +16,8 @@ A flexible customization mod that works with other mods. **All configs are disab
 ## Known Incompatibilities
 - LethalLevelLoader - Partial incompatibility with custom dungeon flows
   - LethalLevelLoader prevents this mod from being able to change custom dungeon flow rarities. While vanilla dungeon flows work fine, you will need to edit the mod's config which adds the custom dungeon flow specifically.
+- Moon price changing mods
+  - If you modify moon prices, other mods may not be able to change the price correctly, or at all.
 ## Configuration
 You must host or join a game at least once to generate the configuration files. Any missing or deleted files will be generated with the default options. By default, the only file that is generated is `Configuration.cfg`. You must enable global config files and individual moon config files in order to modify anything.
 - `Configuration.cfg` - Enable/disable other configuration files here
