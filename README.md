@@ -15,7 +15,7 @@ A flexible customization mod that works with other mods. **All configs are disab
 - Should work with custom events and other mods that change enemy spawn settings
 ## Known Incompatibilities
 - LethalLevelLoader - Partial incompatibility with custom dungeon flows
-  - LethalLevelLoader prevents this mod from being able to change custom dungeon flow rarities. While vanilla dungeon flows work fine, you will need to edit the mod's config which adds the custom dungeon flow specifically.
+  - LethalLevelLoader prevents this mod from being able to change custom dungeon flow rarities. While changing vanilla dungeon flow rarities works fine, you will need to edit the mod's config which adds the custom dungeon flow specifically.
 - Moon price changing mods
   - If you modify moon prices, other mods may not be able to change the price correctly, or at all.
 ## Configuration
@@ -34,9 +34,9 @@ If a global config file is disabled, then it will have no effect on moon options
 
 
 **Complex config types:**
-- [`AnimationCurve`](https://docs.unity3d.com/Manual/animeditor-AnimationCurves.html) - Represents a curve comprised of Keyframes. Each frame represents a key, and a value at that key(generally time).
-  - A curve with no frames is left blank
-  - A curve with one keyframe is described with a single number
+- [`AnimationCurve`](https://docs.unity3d.com/Manual/animeditor-AnimationCurves.html) - Represents a curve comprised of Keyframes. Each frame represents a key, and a value at that key(generally time). For more information, and a visual representation, check out [the mechanics](https://lethal.miraheze.org/wiki/Mechanics).
+  - A curve with no frames is specified with a 0.
+  - A curve with one keyframe is described with a single number. This option is recommended for most users unless you know what you are doing.
   - A curve with multiple keyframes is comprised of a keyframes(`key:value`) separated by commas
 - Global/inheritable options - Represents an option that can be inherited from the global configuration. Generally found in the moon configs.
   - `GLOBAL` or no value uses the global value
@@ -63,6 +63,7 @@ These configuration files do _not_ interfere with each other, meaning enemies sp
 - General
   - `MaxPowerCount` - Maximum total power allowed for this category of enemies. Different enemy types have different power levels. The total power of a level is the sum of the power levels of all existing enemies.
   - `SpawnAmountCurve` - An AnimationCurve with a key ranging from 0 to 1. The key represents the percentage of time progressed in the current level. The value is the amount of enemies to spawn at the given time.
+	- For example, a curve described by `0:-3, .6:1.5, 1:15` would mean that for the first 60% of the day, almost no enemies are going to spawn, but for the last 40%, a lot will spawn.
   - `SpawnAmountRange` - The range of enemies that can spawn. A value of 3 means that 3 more or 3 less enemies can spawn, based on the value returned by the `SpawnAmountCurve`. Not available for outside enemy configs.
 - EnemyType - There is one section for each enemy. Invalid enemy types are ignored.
   - `MaxEnemyCount` - The total amount of enemies of the given type that can spawn
@@ -77,7 +78,7 @@ These configuration files do _not_ interfere with each other, meaning enemies sp
   - `SpawnFalloffCurve` - An AnimationCurve describing the multiplier to use when determining the value of `SpawnChanceCurve`, dependent on the number of existing enemies with the same type divided by 10. Not available for the daytime enemy configs.
   - `UseSpawnFalloff` - If true, then the resulting value from the `SpawnFalloffCurve` will be multiplied with the value from `SpawnCurve`.  Not available for the daytime enemy configs.
 - Rarity - There is one option for each enemy type. Invalid enemy types are ignored.
-  - `<enemy type>` - The weight given to this enemy vs other enemies. If you do not want the enemy to spawn, set the rarity to 0. A higher rarity increases the chances for an enemy to spawn.
+  - `<enemy type>` - The weight given to this enemy vs other enemies. If you do not want the enemy to spawn, set the rarity to 0. A higher rarity increases the chances for an enemy to spawn. The chance of this enemy spawning is the rarity of this enemy divided by the rarity of all the enemy types combined.
 
 Exceptions:
 - The `OutsideEnemies.cfg` option `SpawnChanceRange` has a hardcoded value of `3` in-game, and cannot be changed
@@ -104,7 +105,7 @@ These configuration values can be set per moon. Store items and items share the 
   - `Weight` - The weight of the item. The real in-game weight can be calculated with the formula: `pounds = (value - 1) * 100`. For example, a value of 1.18 is 18lbs. Can only be set in the global scrap config.
   - `Conductive` - Whether or not the item can be struck by lightning.
 - Rarity
-  - `<item name>` - The weight of this item, relative to the total weight of all items. A higher rarity increases the chances for an item to spawn. Includes store items.
+  - `<item name>` - The weight of this item, relative to the total weight of all items. A higher rarity increases the chances for an item to spawn. Includes store items. The chance of this item spawning is the rarity of this item divided by the rarity of all the items combined.
  </details>
 
 
@@ -120,11 +121,11 @@ These configuration values are set per moon. They should theoretically support c
 
 **Options**
 - General
-  - `MapSizeMultiplier` - A multiplier foro how large the dungeon generation should be. Cannot be set per-flow
+  - `MapSizeMultiplier` - A multiplier for how large the dungeon generation should be. Cannot be set per-flow
 - DungeonFlow - There is one section for each DungeonFlow
   - `FactorySizeMultiplier` - A multiplier for how large the dungeon generation should be for this flow.
 - Rarity
-  - `<dungeon flow name>` - The weight of this flow, relative to the total weight of all flows. A higher rarity increases the chances for this flow to be used.
+  - `<dungeon flow name>` - The weight of this flow, relative to the total weight of all flows. A higher rarity increases the chances for this flow to be used. May not work with custom dungeon flows since LethalLevelLoader forcefully overrides this.
  </details>
 
  <details>

@@ -1,4 +1,6 @@
 ## Changelog
+### 1.1.8
+- Fixed error with certain mods that add terminal commands with a null word
 ### 1.1.7
 - Fixed moon prices being set no matter what
 ### 1.1.6

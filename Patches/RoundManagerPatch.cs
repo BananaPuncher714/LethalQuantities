@@ -24,6 +24,7 @@ namespace LethalQuantities.Patches
 
                 // Get all enemy, item and dungeon flows
                 // Filter out any potentially "fake" enemy types that might have been added by other mods
+                Plugin.LETHAL_LOGGER.LogInfo("Fetching all enemy types");
                 HashSet<string> addedEnemyTypes = new HashSet<string>();
                 globalInfo.allEnemyTypes.AddRange(Resources.FindObjectsOfTypeAll<EnemyType>().Where(type => {
                     if (type.enemyPrefab == null)
@@ -41,6 +42,7 @@ namespace LethalQuantities.Patches
                     }
                     return false;
                 }));
+                Plugin.LETHAL_LOGGER.LogInfo("Fetching all items");
                 HashSet<string> addedItems = new HashSet<string>();
                 globalInfo.allItems.AddRange(Resources.FindObjectsOfTypeAll<Item>().Where(type => {
                     if (type.spawnPrefab == null)
@@ -59,11 +61,13 @@ namespace LethalQuantities.Patches
                     return false;
                 }));
 
+                Plugin.LETHAL_LOGGER.LogInfo("Fetching all moon prices");
+                CompatibleNoun[] nouns = Resources.FindObjectsOfTypeAll<TerminalKeyword>().First(w => w.word != null && w.word.ToLower() == "route").compatibleNouns;
                 foreach (SelectableLevel level in Resources.FindObjectsOfTypeAll<SelectableLevel>())
                 {
                     GenericLevelInformation genericInfo = new GenericLevelInformation();
                     bool found = false;
-                    foreach (CompatibleNoun noun in Resources.FindObjectsOfTypeAll<TerminalKeyword>().First(w => w.word.ToLower() == "route").compatibleNouns)
+                    foreach (CompatibleNoun noun in nouns)
                     {
                         TerminalNode result = noun.result;
                         TerminalNode confirm = result.terminalOptions.First(n => n.noun.word.ToLower() == "confirm").result;
@@ -85,6 +89,7 @@ namespace LethalQuantities.Patches
                     globalInfo.allSelectableLevels.Add(level, genericInfo);
                 }
 
+                Plugin.LETHAL_LOGGER.LogInfo("Fetching all traps");
                 Dictionary<GameObject, DirectionalSpawnableMapObject> uniqueMapObjects = new Dictionary<GameObject, DirectionalSpawnableMapObject>();
                 // Keep track of added objects, try to make sure we don't add the same one twice
                 HashSet<string> addedTraps = new HashSet<string>();
@@ -106,6 +111,7 @@ namespace LethalQuantities.Patches
                 }
                 globalInfo.allSpawnableMapObjects.AddRange(uniqueMapObjects.Values);
 
+                Plugin.LETHAL_LOGGER.LogInfo("Fetching all dungeon flows");
                 globalInfo.allDungeonFlows.AddRange(Resources.FindObjectsOfTypeAll<DungeonFlow>());
                 globalInfo.manager = __instance;
                 globalInfo.sortData();
@@ -175,33 +181,6 @@ namespace LethalQuantities.Patches
                     }
                 }
                 Plugin.LETHAL_LOGGER.LogInfo("Done configuring LethalQuantities");
-
-                foreach (CompatibleNoun noun in Resources.FindObjectsOfTypeAll<TerminalKeyword>().First(w => w.word.ToLower() == "route").compatibleNouns)
-                {
-                    TerminalNode result = noun.result;
-                    TerminalNode confirm = result.terminalOptions.First(n => n.noun.word.ToLower() == "confirm").result;
-
-                    int levelId = confirm.buyRerouteToMoon;
-
-                    SelectableLevel matched = null;
-                    foreach (SelectableLevel level in globalInfo.allSelectableLevels.Keys)
-                    {
-                        if (level.levelID == confirm.buyRerouteToMoon)
-                        {
-                            matched = level;
-                            break;
-                        }
-                    }
-
-                    if (matched != null)
-                    {
-                        Plugin.LETHAL_LOGGER.LogInfo($"Price to go to {matched.name} is {confirm.itemCost}");
-                    }
-                    else
-                    {
-                        Plugin.LETHAL_LOGGER.LogWarning($"Unable to find moon for level {levelId}");
-                    }
-                }
             }
         }
 

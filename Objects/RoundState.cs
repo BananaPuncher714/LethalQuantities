@@ -135,6 +135,7 @@ namespace LethalQuantities.Objects
 
         public void OnDestroy()
         {
+            Plugin.LETHAL_LOGGER.LogInfo($"Cleaning up and restoring values to {level.name}");
             // Undo any modifications made to the SelectedLevel
             foreach (GameObject obj in modifiedEnemyTypes)
             {

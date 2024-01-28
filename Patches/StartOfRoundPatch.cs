@@ -40,6 +40,7 @@ namespace LethalQuantities.Patches
             bool wasDefault = defaultPrices.Count() == 0;
             if (priceConfig.enabled.Value)
             {
+                Plugin.LETHAL_LOGGER.LogInfo("Modifying moon prices");
                 foreach (CompatibleNoun noun in routeWord.compatibleNouns)
                 {
                     TerminalNode result = noun.result;
@@ -55,9 +56,8 @@ namespace LethalQuantities.Patches
                     {
                         if (priceConfig.moons.TryGetValue(matched.name, out MoonPriceConfiguration moonConfig))
                         {
-                            // Get the default value for that moon. Always return a value.
-                            CustomEntry<int> priceEntry = moonConfig.price;
-                            int price = priceConfig.moons[matched.name].price.Value(priceEntry.DefaultValue());
+                            int price = defaultPrices[noun];
+                            moonConfig.price.Set(ref price);
 
                             result.itemCost = price;
                             confirm.itemCost = price;
@@ -72,6 +72,7 @@ namespace LethalQuantities.Patches
             else if (!wasDefault)
             {
                 // Reset the moons to their vanilla values, for this level
+                Plugin.LETHAL_LOGGER.LogInfo("Resetting moon prices back to the original values");
                 foreach (var item in defaultPrices)
                 {
                     CompatibleNoun noun = item.Key;

@@ -42,26 +42,35 @@ namespace LethalQuantities
 
             LETHAL_LOGGER = BepInEx.Logging.Logger.CreateLogSource(PluginInfo.PLUGIN_NAME);
 
+            LETHAL_LOGGER.LogInfo("Registering custom TomlTypeConverter for AnimationCurve");
             TomlTypeConverter.AddConverter(typeof(AnimationCurve), new AnimationCurveTypeConverter());
 
+            LETHAL_LOGGER.LogInfo("Registering patches...");
             _harmony = new Harmony(PluginInfo.PLUGIN_NAME);
             _harmony.PatchAll(typeof(RoundManagerPatch));
+            LETHAL_LOGGER.LogInfo("Registered RoundManager patch");
             _harmony.PatchAll(typeof(ObjectPatch));
+            LETHAL_LOGGER.LogInfo("Registered Object patch");
             _harmony.PatchAll(typeof(DungeonPatch));
+            LETHAL_LOGGER.LogInfo("Registered RuntimeDungeon patch");
             _harmony.PatchAll(typeof(StartOfRoundPatch));
+            LETHAL_LOGGER.LogInfo("Registered StartOfRound patch");
             _harmony.PatchAll(typeof(ConfigEntryBasePatch));
+            LETHAL_LOGGER.LogInfo("Registered ConfigEntryBase patch");
 
             SceneManager.sceneLoaded += OnSceneLoaded;
+            LETHAL_LOGGER.LogInfo("Added sceneLoaded delegate");
         }
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
+            LETHAL_LOGGER.LogInfo($"Checking scene {scene.name} for a RoundManager server instance");
             if (RoundManager.Instance != null && RoundManager.Instance.IsServer)
             {
                 SelectableLevel level = RoundManager.Instance.currentLevel;
                 if (level != null && configuration.levelConfigs.ContainsKey(RoundManager.Instance.currentLevel.name))
                 {
-                    LETHAL_LOGGER.LogInfo($"Found level {level.name}, modifying enemy spawns");
+                    LETHAL_LOGGER.LogInfo($"Found a valid configuration for {level.PlanetName}({level.name})");
                     // Add a manager to keep track of all objects
                     GameObject levelModifier = new GameObject("LevelModifier");
                     SceneManager.MoveGameObjectToScene(levelModifier, scene);
@@ -70,6 +79,7 @@ namespace LethalQuantities
                     state.plugin = this;
 
                     state.setData(scene, configuration);
+                    LETHAL_LOGGER.LogInfo($"Initializing round information");
                     state.initialize(level);
                 }
             }
