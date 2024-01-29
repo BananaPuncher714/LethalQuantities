@@ -1,4 +1,6 @@
 ## Changelog
+### 1.1.9
+- Fixed invalid enemies not spawning where they should(outside, inside, daytime)
 ### 1.1.8
 - Fixed error with certain mods that add terminal commands with a null word
 ### 1.1.7

@@ -1,10 +1,47 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 namespace LethalQuantities.Objects
 {
+    internal class EnemySpawnCategoryAttribute: Attribute
+    {
+        public bool daytimeEnemy { get; private set; }
+        public bool outsideEnemy { get; private set; }
+
+        internal EnemySpawnCategoryAttribute(bool daytime, bool outside = false) {
+            daytimeEnemy = daytime;
+            outsideEnemy = daytime ? true : outside;
+        }
+    }
+
+    public static class EnemySpawnCategoryExtension
+    {
+        public static bool isDaytime(this EnemySpawnCategory category)
+        {
+            return getAttribute(category).daytimeEnemy;
+        }
+
+        public static bool isOutside(this EnemySpawnCategory category)
+        {
+            return getAttribute(category).outsideEnemy;
+        }
+
+        private static EnemySpawnCategoryAttribute getAttribute(EnemySpawnCategory category)
+        {
+            return (EnemySpawnCategoryAttribute) Attribute.GetCustomAttribute(typeof(EnemySpawnCategory).GetField(Enum.GetName(typeof(EnemySpawnCategory), category)), typeof(EnemySpawnCategoryAttribute));
+        }
+    }
+
+    public enum EnemySpawnCategory
+    {
+        [EnemySpawnCategoryAttribute(false)] INSIDE,
+        [EnemySpawnCategoryAttribute(false, true)] OUTSIDE,
+        [EnemySpawnCategoryAttribute(true)] DAYTIME
+    }
+
     public class RoundState : MonoBehaviour
     {
         public Plugin plugin { get; internal set; }
@@ -105,21 +142,22 @@ namespace LethalQuantities.Objects
             {
                 if (getValidEnemyConfiguration(out EnemyConfiguration<EnemyTypeConfiguration> config)) {
                     Plugin.LETHAL_LOGGER.LogInfo("Generating spawnable enemy rarities");
-                    populate(level.Enemies, enemies, config.enemyTypes.Values);
+                    populate(level.Enemies, enemies, config.enemyTypes.Values, EnemySpawnCategory.INSIDE);
                 }
             }
 
             {
                 if (getValidDaytimeEnemyConfiguration(out EnemyConfiguration<DaytimeEnemyTypeConfiguration> config)) {
                     Plugin.LETHAL_LOGGER.LogInfo("Generating spawnable daytime enemy rarities");
-                    populate(level.Enemies, enemies, config.enemyTypes.Values);
+                    populate(level.DaytimeEnemies, daytimeEnemies, config.enemyTypes.Values, EnemySpawnCategory.DAYTIME
+                        );
                 }
             }
 
             {
                 if (getValidOutsideEnemyConfiguration(out OutsideEnemyConfiguration<EnemyTypeConfiguration> config)) {
                     Plugin.LETHAL_LOGGER.LogInfo("Generating spawnable outside enemy rarities");
-                    populate(level.Enemies, enemies, config.enemyTypes.Values);
+                    populate(level.OutsideEnemies, outsideEnemies, config.enemyTypes.Values, EnemySpawnCategory.OUTSIDE);
                 }
             }
 
@@ -166,7 +204,7 @@ namespace LethalQuantities.Objects
             level.spawnableMapObjects = defaultSpawnableMapObjects.ToArray();
         }
 
-        private void populate<T>(List<SpawnableEnemyWithRarity> originals, List<SpawnableEnemyWithRarity> enemiesList, IEnumerable<T> configs, bool isOutside = false, bool isDaytimeEnemy = false) where T : DaytimeEnemyTypeConfiguration
+        private void populate<T>(List<SpawnableEnemyWithRarity> originals, List<SpawnableEnemyWithRarity> enemiesList, IEnumerable<T> configs, EnemySpawnCategory category) where T : DaytimeEnemyTypeConfiguration
         {
             Dictionary<EnemyType, int> defaultRarities = new Dictionary<EnemyType, int>();
             foreach (SpawnableEnemyWithRarity enemy in originals)
@@ -183,32 +221,28 @@ namespace LethalQuantities.Objects
                 item.maxEnemyCount.Set(ref maxEnemyCount);
                 if (rarity > 0 && maxEnemyCount > 0)
                 {
-                    EnemyType type = originalType;
-                    if (!item.isEnemyTypeDefault())
+                    EnemyType type = Instantiate(originalType);
+                    item.maxEnemyCount.Set(ref type.MaxCount);
+                    item.powerLevel.Set(ref type.PowerLevel);
+                    item.spawnCurve.Set(ref type.probabilityCurve);
+                    item.stunTimeMultiplier.Set(ref type.stunTimeMultiplier);
+                    item.doorSpeedMultiplier.Set(ref type.doorSpeedMultiplier);
+                    item.stunGameDifficultyMultiplier.Set(ref type.stunGameDifficultyMultiplier);
+                    item.stunnable.Set(ref type.canBeStunned);
+                    item.killable.Set(ref type.canDie);
+                    if (item is EnemyTypeConfiguration)
                     {
-                        type = Instantiate(originalType);
-                        item.maxEnemyCount.Set(ref type.MaxCount);
-                        item.powerLevel.Set(ref type.PowerLevel);
-                        item.spawnCurve.Set(ref type.probabilityCurve);
-                        item.stunTimeMultiplier.Set(ref type.stunTimeMultiplier);
-                        item.doorSpeedMultiplier.Set(ref type.doorSpeedMultiplier);
-                        item.stunGameDifficultyMultiplier.Set(ref type.stunGameDifficultyMultiplier);
-                        item.stunnable.Set(ref type.canBeStunned);
-                        item.killable.Set(ref type.canDie);
-                        if (item is EnemyTypeConfiguration)
-                        {
-                            EnemyTypeConfiguration normalType = item as EnemyTypeConfiguration;
-                            normalType.spawnFalloffCurve.Set(ref type.numberSpawnedFalloff);
-                            normalType.useSpawnFalloff.Set(ref type.useNumberSpawnedFalloff);
-                        }
-                        type.isOutsideEnemy = isOutside;
-                        type.isDaytimeEnemy = isDaytimeEnemy;
+                        EnemyTypeConfiguration normalType = item as EnemyTypeConfiguration;
+                        normalType.spawnFalloffCurve.Set(ref type.numberSpawnedFalloff);
+                        normalType.useSpawnFalloff.Set(ref type.useNumberSpawnedFalloff);
+                    }
+                    type.isOutsideEnemy = category.isOutside();
+                    type.isDaytimeEnemy = category.isDaytime();
 
-                        EnemyAI ai = instantiateEnemyTypeObject(type);
-                        if (ai != null)
-                        {
-                            item.enemyHp.Set(ref ai.enemyHP);
-                        }
+                    EnemyAI ai = instantiateEnemyTypeObject(type);
+                    if (ai != null)
+                    {
+                        item.enemyHp.Set(ref ai.enemyHP);
                     }
                     SpawnableEnemyWithRarity spawnable = new SpawnableEnemyWithRarity();
                     spawnable.enemyType = type;

@@ -69,12 +69,8 @@ namespace LethalQuantities.Objects
 
         public virtual bool isDefault()
         {
-            return rarity.isDefault() && isEnemyTypeDefault();
-        }
-
-        public virtual bool isEnemyTypeDefault()
-        {
-            return maxEnemyCount.isDefault()
+            return rarity.isDefault()
+                    && maxEnemyCount.isDefault()
                     && powerLevel.isDefault()
                     && spawnCurve.isDefault()
                     && stunTimeMultiplier.isDefault()
@@ -94,11 +90,6 @@ namespace LethalQuantities.Objects
 
         public CustomEntry<AnimationCurve> spawnFalloffCurve { get; set; }
         public CustomEntry<bool> useSpawnFalloff { get; set; }
-
-        public override bool isEnemyTypeDefault()
-        {
-            return base.isEnemyTypeDefault() && spawnFalloffCurve.isDefault() && useSpawnFalloff.isDefault();
-        }
     }
 
     public class ScrapConfiguration : IValidatableConfiguration
