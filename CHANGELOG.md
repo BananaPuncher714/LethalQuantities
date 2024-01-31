@@ -1,4 +1,8 @@
 ## Changelog
+### 1.1.10
+- Added compatibilty with LethalExpansion moons
+- Added in filters to check for moons and other objects with strange names
+- Added in a check for terminal nodes with a null word, again.
 ### 1.1.9
 - Fixed invalid enemies not spawning where they should(outside, inside, daytime)
 ### 1.1.8

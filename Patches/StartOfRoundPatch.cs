@@ -1,6 +1,5 @@
 ﻿using HarmonyLib;
 using LethalQuantities.Objects;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -8,7 +7,7 @@ namespace LethalQuantities.Patches
 {
     internal class StartOfRoundPatch
     {
-        private static Dictionary<CompatibleNoun, int> defaultPrices = new Dictionary<CompatibleNoun, int>();
+        private static Dictionary<int, int> defaultPrices = new Dictionary<int, int>();
 
         [HarmonyPatch(typeof(StartOfRound), nameof(StartOfRound.ChangePlanet))]
         [HarmonyPriority(200)]
@@ -22,7 +21,7 @@ namespace LethalQuantities.Patches
         {
             GlobalConfiguration configuration = Plugin.INSTANCE.configuration;
             Terminal terminal = UnityEngine.Object.FindFirstObjectByType<Terminal>();
-            TerminalKeyword routeWord = terminal.terminalNodes.allKeywords.First(w => w.word.ToLower() == "route");
+            TerminalKeyword routeWord = terminal.terminalNodes.allKeywords.First(w => w.word != null && w.word.ToLower() == "route");
 
             PriceConfiguration priceConfig = Plugin.INSTANCE.configuration.priceConfiguration;
             if (Plugin.INSTANCE.configuration.levelConfigs.TryGetValue(level.name, out LevelConfiguration localConfig))
@@ -45,18 +44,21 @@ namespace LethalQuantities.Patches
                 {
                     TerminalNode result = noun.result;
                     TerminalNode confirm = result.terminalOptions.First(n => n.noun.word.ToLower() == "confirm").result;
+                    int levelId = confirm.buyRerouteToMoon;
 
                     if (wasDefault)
                     {
-                        defaultPrices.Add(noun, result.itemCost);
+                        if (!defaultPrices.TryAdd(levelId, result.itemCost))
+                        {
+                            Plugin.LETHAL_LOGGER.LogError($"Already changed price for TerminalNode {result.name} with level id {levelId}. Perhaps another mod has added it in twice??");
+                        }
                     }
 
-                    int levelId = confirm.buyRerouteToMoon;
                     if (StartOfRound.Instance.getLevelById(levelId, out SelectableLevel matched))
                     {
                         if (priceConfig.moons.TryGetValue(matched.name, out MoonPriceConfiguration moonConfig))
                         {
-                            int price = defaultPrices[noun];
+                            int price = defaultPrices.GetValueOrDefault(levelId, result.itemCost);
                             moonConfig.price.Set(ref price);
 
                             result.itemCost = price;
@@ -73,13 +75,16 @@ namespace LethalQuantities.Patches
             {
                 // Reset the moons to their vanilla values, for this level
                 Plugin.LETHAL_LOGGER.LogInfo("Resetting moon prices back to the original values");
-                foreach (var item in defaultPrices)
+                foreach (CompatibleNoun noun in routeWord.compatibleNouns)
                 {
-                    CompatibleNoun noun = item.Key;
-                    int price = item.Value;
+                    TerminalNode result = noun.result;
+                    TerminalNode confirm = result.terminalOptions.First(n => n.noun.word.ToLower() == "confirm").result;
+                    int levelId = confirm.buyRerouteToMoon;
 
-                    noun.result.itemCost = item.Value;
-                    noun.result.terminalOptions.First(n => n.noun.word.ToLower() == "confirm").result.itemCost = price;
+                    int price = defaultPrices.GetValueOrDefault(levelId, result.itemCost);
+
+                    result.itemCost = price;
+                    confirm.itemCost = price;
                 }
                 defaultPrices.Clear();
             }

@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using UnityEngine;
 
 namespace LethalQuantities.Objects
@@ -241,7 +242,7 @@ namespace LethalQuantities.Objects
             SelectableLevel level = levelInfo.level;
             // Process enemies
             {
-                enemies.enabled = levelInfo.mainConfigFile.Bind($"Level.{levelInfo.level.name}", "EnemiesEnabled", false, $"Enables/disables custom enemy spawn rate modification for {level.PlanetName}");
+                enemies.enabled = levelInfo.mainConfigFile.Bind($"Level.{levelInfo.level.name.getTomlFriendlyName()}", "EnemiesEnabled", false, $"Enables/disables custom enemy spawn rate modification for {level.PlanetName}");
 
                 // Only save the configuration file and options if it is enabled
                 if (enemies.enabled.Value)
@@ -258,12 +259,12 @@ namespace LethalQuantities.Objects
                     {
                         EnemyTypeConfiguration masterTypeConfig = masterConfig.enemyConfiguration.enemyTypes[enemyType];
                         EnemyTypeConfiguration typeConfiguration = new EnemyTypeConfiguration(enemyType);
-                        string tablename = $"EnemyTypes.{enemyType.name}";
+                        string tablename = $"EnemyTypes.{enemyType.name.getTomlFriendlyName()}";
                         string friendlyName = enemyType.getFriendlyName();
 
 
                         // Store rarity in a separate table for convenience
-                        typeConfiguration.rarity = enemyConfig.BindGlobal(masterTypeConfig.rarity, "Rarity", enemyType.name, enemySpawnRarities.GetValueOrDefault(enemyType, 0), $"Rarity of a(n) {friendlyName} spawning relative to the total rarity of all other enemy types combined. A higher rarity increases the chance that the enemy will spawn.\nAlternate values: DEFAULT, GLOBAL");
+                        typeConfiguration.rarity = enemyConfig.BindGlobal(masterTypeConfig.rarity, "Rarity", enemyType.name.getTomlFriendlyName(), enemySpawnRarities.GetValueOrDefault(enemyType, 0), $"Rarity of a(n) {friendlyName} spawning relative to the total rarity of all other enemy types combined. A higher rarity increases the chance that the enemy will spawn.\nAlternate values: DEFAULT, GLOBAL"); ;
 
                         typeConfiguration.maxEnemyCount = enemyConfig.BindGlobal(masterTypeConfig.maxEnemyCount, tablename, "MaxEnemyCount", enemyType.MaxCount, $"Maximum amount of {friendlyName} allowed at once.\nAlternate values: DEFAULT, GLOBAL");
                         typeConfiguration.powerLevel = enemyConfig.BindGlobal(masterTypeConfig.powerLevel, tablename, "PowerLevel", enemyType.PowerLevel, $"How much a single {friendlyName} contributes to the maximum power level.\nAlternate values: DEFAULT, GLOBAL");
@@ -286,7 +287,7 @@ namespace LethalQuantities.Objects
 
             // Process daytime enemies
             {
-                daytimeEnemies.enabled = levelInfo.mainConfigFile.Bind($"Level.{levelInfo.level.name}", "DaytimeEnemiesEnabled", false, $"Enables/disables custom daytime enemy spawn rate modification for {level.PlanetName}. Typically enemies like manticoils, locusts, etc.");
+                daytimeEnemies.enabled = levelInfo.mainConfigFile.Bind($"Level.{levelInfo.level.name.getTomlFriendlyName()}", "DaytimeEnemiesEnabled", false, $"Enables/disables custom daytime enemy spawn rate modification for {level.PlanetName}. Typically enemies like manticoils, locusts, etc.");
 
                 if (daytimeEnemies.enabled.Value)
                 {
@@ -304,9 +305,9 @@ namespace LethalQuantities.Objects
                         DaytimeEnemyTypeConfiguration typeConfiguration = new DaytimeEnemyTypeConfiguration(enemyType);
 
                         string friendlyName = enemyType.getFriendlyName();
-                        typeConfiguration.rarity = enemyConfig.BindGlobal(masterTypeConfig.rarity, "Rarity", enemyType.name, enemySpawnRarities.GetValueOrDefault(enemyType, 0), $"Rarity of a(n) {friendlyName} relative to the total rarity of all other enemy types combined. A higher rarity increases the chance that the enemy will spawn.\nAlternate values: DEFAULT, GLOBAL");
+                        typeConfiguration.rarity = enemyConfig.BindGlobal(masterTypeConfig.rarity, "Rarity", enemyType.name.getTomlFriendlyName(), enemySpawnRarities.GetValueOrDefault(enemyType, 0), $"Rarity of a(n) {friendlyName} relative to the total rarity of all other enemy types combined. A higher rarity increases the chance that the enemy will spawn.\nAlternate values: DEFAULT, GLOBAL");
 
-                        string tablename = $"EnemyTypes.{enemyType.name}";
+                        string tablename = $"EnemyTypes.{enemyType.name.getTomlFriendlyName()}";
                         typeConfiguration.maxEnemyCount = enemyConfig.BindGlobal(masterTypeConfig.maxEnemyCount, tablename, "MaxEnemyCount", enemyType.MaxCount, $"Maximum amount of {friendlyName} allowed at once.\nAlternate values: DEFAULT, GLOBAL");
                         typeConfiguration.powerLevel = enemyConfig.BindGlobal(masterTypeConfig.powerLevel, tablename, "PowerLevel", enemyType.PowerLevel, $"How much a(n) {friendlyName} contributes to the maximum power level.\nAlternate values: DEFAULT, GLOBAL");
                         typeConfiguration.spawnCurve = enemyConfig.BindGlobal(masterTypeConfig.spawnCurve, tablename, "SpawnChanceCurve", enemyType.probabilityCurve, $"How likely a(n) {friendlyName} is to spawn as the day progresses. (Key ranges from 0-1). \nAlternate values: DEFAULT, GLOBAL");
@@ -329,7 +330,7 @@ namespace LethalQuantities.Objects
 
             // Process outside enemies
             {
-                outsideEnemies.enabled = levelInfo.mainConfigFile.Bind($"Level.{levelInfo.level.name}", "OutsideEnemiesEnabled", false, $"Enables/disables custom outside enemy spawn rate modification for {level.PlanetName}. Typically eyeless dogs, forest giants, etc.");
+                outsideEnemies.enabled = levelInfo.mainConfigFile.Bind($"Level.{levelInfo.level.name.getTomlFriendlyName()}", "OutsideEnemiesEnabled", false, $"Enables/disables custom outside enemy spawn rate modification for {level.PlanetName}. Typically eyeless dogs, forest giants, etc.");
 
                 if (outsideEnemies.enabled.Value)
                 {
@@ -348,9 +349,9 @@ namespace LethalQuantities.Objects
                         EnemyTypeConfiguration typeConfiguration = new EnemyTypeConfiguration(enemyType);
 
                         string friendlyName = enemyType.getFriendlyName();
-                        typeConfiguration.rarity = enemyConfig.BindGlobal(masterTypeConfig.rarity, "Rarity", enemyType.name, enemySpawnRarities.GetValueOrDefault(enemyType, 0), $"Rarity of a(n) {friendlyName} relative to the total rarity of all other enemy types combined. A higher rarity increases the chance that the enemy will spawn.\nAlternate values: DEFAULT, GLOBAL");
+                        typeConfiguration.rarity = enemyConfig.BindGlobal(masterTypeConfig.rarity, "Rarity", enemyType.name.getTomlFriendlyName(), enemySpawnRarities.GetValueOrDefault(enemyType, 0), $"Rarity of a(n) {friendlyName} relative to the total rarity of all other enemy types combined. A higher rarity increases the chance that the enemy will spawn.\nAlternate values: DEFAULT, GLOBAL");
 
-                        string tablename = $"EnemyTypes.{enemyType.name}";
+                        string tablename = $"EnemyTypes.{enemyType.name.getTomlFriendlyName()}";
                         typeConfiguration.maxEnemyCount = enemyConfig.BindGlobal(masterTypeConfig.maxEnemyCount, tablename, "MaxEnemyCount", enemyType.MaxCount, $"Maximum amount of {friendlyName} allowed at once.\nAlternate values: DEFAULT, GLOBAL");
                         typeConfiguration.powerLevel = enemyConfig.BindGlobal(masterTypeConfig.powerLevel, tablename, "PowerLevel", enemyType.PowerLevel, $"How much a(n) {friendlyName} contributes to the maximum power level.\nAlternate values: DEFAULT, GLOBAL");
                         typeConfiguration.spawnCurve = enemyConfig.BindGlobal(masterTypeConfig.spawnCurve, tablename, "SpawnChanceCurve", enemyType.probabilityCurve, $"How likely a(n) {friendlyName} allowed at once.\nAlternate values: DEFAULT, GLOBAL");
@@ -375,7 +376,7 @@ namespace LethalQuantities.Objects
         {
             SelectableLevel level = levelInfo.level;
             {
-                scrap.enabled = levelInfo.mainConfigFile.Bind($"Level.{levelInfo.level.name}", "ScrapEnabled", false, $"Enables/disables custom scrap generation modifications for {level.PlanetName}");
+                scrap.enabled = levelInfo.mainConfigFile.Bind($"Level.{levelInfo.level.name.getTomlFriendlyName()}", "ScrapEnabled", false, $"Enables/disables custom scrap generation modifications for {level.PlanetName}");
 
                 if (scrap.enabled.Value)
                 {
@@ -390,7 +391,7 @@ namespace LethalQuantities.Objects
                     foreach (Item itemType in levelInfo.globalInfo.allItems)
                     {
                         ItemConfiguration configuration;
-                        string tablename = $"ItemType.{itemType.name}";
+                        string tablename = $"ItemType.{itemType.name.getTomlFriendlyName()}";
                         ItemConfiguration mainItemConfig = masterConfig.scrapConfiguration.items[itemType];
                         if (mainItemConfig is IScrappableConfiguration)
                         {
@@ -420,7 +421,7 @@ namespace LethalQuantities.Objects
         private void instantiateDungeonConfigs(LevelInformation levelInfo)
         {
             SelectableLevel level = levelInfo.level;
-            dungeon.enabled = levelInfo.mainConfigFile.Bind($"Level.{level.name}", "DungeonGenerationEnabled", false, $"Enables/disables custom dungeon generation modifications for {level.PlanetName}");
+            dungeon.enabled = levelInfo.mainConfigFile.Bind($"Level.{level.name.getTomlFriendlyName()}", "DungeonGenerationEnabled", false, $"Enables/disables custom dungeon generation modifications for {level.PlanetName}");
 
             if (dungeon.enabled.Value)
             {
@@ -441,7 +442,7 @@ namespace LethalQuantities.Objects
 
                     dungeonFlowConfig.rarity = dungeonConfig.BindGlobal(masterFlowConfig.rarity, "Rarity", flow.name, flowRarities.GetValueOrDefault(flow, 0), $"Rarity of creating a dungeon using {flow.name} as the generator.\nAlternate values: DEFAULT, GLOBAL");
 
-                    string tablename = $"DungeonFlow.{flow.name}";
+                    string tablename = $"DungeonFlow.{flow.name.getTomlFriendlyName()}";
                     dungeonFlowConfig.factorySizeMultiplier = dungeonConfig.BindGlobal(masterFlowConfig.factorySizeMultiplier, tablename, "FactorySizeMultiplier", level.factorySizeMultiplier, $"Size of the dungeon when using this dungeon flow.\nAlternate values: DEFAULT, GLOBAL");
 
                     dungeon.dungeonFlowConfigurations.Add(flow.name, dungeonFlowConfig);
@@ -454,7 +455,7 @@ namespace LethalQuantities.Objects
         private void instantiateTrapConfigs(LevelInformation levelInfo)
         {
             SelectableLevel level = levelInfo.level;
-            trap.enabled = levelInfo.mainConfigFile.Bind($"Level.{level.name}", "TrapEnabled", false, $"Enables/disables custom trap generation modifications for {level.PlanetName}");
+            trap.enabled = levelInfo.mainConfigFile.Bind($"Level.{level.name.getTomlFriendlyName()}", "TrapEnabled", false, $"Enables/disables custom trap generation modifications for {level.PlanetName}");
 
             if (trap.enabled.Value)
             {
@@ -471,7 +472,7 @@ namespace LethalQuantities.Objects
                     SpawnableMapObjectConfiguration masterTrapConfig = masterConfig.trapConfiguration.traps[mapObject.obj];
                     SpawnableMapObjectConfiguration configuration = new SpawnableMapObjectConfiguration(mapObject);
 
-                    string tablename = $"Trap.{mapObject.obj.name}";
+                    string tablename = $"Trap.{mapObject.obj.name.getTomlFriendlyName()}";
                     configuration.numberToSpawn = trapConfig.BindGlobal(masterTrapConfig.numberToSpawn, tablename, "SpawnAmount", defaultSpawnAmounts.GetValueOrDefault(mapObject.obj, new AnimationCurve()), $"The amount of this trap to spawn. 'Y Axis is the amount to be spawned; X axis should be from 0 to 1 and is randomly picked from.'\nAlternate values: DEFAULT, GLOBAL");
 
                     trap.traps.Add(mapObject.obj, configuration);
@@ -483,7 +484,7 @@ namespace LethalQuantities.Objects
         private void instantiatePriceConfigs(LevelInformation levelInfo)
         {
             SelectableLevel level = levelInfo.level;
-            price.enabled = levelInfo.mainConfigFile.Bind($"Level.{level.name}", "PriceEnabled", false, $"Enables/disables unique moon pricing when on {level.PlanetName}");
+            price.enabled = levelInfo.mainConfigFile.Bind($"Level.{level.name.getTomlFriendlyName()}", "PriceEnabled", false, $"Enables/disables unique moon pricing when on {level.PlanetName}");
 
             if (price.enabled.Value)
             {
@@ -497,7 +498,7 @@ namespace LethalQuantities.Objects
                 {
                     MoonPriceConfiguration config = new MoonPriceConfiguration(level.name);
                     MoonPriceConfiguration masterPriceConfig = masterConfig.priceConfiguration.moons[moon.name];
-                    string tablename = $"Level.{moon.name}";
+                    string tablename = $"Level.{moon.name.getTomlFriendlyName()}";
 
                     string priceDescription = $"The amount of credits it costs to travel to {moon.name}({moon.PlanetName}) from {level.name}({level.PlanetName})";
                     if (moon == level)
@@ -566,6 +567,19 @@ namespace LethalQuantities.Objects
                 }
             }
             return true;
+        }
+    }
+
+    internal static class StringLevelExtension
+    {
+        public static string getFileFriendlyName(this string str)
+        {
+            return string.Join("_", str.Replace("\\", "_").Replace("/", "_").Split(Path.GetInvalidFileNameChars()));
+        }
+
+        public static string getTomlFriendlyName(this string str)
+        {
+            return string.Join("_", Regex.Split(str, "[^A-Za-z0-9\\._-]"));
         }
     }
 }

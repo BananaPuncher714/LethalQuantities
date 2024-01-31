@@ -8,9 +8,6 @@ using UnityEngine.SceneManagement;
 using LethalQuantities.Objects;
 using System.IO;
 using LethalQuantities.Patches;
-using DunGen.Graph;
-using System.Linq;
-using Unity.Netcode;
 
 namespace LethalQuantities
 {
@@ -57,6 +54,8 @@ namespace LethalQuantities
             LETHAL_LOGGER.LogInfo("Registered StartOfRound patch");
             _harmony.PatchAll(typeof(ConfigEntryBasePatch));
             LETHAL_LOGGER.LogInfo("Registered ConfigEntryBase patch");
+            _harmony.PatchAll(typeof(TerminalPatch));
+            LETHAL_LOGGER.LogInfo("Reigsted Terminal patch");
 
             SceneManager.sceneLoaded += OnSceneLoaded;
             LETHAL_LOGGER.LogInfo("Added sceneLoaded delegate");

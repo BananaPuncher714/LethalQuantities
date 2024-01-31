@@ -87,7 +87,7 @@ namespace LethalQuantities.Objects
             // Config file for enabling/disabling individual moon config files
             foreach (SelectableLevel level in globalInfo.allSelectableLevels.Keys)
             {
-                string levelSaveDir = Path.Combine(globalInfo.moonSaveDir, level.name);
+                string levelSaveDir = Path.Combine(globalInfo.moonSaveDir, level.name.getFileFriendlyName());
                 LevelInformation levelInfo = new LevelInformation(this, globalInfo, level, levelSaveDir, fileConfigFile);
 
                 levelConfigs.Add(level.name, new LevelConfiguration(levelInfo));
@@ -114,11 +114,11 @@ namespace LethalQuantities.Objects
                 foreach (EnemyType enemyType in globalInfo.allEnemyTypes)
                 {
                     EnemyTypeConfiguration typeConfiguration = new EnemyTypeConfiguration(enemyType);
+                    string tablename = $"EnemyTypes.{enemyType.name.getTomlFriendlyName()}";
 
                     // Use a separate table for rarity
-                    typeConfiguration.rarity = BindEmptyOrNonDefaultable<int>(enemyConfig, "Rarity", enemyType.name, $"Rarity of a(n) {enemyType.enemyName} spawning relative to the total rarity of all other enemy types combined. A higher rarity increases the chance that the enemy will spawn.\nLeave blank or DEFAULT to use the moon's default rarity.");
+                    typeConfiguration.rarity = BindEmptyOrNonDefaultable<int>(enemyConfig, "Rarity", enemyType.name.getTomlFriendlyName(), $"Rarity of a(n) {enemyType.enemyName} spawning relative to the total rarity of all other enemy types combined. A higher rarity increases the chance that the enemy will spawn.\nLeave blank or DEFAULT to use the moon's default rarity.");
 
-                    string tablename = $"EnemyTypes.{enemyType.name}";
                     typeConfiguration.maxEnemyCount = BindEmptyOrDefaultable(enemyConfig, tablename, "MaxEnemyCount", enemyType.MaxCount, $"Maximum amount of {enemyType.enemyName}s allowed at once.\nAlternate values: DEFAULT");
                     typeConfiguration.powerLevel = BindEmptyOrDefaultable(enemyConfig, tablename, "PowerLevel", enemyType.PowerLevel, $"How much a single {enemyType.enemyName} contributes to the maximum power level\nAlternate values: DEFAULT");
                     typeConfiguration.spawnCurve = BindEmptyOrDefaultable(enemyConfig, tablename, "SpawnChanceCurve", enemyType.probabilityCurve, $"How likely a(n) {enemyType.enemyName} is to spawn as the day progresses. (Key ranges from 0-1 )\nAlternate values: DEFAULT");
@@ -159,10 +159,10 @@ namespace LethalQuantities.Objects
                 foreach (EnemyType enemyType in globalInfo.allEnemyTypes)
                 {
                     DaytimeEnemyTypeConfiguration typeConfiguration = new DaytimeEnemyTypeConfiguration(enemyType);
-                    string tablename = $"EnemyTypes.{enemyType.name}";
+                    string tablename = $"EnemyTypes.{enemyType.name.getTomlFriendlyName()}";
 
                     // Use a separate table for rarity
-                    typeConfiguration.rarity = BindEmptyOrNonDefaultable<int>(enemyConfig, "Rarity", enemyType.name, $"Rarity of a(n) {enemyType.enemyName} spawning relative to the total rarity of all other enemy types combined. A higher rarity increases the chance that the enemy will spawn.\nLeave blank or DEFAULT to use the moon's default rarity.");
+                    typeConfiguration.rarity = BindEmptyOrNonDefaultable<int>(enemyConfig, "Rarity", enemyType.name.getTomlFriendlyName(), $"Rarity of a(n) {enemyType.enemyName} spawning relative to the total rarity of all other enemy types combined. A higher rarity increases the chance that the enemy will spawn.\nLeave blank or DEFAULT to use the moon's default rarity.");
 
                     typeConfiguration.maxEnemyCount = BindEmptyOrDefaultable(enemyConfig, tablename, "MaxEnemyCount", enemyType.MaxCount, $"Maximum amount of {enemyType.enemyName}s allowed at once\nAlternate values: DEFAULT");
                     typeConfiguration.powerLevel = BindEmptyOrDefaultable(enemyConfig, tablename, "PowerLevel", enemyType.PowerLevel, $"How much a(n) {enemyType.enemyName} contributes to the maximum power level\nAlternate values: DEFAULT");
@@ -204,10 +204,10 @@ namespace LethalQuantities.Objects
                 foreach (EnemyType enemyType in globalInfo.allEnemyTypes)
                 {
                     EnemyTypeConfiguration typeConfiguration = new EnemyTypeConfiguration(enemyType);
-                    string tablename = $"EnemyTypes.{enemyType.name}";
+                    string tablename = $"EnemyTypes.{enemyType.name.getTomlFriendlyName()}";
 
                     // Use a separate table for rarity
-                    typeConfiguration.rarity = BindEmptyOrNonDefaultable<int>(enemyConfig, "Rarity", enemyType.name, $"Rarity of a(n) {enemyType.enemyName} spawning relative to the total rarity of all other enemy types combined. A higher rarity increases the chance that the enemy will spawn.\nLeave blank or DEFAULT to use the moon's default rarity.");
+                    typeConfiguration.rarity = BindEmptyOrNonDefaultable<int>(enemyConfig, "Rarity", enemyType.name.getTomlFriendlyName(), $"Rarity of a(n) {enemyType.enemyName} spawning relative to the total rarity of all other enemy types combined. A higher rarity increases the chance that the enemy will spawn.\nLeave blank or DEFAULT to use the moon's default rarity.");
 
                     typeConfiguration.maxEnemyCount = BindEmptyOrDefaultable(enemyConfig, tablename, "MaxEnemyCount", enemyType.MaxCount, $"Maximum amount of {enemyType.enemyName}s allowed at once\nAlternate values: DEFAULT");
                     typeConfiguration.powerLevel = BindEmptyOrDefaultable(enemyConfig, tablename, "PowerLevel", enemyType.PowerLevel, $"How much a(n) {enemyType.enemyName} contributes to the maximum power level\nAlternate values: DEFAULT");
@@ -250,7 +250,7 @@ namespace LethalQuantities.Objects
             foreach (Item itemType in globalInfo.allItems)
             {
                 GlobalItemConfiguration itemConfiguration;
-                string tablename = $"ItemType.{itemType.name}";
+                string tablename = $"ItemType.{itemType.name.getTomlFriendlyName()}";
                 if (itemType.isScrap)
                 {
                     GlobalItemScrapConfiguration configuration = new GlobalItemScrapConfiguration(itemType);
@@ -263,7 +263,7 @@ namespace LethalQuantities.Objects
                     itemConfiguration = new GlobalItemConfiguration(itemType);
                 }
 
-                itemConfiguration.rarity = BindEmptyOrNonDefaultable<int>(scrapConfig, "Rarity", itemType.name, $"Rarity of a(n) {itemType.itemName} relative to the total rarity of all other item types combined. A higher rarity increases the chance that the item will spawn.\nLeave blank or DEFAULT to use the moon's default rarity.");
+                itemConfiguration.rarity = BindEmptyOrNonDefaultable<int>(scrapConfig, "Rarity", itemType.name.getTomlFriendlyName(), $"Rarity of a(n) {itemType.itemName} relative to the total rarity of all other item types combined. A higher rarity increases the chance that the item will spawn.\nLeave blank or DEFAULT to use the moon's default rarity.");
 
                 itemConfiguration.weight = BindEmptyOrDefaultable(scrapConfig, tablename, "Weight", itemType.weight, $"The weight of a(n) {itemType.itemName}. The in-game weight can be found by the formula: pounds = (value - 1) * 100. For example, a value of 1.18 means the object weighs 18lbs. This option can only be set in the global config.\nAlternate values: DEFAULT");
                 itemConfiguration.conductive = BindEmptyOrDefaultable(scrapConfig, tablename, "Conductive", itemType.isConductiveMetal, $"Whether or not {itemType.itemName} is conductive(can be struck by lightning).\nAlternate values: DEFAULT");
@@ -293,9 +293,9 @@ namespace LethalQuantities.Objects
             foreach (DungeonFlow flow in globalInfo.allDungeonFlows)
             {
                 DungeonFlowConfiguration configuration = new DungeonFlowConfiguration();
-                configuration.rarity = BindEmptyOrNonDefaultable<int>(dungeonFile, "Rarity", flow.name, $"Rarity of a moon using a {flow.name} dungeon generator as the interior. A higher rarity increases the chance that the moon will use this dungeon flow.\nLeave blank or DEFAULT to use the moon's default rarity.");
+                configuration.rarity = BindEmptyOrNonDefaultable<int>(dungeonFile, "Rarity", flow.name.getTomlFriendlyName(), $"Rarity of a moon using a {flow.name} dungeon generator as the interior. A higher rarity increases the chance that the moon will use this dungeon flow.\nLeave blank or DEFAULT to use the moon's default rarity.");
 
-                string tablename = $"DungeonFlow." + flow.name;
+                string tablename = $"DungeonFlow.{flow.name.getTomlFriendlyName()}";
                 configuration.factorySizeMultiplier = BindEmptyOrNonDefaultable<float>(dungeonFile, tablename, "FactorySizeMultiplier", $"Size of the dungeon when using this dungeon flow.\nLeave blank or DEFAULT to use the moon's default factory size multiplier.\nAlternate values: DEFAULT");
 
                 dungeonConfiguration.dungeonFlowConfigurations.Add(flow.name, configuration);
@@ -322,7 +322,7 @@ namespace LethalQuantities.Objects
             foreach (DirectionalSpawnableMapObject mapObject in globalInfo.allSpawnableMapObjects)
             {
                 SpawnableMapObjectConfiguration configuration = new SpawnableMapObjectConfiguration(mapObject);
-                string tablename = $"Trap.{mapObject.obj.name}";
+                string tablename = $"Trap.{mapObject.obj.name.getTomlFriendlyName()}";
                 configuration.numberToSpawn = BindEmptyOrNonDefaultable<AnimationCurve>(trapFile, tablename, "SpawnAmount", $"The amount of this trap to spawn. 'Y Axis is the amount to be spawned; X axis should be from 0 to 1 and is randomly picked from.'\nAlternate values: DEFAULT");
 
                 trapConfiguration.traps.Add(mapObject.obj, configuration);
@@ -353,7 +353,7 @@ namespace LethalQuantities.Objects
                 if (globalInfo.allSelectableLevels.TryGetValue(level, out GenericLevelInformation info))
                 {
                     MoonPriceConfiguration config = new MoonPriceConfiguration(level.name);
-                    string tablename = $"Level.{level.name}";
+                    string tablename = $"Level.{level.name.getTomlFriendlyName()}";
 
                     config.price = BindEmptyOrDefaultable(priceFile, tablename, "TravelCost", info.price, $"How many credits it costs to travel to {level.name}({level.PlanetName}).\nAlternate values: DEFAULT");
 

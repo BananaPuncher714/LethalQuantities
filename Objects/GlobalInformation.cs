@@ -20,7 +20,7 @@ namespace LethalQuantities.Objects
 
     public class GenericLevelInformation
     {
-        public int price { get; set; }
+        public int price { get; set; } = -1;
     }
 
     public class GlobalInformation
