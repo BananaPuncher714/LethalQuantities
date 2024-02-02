@@ -30,15 +30,32 @@ namespace LethalQuantities.Patches
                 {
                     priceConfig = localConfig.price;
                 }
-            } else
+            }
+            else
             {
                 Plugin.LETHAL_LOGGER.LogError($"Did not find local config for ${level.name}({level.PlanetName}). Did the configuration files generate properly?");
                 return;
             }
 
+            List<PriceConfiguration> priceConfigurations = new List<PriceConfiguration>();
+            if (configuration.priceConfiguration.enabled.Value)
+            {
+                priceConfigurations.Add(configuration.priceConfiguration);
+            }
+
+            foreach (LevelConfiguration config in configuration.levelConfigs.Values)
+            {
+                if (config.price.enabled.Value)
+                {
+                    priceConfigurations.Add(config.price);
+                }
+            }
+
+
             bool wasDefault = defaultPrices.Count() == 0;
             if (priceConfig.enabled.Value)
             {
+                bool updatedConfigs = false;
                 Plugin.LETHAL_LOGGER.LogInfo("Modifying moon prices");
                 foreach (CompatibleNoun noun in routeWord.compatibleNouns)
                 {
@@ -56,6 +73,28 @@ namespace LethalQuantities.Patches
 
                     if (StartOfRound.Instance.getLevelById(levelId, out SelectableLevel matched))
                     {
+                        if (priceConfigurations.Count > 0)
+                        {
+                            bool didMoonPriceUpdate = false;
+                            foreach (PriceConfiguration config in priceConfigurations)
+                            {
+                                if (config.moons[matched.name].price.DefaultValue() == -1)
+                                {
+                                    updatedConfigs = didMoonPriceUpdate = true;
+                                    config.file.SaveOnConfigSet = false;
+                                    config.moons[matched.name].price.setDefaultValue(result.itemCost);
+                                }
+                            }
+                            if (didMoonPriceUpdate)
+                            {
+                                Plugin.LETHAL_LOGGER.LogInfo($"Updated price configs with a new default price for level {matched.name}");
+                            }
+                        }
+                        else
+                        {
+                            Plugin.LETHAL_LOGGER.LogError("Expected at least 1 enabled PriceConfiguration object, got none. Was this PriceConfiguration object loaded properly?");
+                        }
+
                         if (priceConfig.moons.TryGetValue(matched.name, out MoonPriceConfiguration moonConfig))
                         {
                             int price = defaultPrices.GetValueOrDefault(levelId, result.itemCost);
@@ -70,23 +109,32 @@ namespace LethalQuantities.Patches
                         Plugin.LETHAL_LOGGER.LogWarning($"Unable to find moon for level {levelId}");
                     }
                 }
-            }
-            else if (!wasDefault)
-            {
-                // Reset the moons to their vanilla values, for this level
-                Plugin.LETHAL_LOGGER.LogInfo("Resetting moon prices back to the original values");
-                foreach (CompatibleNoun noun in routeWord.compatibleNouns)
+
+                if (updatedConfigs)
                 {
-                    TerminalNode result = noun.result;
-                    TerminalNode confirm = result.terminalOptions.First(n => n.noun.word.ToLower() == "confirm").result;
-                    int levelId = confirm.buyRerouteToMoon;
-
-                    int price = defaultPrices.GetValueOrDefault(levelId, result.itemCost);
-
-                    result.itemCost = price;
-                    confirm.itemCost = price;
+                    foreach (PriceConfiguration config in priceConfigurations)
+                    {
+                        config.file.Save();
+                        config.file.SaveOnConfigSet = true;
+                    }
                 }
-                defaultPrices.Clear();
+                else if (!wasDefault)
+                {
+                    // Reset the moons to their vanilla values, for this level
+                    Plugin.LETHAL_LOGGER.LogInfo("Resetting moon prices back to the original values");
+                    foreach (CompatibleNoun noun in routeWord.compatibleNouns)
+                    {
+                        TerminalNode result = noun.result;
+                        TerminalNode confirm = result.terminalOptions.First(n => n.noun.word.ToLower() == "confirm").result;
+                        int levelId = confirm.buyRerouteToMoon;
+
+                        int price = defaultPrices.GetValueOrDefault(levelId, result.itemCost);
+
+                        result.itemCost = price;
+                        confirm.itemCost = price;
+                    }
+                    defaultPrices.Clear();
+                }
             }
         }
     }

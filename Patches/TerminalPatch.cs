@@ -8,7 +8,10 @@ namespace LethalQuantities.Patches
         [HarmonyPrefix]
         private static void onTerminalStartPrefix(Terminal __instance)
         {
-            StartOfRoundPatch.updateMoonPrices(StartOfRound.Instance.currentLevel);
+            if (RoundManager.Instance.IsServer)
+            {
+                StartOfRoundPatch.updateMoonPrices(StartOfRound.Instance.currentLevel);
+            }
         }
     }
 }

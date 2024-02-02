@@ -32,7 +32,10 @@ namespace LethalQuantities.Objects
         {
             return typeof(T);
         }
-
+        public virtual void setDefaultValue(T value)
+        {
+            throw new NotImplementedException();
+        }
         public virtual T DefaultValue()
         {
             throw new NotImplementedException();
@@ -71,6 +74,11 @@ namespace LethalQuantities.Objects
         public override bool Set(ref T value)
         {
             return true;
+        }
+
+        public override void setDefaultValue(T value)
+        {
+            defaultValue = v => value;
         }
 
         public override T DefaultValue()
@@ -155,6 +163,10 @@ namespace LethalQuantities.Objects
             return converter.ConvertToString(defaultValue, typeof(T));
         }
 
+        public override void setDefaultValue(T value)
+        {
+            defaultValue = value;
+        }
         public override T DefaultValue()
         {
             return defaultValue;
@@ -219,6 +231,10 @@ namespace LethalQuantities.Objects
             return converter.ConvertToString(defaultValue, typeof(T));
         }
 
+        public override void setDefaultValue(T value)
+        {
+            defaultValue = value;
+        }
         public override T DefaultValue()
         {
             return defaultValue;

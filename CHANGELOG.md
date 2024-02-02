@@ -1,4 +1,8 @@
 ## Changelog
+### 1.1.11
+- Fixed outside enemies not working as expected
+- Fixed level not loading if certain scrap rarity values were set above 0
+- Fixed some moon prices showing as -1 by default
 ### 1.1.10
 - Added compatibilty with LethalExpansion moons
 - Added in filters to check for moons and other objects with strange names

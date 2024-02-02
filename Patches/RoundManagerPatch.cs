@@ -26,7 +26,8 @@ namespace LethalQuantities.Patches
                 // Filter out any potentially "fake" enemy types that might have been added by other mods
                 Plugin.LETHAL_LOGGER.LogInfo("Fetching all enemy types");
                 HashSet<string> addedEnemyTypes = new HashSet<string>();
-                globalInfo.allEnemyTypes.AddRange(Resources.FindObjectsOfTypeAll<EnemyType>().Where(type => {
+                globalInfo.allEnemyTypes.AddRange(Resources.FindObjectsOfTypeAll<EnemyType>().Where(type =>
+                {
                     if (type.enemyPrefab == null)
                     {
                         Plugin.LETHAL_LOGGER.LogWarning($"Enemy type {type.name} is missing prefab! Perhaps another mod has removed it? Some default values in the config may not be correct.");
@@ -45,7 +46,9 @@ namespace LethalQuantities.Patches
                 Plugin.LETHAL_LOGGER.LogInfo("Fetching all items");
                 HashSet<string> addedItems = new HashSet<string>();
                 globalInfo.allItems.AddRange(Resources.FindObjectsOfTypeAll<Item>().Where(type => {
-                    if (type.spawnPrefab == null)
+                    // There is no way to determine if an item is valid or not, and since LethalLevelLoader adds in fake items, this is the best that can be done
+                    // Not my problem if it breaks, but sure is annoying to have to clean up after other mods
+                    if (type.spawnPrefab == null || type.itemIcon == null)
                     {
                         Plugin.LETHAL_LOGGER.LogWarning($"Item {type.name} is missing prefab! Perhaps another mod has removed it? Some default values in the config may not be correct.");
                     }
@@ -219,8 +222,8 @@ namespace LethalQuantities.Patches
                         Plugin.LETHAL_LOGGER.LogInfo("Changing outside enemy values");
                         config.maxPowerCount.Set(ref newLevel.maxOutsideEnemyPowerCount);
                         config.spawnAmountCurve.Set(ref newLevel.outsideEnemySpawnChanceThroughDay);
-                        newLevel.DaytimeEnemies.Clear();
-                        newLevel.DaytimeEnemies.AddRange(state.daytimeEnemies);
+                        newLevel.OutsideEnemies.Clear();
+                        newLevel.OutsideEnemies.AddRange(state.outsideEnemies);
                     }
                 }
 
@@ -305,6 +308,8 @@ namespace LethalQuantities.Patches
                             int originalRarity = flows.GetValueOrDefault(name, 0);
                             config.rarity.Set(ref originalRarity);
                             flows[name] = originalRarity;
+
+                            Plugin.LETHAL_LOGGER.LogInfo($"Set dungeon flow rarity for {name} to {originalRarity}");
                         }
                         newLevel.dungeonFlowTypes = __instance.ConvertToDungeonFlowArray(flows);
                     }

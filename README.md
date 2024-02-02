@@ -1,5 +1,5 @@
 # Lethal Quantities
-A flexible customization mod that works with other mods. **All configs are disabled by default.** Please request features or report issues [here](https://github.com/BananaPuncher714/LethalQuantities/issues). **Configs are generated after you host or join a game, and can be confirmed if this mod prints out debug information in the console about every moon and enemy type.**
+A flexible customization mod that works with other mods. **All configs are disabled by default.** Please request features or report issues [here](https://github.com/BananaPuncher714/LethalQuantities/issues). **Configs are generated after you host or join a game**
 ## Features
 - Provides optional(disabled by default) settings to enhance your Lethal Company experience
 - Some more control over how many enemies spawn, and on what moons
@@ -15,9 +15,17 @@ A flexible customization mod that works with other mods. **All configs are disab
 - Should work with custom events and other mods that change enemy spawn settings
 ## Known Incompatibilities
 - LethalLevelLoader - Partial incompatibility with custom dungeon flows
-  - LethalLevelLoader prevents this mod from being able to change custom dungeon flow rarities. While changing vanilla dungeon flow rarities works fine, you will need to edit the mod's config which adds the custom dungeon flow specifically.
+  - LethalLevelLoader prevents this mod from being able to change custom dungeon flow rarities. While changing vanilla dungeon flow rarities works fine, you will need to edit the mod's config which adds the custom dungeon flow specifically. This is an issue with LethalLevelLoader.
+  - For developers:
+	- LethalQuantities uses the vanilla dungeon flow rarity array in SelectableLevel. This should be used when considering which dungeon flow to spawn. Any alternative is intrusive.
+- LethalLevelLoader moons - Potential incompatibility
+  - Due to how LethalLevelLoader encourages moon creators to add custom enemies and items, certain incomplete item and enemy types may not be detected by LethalQuantities and cause errors when loading into a level.
+  - For developers:
+	- `EnemyType`s and `Item`s should **contain everything a vanilla object is expected to contain**.
 - Moon price changing mods
-  - If you modify moon prices, other mods may not be able to change the price correctly, or at all.
+  - If you modify moon prices with LethalQuantities, other mods may not be able to change the price correctly, or at all.
+  - For developers:
+	- The moon prices are set in a prefix for `StartOfRound.ChangePlanet` with a priority of 200. You can add your own prefix(with a higher priority value) or postfix to ensure that your prices are set properly.
 ## Configuration
 You must host or join a game at least once to generate the configuration files. Any missing or deleted files will be generated with the default options. By default, the only file that is generated is `Configuration.cfg`. You must enable global config files and individual moon config files in order to modify anything.
 - `Configuration.cfg` - Enable/disable other configuration files here
@@ -56,7 +64,7 @@ There are 3 different enemy configuration files:
 - `OutsideEnemies.cfg` - Responsible for all enemies that can spawn outside, but normally hostile ones.
 
 
-These configuration files do _not_ interfere with each other, meaning enemies spawned based on one config will not count towards settings from another config(such as MaxEnemyCount).
+These configuration files do _not_ interfere with each other, meaning enemies spawned based on one config will not count towards settings from another config(such as MaxEnemyCount, EnemyHp, etc).
 
 
 **Options**
@@ -68,7 +76,7 @@ These configuration files do _not_ interfere with each other, meaning enemies sp
 - EnemyType - There is one section for each enemy. Invalid enemy types are ignored.
   - `MaxEnemyCount` - The total amount of enemies of the given type that can spawn
   - `PowerLevel` - How much power an enemy of the given type counts for
-  - `SpawnCurve` - An AnimationCurve from 0 to 1. The key represents the percentage of time progressed, much like `SpawnChanceCurve`. The value normally ranges from 0 to 1, and is multiplied by `Rarity` to find the weight.
+  - `SpawnCurve` - An AnimationCurve from 0 to 1. The key represents the percentage of time progressed, much like `SpawnChanceCurve`. The value normally ranges from 0 to 1, and is multiplied by `Rarity` to find the weight. For more information, view the **Spawn Logic** section below
   - `StunTimeMultiplier` - The  multiplier for how long an enemy can be stunned.
   - `DoorSpeedMultiplier` - The multiplier for how long an enemy takes to open a door.
   - `StunGameDifficultyMultiplier` - I don't know what this option does.
@@ -82,6 +90,7 @@ These configuration files do _not_ interfere with each other, meaning enemies sp
 
 Exceptions:
 - The `OutsideEnemies.cfg` option `SpawnChanceRange` has a hardcoded value of `3` in-game, and cannot be changed
+- The `DaytimeEnemies.cfg` does not use `SpawnFalloffCurve` when calculating the total rarity.
 </details>
 <details>
 <summary>Scrap</summary>
@@ -160,6 +169,7 @@ These configuration values are set per moon. They support custom traps.
 
 ## Spawn Logic
 The enemy spawn logic in **Lethal Company** is a bit complex, and there are many additional variables that I did not make configurable. It would require a fairly large recode, and it would be more likely to cause problems with other mods. That said, here are some basic things to keep in mind when configuring enemy spawning:
+- **This is the vanilla behavior. This does not apply to mods that implement custom spawning algorithms.**
 - The number of vents does not limit how many enemies can spawn indoors
 - The AnimationCurves dependent on time are always from 0 to 1. This includes if the total amount of hours is changed by another mod, or if the day progresses slower/faster.
 - The AnimationCurves are not a linear progression from one frame to another. It is modelled by Unity's AnimationCurve, and therefore probably a smooth line

@@ -5,6 +5,7 @@ using HarmonyLib;
 using LethalQuantities.Patches;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using UnityEngine;
@@ -343,6 +344,7 @@ namespace LethalQuantities.Objects
             if (priceConfiguration.enabled.Value)
             {
                 priceFile = new ConfigFile(Path.Combine(globalInfo.configSaveDir, PRICES_CFG_NAME), true);
+                priceConfiguration.file = priceFile;
                 priceFile.SaveOnConfigSet = false;
             }
 

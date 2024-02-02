@@ -198,6 +198,7 @@ namespace LethalQuantities.Objects
     }
     public class PriceConfiguration
     {
+        internal ConfigFile file { get; set; }
         public ConfigEntry<bool> enabled { get; set; }
         public Dictionary<string, MoonPriceConfiguration> moons { get; } = new Dictionary<string, MoonPriceConfiguration>();
     }
@@ -490,6 +491,7 @@ namespace LethalQuantities.Objects
             {
                 GlobalConfiguration masterConfig = levelInfo.masterConfig;
                 ConfigFile priceConfig = new ConfigFile(Path.Combine(levelInfo.levelSaveDir, GlobalConfiguration.PRICES_CFG_NAME), true);
+                price.file = priceConfig;
                 priceConfig.SaveOnConfigSet = false;
 
                 List<SelectableLevel> levelList = levelInfo.globalInfo.allSelectableLevels.Keys.ToList();
