@@ -255,7 +255,7 @@ namespace LethalQuantities.Objects
                     enemies.spawnAmountCurve = enemyConfig.BindGlobal(masterConfig.enemyConfiguration.spawnAmountCurve, "General", "SpawnAmountCurve", level.enemySpawnChanceThroughoutDay, "How many enemies can spawn enemy as the day progresses. (Key ranges from 0-1 )\nAlternate values: DEFAULT, GLOBAL");
                     enemies.spawnAmountRange = enemyConfig.BindGlobal(masterConfig.enemyConfiguration.spawnAmountRange, "General", "SpawnAmountRange", level.spawnProbabilityRange, "How many more/less enemies can spawn. A spawn range of 3 means there can be -/+3 enemies\nAlternate values: DEFAULT, GLOBAL");
 
-                    Dictionary<EnemyType, int> enemySpawnRarities = convertToDictionary(level.Enemies);
+                    Dictionary<string, int> enemySpawnRarities = convertToDictionary(level.Enemies);
                     foreach (EnemyType enemyType in levelInfo.globalInfo.allEnemyTypes)
                     {
                         EnemyTypeConfiguration masterTypeConfig = masterConfig.enemyConfiguration.enemyTypes[enemyType];
@@ -265,7 +265,7 @@ namespace LethalQuantities.Objects
 
 
                         // Store rarity in a separate table for convenience
-                        typeConfiguration.rarity = enemyConfig.BindGlobal(masterTypeConfig.rarity, "Rarity", enemyType.name.getTomlFriendlyName(), enemySpawnRarities.GetValueOrDefault(enemyType, 0), $"Rarity of a(n) {friendlyName} spawning relative to the total rarity of all other enemy types combined. A higher rarity increases the chance that the enemy will spawn.\nAlternate values: DEFAULT, GLOBAL"); ;
+                        typeConfiguration.rarity = enemyConfig.BindGlobal(masterTypeConfig.rarity, "Rarity", enemyType.name.getTomlFriendlyName(), enemySpawnRarities.GetValueOrDefault(enemyType.name, 0), $"Rarity of a(n) {friendlyName} spawning relative to the total rarity of all other enemy types combined. A higher rarity increases the chance that the enemy will spawn.\nAlternate values: DEFAULT, GLOBAL"); ;
 
                         typeConfiguration.maxEnemyCount = enemyConfig.BindGlobal(masterTypeConfig.maxEnemyCount, tablename, "MaxEnemyCount", enemyType.MaxCount, $"Maximum amount of {friendlyName} allowed at once.\nAlternate values: DEFAULT, GLOBAL");
                         typeConfiguration.powerLevel = enemyConfig.BindGlobal(masterTypeConfig.powerLevel, tablename, "PowerLevel", enemyType.PowerLevel, $"How much a single {friendlyName} contributes to the maximum power level.\nAlternate values: DEFAULT, GLOBAL");
@@ -299,14 +299,14 @@ namespace LethalQuantities.Objects
                     daytimeEnemies.spawnAmountCurve = enemyConfig.BindGlobal(masterConfig.daytimeEnemyConfiguration.spawnAmountCurve, "General", "SpawnAmountCurve", level.daytimeEnemySpawnChanceThroughDay, "How many enemies can spawn enemy as the day progresses. (Key ranges from 0-1)\nAlternate values: DEFAULT, GLOBAL");
                     daytimeEnemies.spawnAmountRange = enemyConfig.BindGlobal(masterConfig.daytimeEnemyConfiguration.spawnAmountRange, "General", "SpawnAmountRange", level.daytimeEnemiesProbabilityRange, "How many more/less enemies can spawn. A spawn range of 3 means there can be -/+3 enemies\nAlternate values: DEFAULT, GLOBAL");
 
-                    Dictionary<EnemyType, int> enemySpawnRarities = convertToDictionary(level.DaytimeEnemies);
+                    Dictionary<string, int> enemySpawnRarities = convertToDictionary(level.DaytimeEnemies);
                     foreach (EnemyType enemyType in levelInfo.globalInfo.allEnemyTypes)
                     {
                         DaytimeEnemyTypeConfiguration masterTypeConfig = masterConfig.daytimeEnemyConfiguration.enemyTypes[enemyType];
                         DaytimeEnemyTypeConfiguration typeConfiguration = new DaytimeEnemyTypeConfiguration(enemyType);
 
                         string friendlyName = enemyType.getFriendlyName();
-                        typeConfiguration.rarity = enemyConfig.BindGlobal(masterTypeConfig.rarity, "Rarity", enemyType.name.getTomlFriendlyName(), enemySpawnRarities.GetValueOrDefault(enemyType, 0), $"Rarity of a(n) {friendlyName} relative to the total rarity of all other enemy types combined. A higher rarity increases the chance that the enemy will spawn.\nAlternate values: DEFAULT, GLOBAL");
+                        typeConfiguration.rarity = enemyConfig.BindGlobal(masterTypeConfig.rarity, "Rarity", enemyType.name.getTomlFriendlyName(), enemySpawnRarities.GetValueOrDefault(enemyType.name, 0), $"Rarity of a(n) {friendlyName} relative to the total rarity of all other enemy types combined. A higher rarity increases the chance that the enemy will spawn.\nAlternate values: DEFAULT, GLOBAL");
 
                         string tablename = $"EnemyTypes.{enemyType.name.getTomlFriendlyName()}";
                         typeConfiguration.maxEnemyCount = enemyConfig.BindGlobal(masterTypeConfig.maxEnemyCount, tablename, "MaxEnemyCount", enemyType.MaxCount, $"Maximum amount of {friendlyName} allowed at once.\nAlternate values: DEFAULT, GLOBAL");
@@ -343,14 +343,14 @@ namespace LethalQuantities.Objects
                     // Hardcoded to 3 internally
                     //outsideEnemies.spawnAmountRange = enemyConfig.BindGlobal("General", "SpawnAmountRange", level.spawnProbabilityRange, "How many more/less enemies can spawn. A spawn range of 3 means there can be -/+3 enemies.");
 
-                    Dictionary<EnemyType, int> enemySpawnRarities = convertToDictionary(level.OutsideEnemies);
+                    Dictionary<string, int> enemySpawnRarities = convertToDictionary(level.OutsideEnemies);
                     foreach (EnemyType enemyType in levelInfo.globalInfo.allEnemyTypes)
                     {
                         EnemyTypeConfiguration masterTypeConfig = masterConfig.outsideEnemyConfiguration.enemyTypes[enemyType];
                         EnemyTypeConfiguration typeConfiguration = new EnemyTypeConfiguration(enemyType);
 
                         string friendlyName = enemyType.getFriendlyName();
-                        typeConfiguration.rarity = enemyConfig.BindGlobal(masterTypeConfig.rarity, "Rarity", enemyType.name.getTomlFriendlyName(), enemySpawnRarities.GetValueOrDefault(enemyType, 0), $"Rarity of a(n) {friendlyName} relative to the total rarity of all other enemy types combined. A higher rarity increases the chance that the enemy will spawn.\nAlternate values: DEFAULT, GLOBAL");
+                        typeConfiguration.rarity = enemyConfig.BindGlobal(masterTypeConfig.rarity, "Rarity", enemyType.name.getTomlFriendlyName(), enemySpawnRarities.GetValueOrDefault(enemyType.name, 0), $"Rarity of a(n) {friendlyName} relative to the total rarity of all other enemy types combined. A higher rarity increases the chance that the enemy will spawn.\nAlternate values: DEFAULT, GLOBAL");
 
                         string tablename = $"EnemyTypes.{enemyType.name.getTomlFriendlyName()}";
                         typeConfiguration.maxEnemyCount = enemyConfig.BindGlobal(masterTypeConfig.maxEnemyCount, tablename, "MaxEnemyCount", enemyType.MaxCount, $"Maximum amount of {friendlyName} allowed at once.\nAlternate values: DEFAULT, GLOBAL");
@@ -388,7 +388,7 @@ namespace LethalQuantities.Objects
                     scrap.maxScrap = scrapConfig.BindGlobal(masterConfig.scrapConfiguration.maxScrap, "General", "MaxScrapCount", level.maxScrap, "Maximum total number of scrap generated in the level, exclusive.\nAlternate values: DEFAULT, GLOBAL");
                     scrap.scrapAmountMultiplier = scrapConfig.BindGlobal(masterConfig.scrapConfiguration.scrapAmountMultiplier, "General", "ScrapAmountMultiplier", levelInfo.globalInfo.manager.scrapAmountMultiplier, "Modifier to the total amount of scrap generated in the level.\nAlternate values: DEFAULT, GLOBAL");
                     scrap.scrapValueMultiplier = scrapConfig.BindGlobal(masterConfig.scrapConfiguration.scrapValueMultiplier, "General", "ScrapValueMultiplier", levelInfo.globalInfo.manager.scrapValueMultiplier, "Modifier to the total value of scrap generated in the level.\nAlternate values: DEFAULT, GLOBAL");
-                    Dictionary<Item, int> itemSpawnRarities = convertToDictionary(level.spawnableScrap);
+                    Dictionary<string, int> itemSpawnRarities = convertToDictionary(level.spawnableScrap);
                     foreach (Item itemType in levelInfo.globalInfo.allItems)
                     {
                         ItemConfiguration configuration;
@@ -408,7 +408,7 @@ namespace LethalQuantities.Objects
                             configuration = new ItemConfiguration(itemType);
                         }
 
-                        configuration.rarity = scrapConfig.BindGlobal(mainItemConfig.rarity, "Rarity", itemType.name, itemSpawnRarities.GetValueOrDefault(itemType, 0), $"Rarity of a(n) {itemType.itemName} relative to the total rarity of all other item types combined. A higher rarity increases the chance that the item will spawn.\nAlternate values: DEFAULT, GLOBAL");
+                        configuration.rarity = scrapConfig.BindGlobal(mainItemConfig.rarity, "Rarity", itemType.name, itemSpawnRarities.GetValueOrDefault(itemType.name, 0), $"Rarity of a(n) {itemType.itemName} relative to the total rarity of all other item types combined. A higher rarity increases the chance that the item will spawn.\nAlternate values: DEFAULT, GLOBAL");
 
                         configuration.conductive = scrapConfig.BindGlobal(mainItemConfig.conductive, tablename, "Conductive", itemType.isConductiveMetal, $"Whether or not {itemType.itemName} is conductive(can be struck by lightning).\nAlternate values: DEFAULT, GLOBAL");
                         scrap.items.Add(itemType, configuration);
@@ -518,30 +518,30 @@ namespace LethalQuantities.Objects
             }
         }
 
-        private static Dictionary<EnemyType, int> convertToDictionary(List<SpawnableEnemyWithRarity> enemies)
+        private static Dictionary<string, int> convertToDictionary(List<SpawnableEnemyWithRarity> enemies)
         {
-            Dictionary<EnemyType, int> enemySpawnRarities = new Dictionary<EnemyType, int>();
+            Dictionary<string, int> enemySpawnRarities = new Dictionary<string, int>();
             foreach (SpawnableEnemyWithRarity enemy in enemies)
             {
-                if (!enemySpawnRarities.TryAdd(enemy.enemyType, enemy.rarity))
+                if (!enemySpawnRarities.TryAdd(enemy.enemyType.name, enemy.rarity))
                 {
-                    enemySpawnRarities[enemy.enemyType] += enemy.rarity;
+                    enemySpawnRarities[enemy.enemyType.name] += enemy.rarity;
                 }
             }
             return enemySpawnRarities;
         }
 
-        private static Dictionary<Item, int> convertToDictionary(List<SpawnableItemWithRarity> items)
+        private static Dictionary<string, int> convertToDictionary(List<SpawnableItemWithRarity> items)
         {
-            Dictionary<Item, int> itemSpawnRarities = new Dictionary<Item, int>();
+            Dictionary<string, int> itemSpawnRarities = new Dictionary<string, int>();
             foreach(SpawnableItemWithRarity item in items)
             {
-                if (!itemSpawnRarities.TryAdd(item.spawnableItem, item.rarity))
+                if (!itemSpawnRarities.TryAdd(item.spawnableItem.name, item.rarity))
                 {
-                    itemSpawnRarities[item.spawnableItem] += item.rarity;
+                    itemSpawnRarities[item.spawnableItem.name] += item.rarity;
                 }
             }
-            return (itemSpawnRarities);
+            return itemSpawnRarities;
         }
     }
 

@@ -1,4 +1,8 @@
 ## Changelog
+### 1.1.12
+- Fixed daytime enemies using outside enemies spawning pool
+- Added more null checks when searching for moon prices
+- Fixed certain moon default enemy and item rarities showing as 0
 ### 1.1.11
 - Fixed outside enemies not working as expected
 - Fixed level not loading if certain scrap rarity values were set above 0

@@ -60,7 +60,25 @@ namespace LethalQuantities.Patches
                 foreach (CompatibleNoun noun in routeWord.compatibleNouns)
                 {
                     TerminalNode result = noun.result;
-                    TerminalNode confirm = result.terminalOptions.First(n => n.noun.word.ToLower() == "confirm").result;
+                    if (result.terminalOptions == null)
+                    {
+                        Plugin.LETHAL_LOGGER.LogError($"Route subcommand {result.name} does not have any valid terminal options!");
+                        continue;
+                    }
+
+                    CompatibleNoun confirmNoun = result.terminalOptions.First(n => n.noun.word.ToLower() == "confirm");
+                    if (confirmNoun == null)
+                    {
+                        Plugin.LETHAL_LOGGER.LogError($"Unable to find a confirm option for route command {result.name}");
+                        continue;
+                    }
+                    TerminalNode confirm = confirmNoun.result;
+
+                    if (confirm == null)
+                    {
+                        Plugin.LETHAL_LOGGER.LogError($"Found a confirm option for route command {result.name}, but it has no result node!");
+                        continue;
+                    }
                     int levelId = confirm.buyRerouteToMoon;
 
                     if (wasDefault)
@@ -125,7 +143,25 @@ namespace LethalQuantities.Patches
                     foreach (CompatibleNoun noun in routeWord.compatibleNouns)
                     {
                         TerminalNode result = noun.result;
-                        TerminalNode confirm = result.terminalOptions.First(n => n.noun.word.ToLower() == "confirm").result;
+                        if (result.terminalOptions == null)
+                        {
+                            Plugin.LETHAL_LOGGER.LogError($"Route subcommand {result.name} does not have any valid terminal options!");
+                            continue;
+                        }
+
+                        CompatibleNoun confirmNoun = result.terminalOptions.First(n => n.noun.word.ToLower() == "confirm");
+                        if (confirmNoun == null)
+                        {
+                            Plugin.LETHAL_LOGGER.LogError($"Unable to find a confirm option for route command {result.name}");
+                            continue;
+                        }
+                        TerminalNode confirm = confirmNoun.result;
+
+                        if (confirm == null)
+                        {
+                            Plugin.LETHAL_LOGGER.LogError($"Found a confirm option for route command {result.name}, but it has no result node!");
+                            continue;
+                        }
                         int levelId = confirm.buyRerouteToMoon;
 
                         int price = defaultPrices.GetValueOrDefault(levelId, result.itemCost);

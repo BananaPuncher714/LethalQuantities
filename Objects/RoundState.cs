@@ -149,8 +149,7 @@ namespace LethalQuantities.Objects
             {
                 if (getValidDaytimeEnemyConfiguration(out EnemyConfiguration<DaytimeEnemyTypeConfiguration> config)) {
                     Plugin.LETHAL_LOGGER.LogInfo("Generating spawnable daytime enemy rarities");
-                    populate(level.DaytimeEnemies, daytimeEnemies, config.enemyTypes.Values, EnemySpawnCategory.DAYTIME
-                        );
+                    populate(level.DaytimeEnemies, daytimeEnemies, config.enemyTypes.Values, EnemySpawnCategory.DAYTIME);
                 }
             }
 
@@ -167,8 +166,6 @@ namespace LethalQuantities.Objects
                     copyDefaultItems(defaultItemInformation, config.items.Values);
                 }
             }
-
-            defaultSpawnableMapObjects.AddRange(level.spawnableMapObjects);
         }
 
         public void OnDestroy()

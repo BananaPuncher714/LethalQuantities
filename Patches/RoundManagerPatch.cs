@@ -73,7 +73,25 @@ namespace LethalQuantities.Patches
                     foreach (CompatibleNoun noun in nouns)
                     {
                         TerminalNode result = noun.result;
-                        TerminalNode confirm = result.terminalOptions.First(n => n.noun.word.ToLower() == "confirm").result;
+                        if (result.terminalOptions == null)
+                        {
+                            Plugin.LETHAL_LOGGER.LogError($"Route subcommand {result.name} does not have any valid terminal options!");
+                            continue;
+                        }
+
+                        CompatibleNoun confirmNoun = result.terminalOptions.First(n => n.noun.word.ToLower() == "confirm");
+                        if (confirmNoun == null)
+                        {
+                            Plugin.LETHAL_LOGGER.LogError($"Unable to find a confirm option for route command {result.name}");
+                            continue;
+                        }
+                        TerminalNode confirm = confirmNoun.result;
+
+                        if (confirm == null)
+                        {
+                            Plugin.LETHAL_LOGGER.LogError($"Found a confirm option for route command {result.name}, but it has no result node!");
+                            continue;
+                        }
 
                         int levelId = confirm.buyRerouteToMoon;
 
@@ -235,7 +253,7 @@ namespace LethalQuantities.Patches
                         config.spawnAmountCurve.Set(ref newLevel.daytimeEnemySpawnChanceThroughDay);
                         config.spawnAmountRange.Set(ref newLevel.daytimeEnemiesProbabilityRange);
                         newLevel.DaytimeEnemies.Clear();
-                        newLevel.DaytimeEnemies.AddRange(state.outsideEnemies);
+                        newLevel.DaytimeEnemies.AddRange(state.daytimeEnemies);
                     }
                 }
 
