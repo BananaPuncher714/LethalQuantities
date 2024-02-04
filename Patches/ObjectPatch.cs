@@ -12,13 +12,16 @@ namespace LethalQuantities.Patches
         [HarmonyPrefix]
         static void onInstantiatePrefix(GameObject original)
         {
-            RoundState state = Plugin.getRoundState();
-            if (state != null)
+            if (RoundManager.Instance != null && RoundManager.Instance.currentLevel != null)
             {
-                if (state.modifiedEnemyTypes.Contains(original) && !original.activeSelf)
+                RoundState state = Plugin.getRoundState(RoundManager.Instance.currentLevel.name);
+                if (state != null)
                 {
-                    original.hideFlags = HideFlags.None;
-                    original.SetActive(true);
+                    if (state.modifiedEnemyTypes.Contains(original) && !original.activeSelf)
+                    {
+                        original.hideFlags = HideFlags.None;
+                        original.SetActive(true);
+                    }
                 }
             }
         }
@@ -28,13 +31,16 @@ namespace LethalQuantities.Patches
         [HarmonyPostfix]
         static void onInstantiatePostfix(GameObject original)
         {
-            RoundState state = Plugin.getRoundState();
-            if (state != null)
+            if (RoundManager.Instance != null && RoundManager.Instance.currentLevel != null)
             {
-                if (state.modifiedEnemyTypes.Contains(original) && original.activeSelf)
+                RoundState state = Plugin.getRoundState(RoundManager.Instance.currentLevel.name);
+                if (state != null)
                 {
-                    original.hideFlags = HideFlags.HideAndDontSave;
-                    original.SetActive(false);
+                    if (state.modifiedEnemyTypes.Contains(original) && original.activeSelf)
+                    {
+                        original.hideFlags = HideFlags.HideAndDontSave;
+                        original.SetActive(false);
+                    }
                 }
             }
         }

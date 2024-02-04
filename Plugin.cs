@@ -63,12 +63,18 @@ namespace LethalQuantities
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            LETHAL_LOGGER.LogInfo($"Checking scene {scene.name} for a RoundManager server instance");
-            if (RoundManager.Instance != null && RoundManager.Instance.IsServer)
+            LETHAL_LOGGER.LogInfo($"Checking scene {scene.name} for a valid level");
+            if (RoundManager.Instance != null)
             {
                 SelectableLevel level = RoundManager.Instance.currentLevel;
                 if (level != null && configuration.levelConfigs.ContainsKey(RoundManager.Instance.currentLevel.name))
                 {
+                    foreach (RoundState oldState in FindObjectsOfType<RoundState>())
+                    {
+                        LETHAL_LOGGER.LogWarning($"Found stale RoundState for level {oldState.level.name}");
+                        Destroy(oldState.gameObject);
+                    }
+
                     LETHAL_LOGGER.LogInfo($"Found a valid configuration for {level.PlanetName}({level.name})");
                     // Add a manager to keep track of all objects
                     GameObject levelModifier = new GameObject("LevelModifier");
@@ -84,12 +90,14 @@ namespace LethalQuantities
             }
         }
 
-        internal static RoundState getRoundState()
+        internal static RoundState getRoundState(string name)
         {
-            GameObject obj = GameObject.Find("LevelModifier");
-            if (obj != null)
+            foreach (RoundState state in FindObjectsOfType<RoundState>())
             {
-                return obj.GetComponent<RoundState>();
+                if (state.level.name == name)
+                {
+                    return state;
+                }
             }
             return null;
         }

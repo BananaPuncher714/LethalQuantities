@@ -253,7 +253,7 @@ namespace LethalQuantities.Objects
                     enemyConfig.SaveOnConfigSet = false;
                     enemies.maxPowerCount = enemyConfig.BindGlobal(masterConfig.enemyConfiguration.maxPowerCount, "General", "MaxPowerCount", level.maxEnemyPowerCount, "Maximum total power level allowed for inside enemies\nAlternate values: DEFAULT, GLOBAL");
                     enemies.spawnAmountCurve = enemyConfig.BindGlobal(masterConfig.enemyConfiguration.spawnAmountCurve, "General", "SpawnAmountCurve", level.enemySpawnChanceThroughoutDay, "How many enemies can spawn enemy as the day progresses. (Key ranges from 0-1 )\nAlternate values: DEFAULT, GLOBAL");
-                    enemies.spawnAmountRange = enemyConfig.BindGlobal(masterConfig.enemyConfiguration.spawnAmountRange, "General", "SpawnAmountRange", level.spawnProbabilityRange, "How many more/less enemies can spawn. A spawn range of 3 means there can be -/+3 enemies\nAlternate values: DEFAULT, GLOBAL");
+                    enemies.spawnAmountRange = enemyConfig.BindGlobal(masterConfig.enemyConfiguration.spawnAmountRange, "General", "SpawnAmountRange", level.spawnProbabilityRange, "How many more/less enemies can spawn. A spawn range of 3 means there can be -/+3 enemies. This value cannot be less than half the total amount of days for the quota rounded down, otherwise the game will throw an error and not spawn any enemies.\nAlternate values: DEFAULT, GLOBAL");
 
                     Dictionary<string, int> enemySpawnRarities = convertToDictionary(level.Enemies);
                     foreach (EnemyType enemyType in levelInfo.globalInfo.allEnemyTypes)
@@ -297,7 +297,7 @@ namespace LethalQuantities.Objects
                     enemyConfig.SaveOnConfigSet = false;
                     daytimeEnemies.maxPowerCount = enemyConfig.BindGlobal(masterConfig.daytimeEnemyConfiguration.maxPowerCount, "General", "MaxPowerCount", level.maxDaytimeEnemyPowerCount, "Maximum total power level allowed for daytime enemies\nAlternate values: DEFAULT, GLOBAL");
                     daytimeEnemies.spawnAmountCurve = enemyConfig.BindGlobal(masterConfig.daytimeEnemyConfiguration.spawnAmountCurve, "General", "SpawnAmountCurve", level.daytimeEnemySpawnChanceThroughDay, "How many enemies can spawn enemy as the day progresses. (Key ranges from 0-1)\nAlternate values: DEFAULT, GLOBAL");
-                    daytimeEnemies.spawnAmountRange = enemyConfig.BindGlobal(masterConfig.daytimeEnemyConfiguration.spawnAmountRange, "General", "SpawnAmountRange", level.daytimeEnemiesProbabilityRange, "How many more/less enemies can spawn. A spawn range of 3 means there can be -/+3 enemies\nAlternate values: DEFAULT, GLOBAL");
+                    daytimeEnemies.spawnAmountRange = enemyConfig.BindGlobal(masterConfig.daytimeEnemyConfiguration.spawnAmountRange, "General", "SpawnAmountRange", level.daytimeEnemiesProbabilityRange, "How many more/less enemies can spawn. A spawn range of 3 means there can be -/+3 enemies. This value cannot be less than half the total amount of days for the quota rounded down, otherwise the game will throw an error and not spawn any enemies.\nAlternate values: DEFAULT, GLOBAL");
 
                     Dictionary<string, int> enemySpawnRarities = convertToDictionary(level.DaytimeEnemies);
                     foreach (EnemyType enemyType in levelInfo.globalInfo.allEnemyTypes)

@@ -16,12 +16,6 @@ A flexible customization mod that works with other mods. **All configs are disab
 ## Known Incompatibilities
 - LethalLevelLoader - Partial incompatibility with custom dungeon flows
   - LethalLevelLoader prevents this mod from being able to change custom dungeon flow rarities. While changing vanilla dungeon flow rarities works fine, you will need to edit the mod's config which adds the custom dungeon flow specifically. This is an issue with LethalLevelLoader.
-  - For developers:
-	- LethalQuantities uses the vanilla dungeon flow rarity array in SelectableLevel. This should be used when considering which dungeon flow to spawn. Any alternative is intrusive.
-- LethalLevelLoader moons - Potential incompatibility
-  - Due to how LethalLevelLoader encourages moon creators to add custom enemies and items, certain incomplete item and enemy types may not be detected by LethalQuantities and cause errors when loading into a level.
-  - For developers:
-	- `EnemyType`s and `Item`s should **contain everything a vanilla object is expected to contain**.
 - Moon price changing mods
   - If you modify moon prices with LethalQuantities, other mods may not be able to change the price correctly, or at all.
   - For developers:
@@ -72,7 +66,7 @@ These configuration files do _not_ interfere with each other, meaning enemies sp
   - `MaxPowerCount` - Maximum total power allowed for this category of enemies. Different enemy types have different power levels. The total power of a level is the sum of the power levels of all existing enemies.
   - `SpawnAmountCurve` - An AnimationCurve with a key ranging from 0 to 1. The key represents the percentage of time progressed in the current level. The value is the amount of enemies to spawn at the given time.
 	- For example, a curve described by `0:-3, .6:1.5, 1:15` would mean that for the first 60% of the day, almost no enemies are going to spawn, but for the last 40%, a lot will spawn.
-  - `SpawnAmountRange` - The range of enemies that can spawn. A value of 3 means that 3 more or 3 less enemies can spawn, based on the value returned by the `SpawnAmountCurve`. Not available for outside enemy configs.
+  - `SpawnAmountRange` - The range of enemies that can spawn. A value of 3 means that 3 more or 3 less enemies can spawn, based on the value returned by the `SpawnAmountCurve`. Not available for outside enemy configs. This value must be greater than or equal to the amount of days at the start of the quota divided by 2, rounded up.
 - EnemyType - There is one section for each enemy. Invalid enemy types are ignored.
   - `MaxEnemyCount` - The total amount of enemies of the given type that can spawn
   - `PowerLevel` - How much power an enemy of the given type counts for

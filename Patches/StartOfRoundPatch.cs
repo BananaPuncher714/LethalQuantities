@@ -136,41 +136,41 @@ namespace LethalQuantities.Patches
                         config.file.SaveOnConfigSet = true;
                     }
                 }
-                else if (!wasDefault)
+            }
+            else if (!wasDefault)
+            {
+                // Reset the moons to their vanilla values, for this level
+                Plugin.LETHAL_LOGGER.LogInfo("Resetting moon prices back to the original values");
+                foreach (CompatibleNoun noun in routeWord.compatibleNouns)
                 {
-                    // Reset the moons to their vanilla values, for this level
-                    Plugin.LETHAL_LOGGER.LogInfo("Resetting moon prices back to the original values");
-                    foreach (CompatibleNoun noun in routeWord.compatibleNouns)
+                    TerminalNode result = noun.result;
+                    if (result.terminalOptions == null)
                     {
-                        TerminalNode result = noun.result;
-                        if (result.terminalOptions == null)
-                        {
-                            Plugin.LETHAL_LOGGER.LogError($"Route subcommand {result.name} does not have any valid terminal options!");
-                            continue;
-                        }
-
-                        CompatibleNoun confirmNoun = result.terminalOptions.First(n => n.noun.word.ToLower() == "confirm");
-                        if (confirmNoun == null)
-                        {
-                            Plugin.LETHAL_LOGGER.LogError($"Unable to find a confirm option for route command {result.name}");
-                            continue;
-                        }
-                        TerminalNode confirm = confirmNoun.result;
-
-                        if (confirm == null)
-                        {
-                            Plugin.LETHAL_LOGGER.LogError($"Found a confirm option for route command {result.name}, but it has no result node!");
-                            continue;
-                        }
-                        int levelId = confirm.buyRerouteToMoon;
-
-                        int price = defaultPrices.GetValueOrDefault(levelId, result.itemCost);
-
-                        result.itemCost = price;
-                        confirm.itemCost = price;
+                        Plugin.LETHAL_LOGGER.LogError($"Route subcommand {result.name} does not have any valid terminal options!");
+                        continue;
                     }
-                    defaultPrices.Clear();
+
+                    CompatibleNoun confirmNoun = result.terminalOptions.First(n => n.noun.word.ToLower() == "confirm");
+                    if (confirmNoun == null)
+                    {
+                        Plugin.LETHAL_LOGGER.LogError($"Unable to find a confirm option for route command {result.name}");
+                        continue;
+                    }
+                    TerminalNode confirm = confirmNoun.result;
+
+                    if (confirm == null)
+                    {
+                        Plugin.LETHAL_LOGGER.LogError($"Found a confirm option for route command {result.name}, but it has no result node!");
+                        continue;
+                    }
+                    int levelId = confirm.buyRerouteToMoon;
+
+                    int price = defaultPrices.GetValueOrDefault(levelId, result.itemCost);
+
+                    result.itemCost = price;
+                    confirm.itemCost = price;
                 }
+                defaultPrices.Clear();
             }
         }
     }

@@ -110,7 +110,7 @@ namespace LethalQuantities.Objects
 
                 enemyConfiguration.maxPowerCount = BindEmptyOrNonDefaultable<int>(enemyConfig, "General", "MaxPowerCount", "Maximum total power level allowed for inside enemies.\nLeave blank or DEFAULT to use the moon's default rarity.");
                 enemyConfiguration.spawnAmountCurve = BindEmptyOrNonDefaultable<AnimationCurve>(enemyConfig, "General", "SpawnAmountCurve", "How many enemies can spawn enemy as the day progresses. (Key ranges from 0-1 ).\nLeave blank or DEFAULT to use the moon's default rarity.");
-                enemyConfiguration.spawnAmountRange = BindEmptyOrNonDefaultable<float>(enemyConfig, "General", "SpawnAmountRange", "How many more/less enemies can spawn. A spawn range of 3 means there can be -/+3 enemies.\nLeave blank or DEFAULT to use the moon's default rarity.");
+                enemyConfiguration.spawnAmountRange = BindEmptyOrNonDefaultable<float>(enemyConfig, "General", "SpawnAmountRange", "How many more/less enemies can spawn. A spawn range of 3 means there can be -/+3 enemies. This value cannot be less than half the total amount of days for the quota rounded down, otherwise the game will throw an error and not spawn any enemies.\nLeave blank or DEFAULT to use the moon's default rarity.");
 
                 foreach (EnemyType enemyType in globalInfo.allEnemyTypes)
                 {
@@ -155,7 +155,7 @@ namespace LethalQuantities.Objects
 
                 daytimeEnemyConfiguration.maxPowerCount = BindEmptyOrNonDefaultable<int>(enemyConfig, "General", "MaxPowerCount", "Maximum total power level allowed for inside enemies.\nLeave blank or DEFAULT to use the moon's default rarity.");
                 daytimeEnemyConfiguration.spawnAmountCurve = BindEmptyOrNonDefaultable<AnimationCurve>(enemyConfig, "General", "SpawnAmountCurve", "How many enemies can spawn enemy as the day progresses. (Key ranges from 0-1 ).\nLeave blank or DEFAULT to use the moon's default rarity.");
-                daytimeEnemyConfiguration.spawnAmountRange = BindEmptyOrNonDefaultable<float>(enemyConfig, "General", "SpawnAmountRange", "How many more/less enemies can spawn. A spawn range of 3 means there can be -/+3 enemies.\nLeave blank or DEFAULT to use the moon's default rarity.");
+                daytimeEnemyConfiguration.spawnAmountRange = BindEmptyOrNonDefaultable<float>(enemyConfig, "General", "SpawnAmountRange", "How many more/less enemies can spawn. A spawn range of 3 means there can be -/+3 enemies. This value cannot be less than half the total amount of days for the quota rounded down, otherwise the game will throw an error and not spawn any enemies.\nLeave blank or DEFAULT to use the moon's default rarity.");
 
                 foreach (EnemyType enemyType in globalInfo.allEnemyTypes)
                 {

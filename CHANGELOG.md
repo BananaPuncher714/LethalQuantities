@@ -1,4 +1,9 @@
 ## Changelog
+### 1.1.13
+- Added check for a spawn amount range value being too low
+- Added dungeon flow size modification for all players instead of host to prevent potential desync
+- Fixed prices sometimes not being set properly when going to certain moons
+- Identify valid and invalid items by checking with the NetworkManager
 ### 1.1.12
 - Fixed daytime enemies using outside enemies spawning pool
 - Added more null checks when searching for moon prices

@@ -18,6 +18,8 @@ namespace LethalQuantities.Patches
         {
             if (!Plugin.INSTANCE.configInitialized)
             {
+                NetworkManager manager = UnityEngine.Object.FindObjectOfType<NetworkManager>();
+
                 // The purpose for this segment below is to save the vanilla information, before any mods change any values
                 StartOfRound instance = StartOfRound.Instance;
                 GlobalInformation globalInfo = new GlobalInformation(Plugin.GLOBAL_SAVE_DIR, Plugin.LEVEL_SAVE_DIR);
@@ -31,6 +33,10 @@ namespace LethalQuantities.Patches
                     if (type.enemyPrefab == null)
                     {
                         Plugin.LETHAL_LOGGER.LogWarning($"Enemy type {type.name} is missing prefab! Perhaps another mod has removed it? Some default values in the config may not be correct.");
+                    }
+                    else if (!manager.NetworkConfig.Prefabs.Contains(type.enemyPrefab))
+                    {
+                        Plugin.LETHAL_LOGGER.LogWarning($"Enemy type {type.name} is not a real object! Ignoring type");
                     }
                     else if (addedEnemyTypes.Contains(type.name))
                     {
@@ -46,11 +52,13 @@ namespace LethalQuantities.Patches
                 Plugin.LETHAL_LOGGER.LogInfo("Fetching all items");
                 HashSet<string> addedItems = new HashSet<string>();
                 globalInfo.allItems.AddRange(Resources.FindObjectsOfTypeAll<Item>().Where(type => {
-                    // There is no way to determine if an item is valid or not, and since LethalLevelLoader adds in fake items, this is the best that can be done
-                    // Not my problem if it breaks, but sure is annoying to have to clean up after other mods
-                    if (type.spawnPrefab == null || type.itemIcon == null)
+                    if (type.spawnPrefab == null)
                     {
                         Plugin.LETHAL_LOGGER.LogWarning($"Item {type.name} is missing prefab! Perhaps another mod has removed it? Some default values in the config may not be correct.");
+                    }
+                    else if (!manager.NetworkConfig.Prefabs.Contains(type.spawnPrefab))
+                    {
+                        Plugin.LETHAL_LOGGER.LogWarning($"Item {type.name} is not a real item! Ignoring item");
                     }
                     else if (addedItems.Contains(type.name))
                     {
@@ -217,11 +225,11 @@ namespace LethalQuantities.Patches
             {
                 return;
             }
-            RoundState state = Plugin.getRoundState();
+            RoundState state = Plugin.getRoundState(newLevel.name);
             if (state != null)
             {
-                Plugin.LETHAL_LOGGER.LogInfo("RoundState found, modifying level before loading");
-
+                Plugin.LETHAL_LOGGER.LogInfo($"RoundState found for level {state.level.name}, modifying level before loading");
+                int minimumSpawnProbabilityRange = (int) Math.Ceiling(Math.Abs(TimeOfDay.Instance.daysUntilDeadline - 3) / 3.2);
                 {
                     if (state.getValidEnemyConfiguration(out EnemyConfiguration<EnemyTypeConfiguration> config))
                     {
@@ -229,6 +237,12 @@ namespace LethalQuantities.Patches
                         config.maxPowerCount.Set(ref newLevel.maxEnemyPowerCount);
                         config.spawnAmountCurve.Set(ref newLevel.enemySpawnChanceThroughoutDay);
                         config.spawnAmountRange.Set(ref newLevel.spawnProbabilityRange);
+                        // Make sure the game does not break if the spawn probability range is too small
+                        if (newLevel.spawnProbabilityRange < minimumSpawnProbabilityRange)
+                        {
+                            Plugin.LETHAL_LOGGER.LogWarning($"Interior enemy spawn amount range is too small({newLevel.spawnProbabilityRange}), setting to {minimumSpawnProbabilityRange}");
+                            newLevel.spawnProbabilityRange = minimumSpawnProbabilityRange;
+                        }
                         newLevel.Enemies.Clear();
                         newLevel.Enemies.AddRange(state.enemies);
                     }
@@ -252,6 +266,12 @@ namespace LethalQuantities.Patches
                         config.maxPowerCount.Set(ref newLevel.maxDaytimeEnemyPowerCount);
                         config.spawnAmountCurve.Set(ref newLevel.daytimeEnemySpawnChanceThroughDay);
                         config.spawnAmountRange.Set(ref newLevel.daytimeEnemiesProbabilityRange);
+                        // Make sure the game does not break if the spawn probability range is too small
+                        if (newLevel.daytimeEnemiesProbabilityRange < minimumSpawnProbabilityRange)
+                        {
+                            Plugin.LETHAL_LOGGER.LogWarning($"Interior enemy spawn amount range is too small({newLevel.daytimeEnemiesProbabilityRange}), setting to {minimumSpawnProbabilityRange}");
+                            newLevel.daytimeEnemiesProbabilityRange = minimumSpawnProbabilityRange;
+                        }
                         newLevel.DaytimeEnemies.Clear();
                         newLevel.DaytimeEnemies.AddRange(state.daytimeEnemies);
                     }

@@ -12,7 +12,7 @@ namespace LethalQuantities.Patches
         [HarmonyPrefix]
         static void onDungeonGenerate(RuntimeDungeon __instance)
         {
-            RoundState state = Plugin.getRoundState();
+            RoundState state = Plugin.getRoundState(RoundManager.Instance.currentLevel.name);
             if (state != null)
             {
                 if (state.getValidDungeonGenerationConfiguration(out DungeonGenerationConfiguration configuration))
@@ -22,7 +22,10 @@ namespace LethalQuantities.Patches
                     {
                         config.factorySizeMultiplier.Set(ref RoundManager.Instance.currentLevel.factorySizeMultiplier);
 
+                        // Must be the same across all players to avoid desync
                         __instance.Generator.LengthMultiplier = RoundManager.Instance.mapSizeMultiplier * RoundManager.Instance.currentLevel.factorySizeMultiplier;
+
+                        Plugin.LETHAL_LOGGER.LogInfo($"Found dungeon flow {name}, using a length multiplier of {__instance.Generator.LengthMultiplier}");
                     }
                 }
             }
