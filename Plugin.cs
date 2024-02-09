@@ -8,6 +8,7 @@ using UnityEngine.SceneManagement;
 using LethalQuantities.Objects;
 using System.IO;
 using LethalQuantities.Patches;
+using Newtonsoft.Json;
 
 namespace LethalQuantities
 {

@@ -51,7 +51,6 @@ namespace LethalQuantities.Patches
                 }
             }
 
-
             bool wasDefault = defaultPrices.Count() == 0;
             if (priceConfig.enabled.Value)
             {
@@ -80,17 +79,16 @@ namespace LethalQuantities.Patches
                         continue;
                     }
                     int levelId = confirm.buyRerouteToMoon;
-
-                    if (wasDefault)
-                    {
-                        if (!defaultPrices.TryAdd(levelId, result.itemCost))
-                        {
-                            Plugin.LETHAL_LOGGER.LogError($"Already changed price for TerminalNode {result.name} with level id {levelId}. Perhaps another mod has added it in twice??");
-                        }
-                    }
-
                     if (StartOfRound.Instance.getLevelById(levelId, out SelectableLevel matched))
                     {
+                        if (wasDefault)
+                        {
+                            if (!defaultPrices.TryAdd(levelId, result.itemCost))
+                            {
+                                Plugin.LETHAL_LOGGER.LogError($"Already changed price for TerminalNode {result.name} with level id {levelId}. Perhaps another mod has added it in twice??");
+                            }
+                        }
+
                         if (priceConfigurations.Count > 0)
                         {
                             bool didMoonPriceUpdate = false;
@@ -124,7 +122,7 @@ namespace LethalQuantities.Patches
                     }
                     else
                     {
-                        Plugin.LETHAL_LOGGER.LogWarning($"Unable to find moon for level {levelId}");
+                        Plugin.LETHAL_LOGGER.LogWarning($"Unable to find moon for level {levelId} on CompatibleNoun {result.name}");
                     }
                 }
 

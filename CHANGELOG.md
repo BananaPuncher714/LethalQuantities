@@ -1,4 +1,8 @@
 ## Changelog
+### 1.1.14
+- Added compatibility with LethalLevelLoader so the dungeon generation config should work properly
+- Fixed dungeon flow desync as long as all players have the same dungeon generation config
+- Added a price update in a RoundManager start postfix to properly set moon prices
 ### 1.1.13
 - Added check for a spawn amount range value being too low
 - Added dungeon flow size modification for all players instead of host to prevent potential desync

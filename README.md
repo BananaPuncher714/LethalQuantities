@@ -14,8 +14,6 @@ A flexible customization mod that works with other mods. **All configs are disab
   - Make travel cheaper between certain moons to emulate star maps!
 - Should work with custom events and other mods that change enemy spawn settings
 ## Known Incompatibilities
-- LethalLevelLoader - Partial incompatibility with custom dungeon flows
-  - LethalLevelLoader prevents this mod from being able to change custom dungeon flow rarities. While changing vanilla dungeon flow rarities works fine, you will need to edit the mod's config which adds the custom dungeon flow specifically. This is an issue with LethalLevelLoader.
 - Moon price changing mods
   - If you modify moon prices with LethalQuantities, other mods may not be able to change the price correctly, or at all.
   - For developers:
