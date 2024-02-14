@@ -68,7 +68,7 @@ namespace LethalQuantities
             if (RoundManager.Instance != null)
             {
                 SelectableLevel level = RoundManager.Instance.currentLevel;
-                if (level != null && configuration.levelConfigs.ContainsKey(RoundManager.Instance.currentLevel.name))
+                if (level != null && configuration.levelConfigs.ContainsKey(RoundManager.Instance.currentLevel))
                 {
                     foreach (RoundState oldState in FindObjectsOfType<RoundState>())
                     {
@@ -91,11 +91,11 @@ namespace LethalQuantities
             }
         }
 
-        internal static RoundState getRoundState(string name)
+        internal static RoundState getRoundState(SelectableLevel level)
         {
             foreach (RoundState state in FindObjectsOfType<RoundState>())
             {
-                if (state.level.name == name)
+                if (state.level == level)
                 {
                     return state;
                 }

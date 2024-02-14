@@ -24,7 +24,7 @@ namespace LethalQuantities.Patches
             TerminalKeyword routeWord = terminal.terminalNodes.allKeywords.First(w => w.word != null && w.word.ToLower() == "route");
 
             PriceConfiguration priceConfig = Plugin.INSTANCE.configuration.priceConfiguration;
-            if (Plugin.INSTANCE.configuration.levelConfigs.TryGetValue(level.name, out LevelConfiguration localConfig))
+            if (Plugin.INSTANCE.configuration.levelConfigs.TryGetValue(level, out LevelConfiguration localConfig))
             {
                 if (localConfig.price.enabled.Value)
                 {
@@ -94,11 +94,11 @@ namespace LethalQuantities.Patches
                             bool didMoonPriceUpdate = false;
                             foreach (PriceConfiguration config in priceConfigurations)
                             {
-                                if (config.moons[matched.name].price.DefaultValue() == -1)
+                                if (config.moons[matched].price.DefaultValue() == -1)
                                 {
                                     updatedConfigs = didMoonPriceUpdate = true;
                                     config.file.SaveOnConfigSet = false;
-                                    config.moons[matched.name].price.setDefaultValue(result.itemCost);
+                                    config.moons[matched].price.setDefaultValue(result.itemCost);
                                 }
                             }
                             if (didMoonPriceUpdate)
@@ -111,7 +111,7 @@ namespace LethalQuantities.Patches
                             Plugin.LETHAL_LOGGER.LogError("Expected at least 1 enabled PriceConfiguration object, got none. Was this PriceConfiguration object loaded properly?");
                         }
 
-                        if (priceConfig.moons.TryGetValue(matched.name, out MoonPriceConfiguration moonConfig))
+                        if (priceConfig.moons.TryGetValue(matched, out MoonPriceConfiguration moonConfig))
                         {
                             int price = defaultPrices.GetValueOrDefault(levelId, result.itemCost);
                             moonConfig.price.Set(ref price);

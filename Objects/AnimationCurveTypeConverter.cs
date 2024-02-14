@@ -6,6 +6,7 @@ using UnityEngine;
 
 namespace LethalQuantities.Objects
 {
+    // TODO Add weights, tangents, and weighted mode
     internal class AnimationCurveTypeConverter : TypeConverter
     {
         public AnimationCurveTypeConverter()

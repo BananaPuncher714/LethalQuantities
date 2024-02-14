@@ -200,7 +200,7 @@ namespace LethalQuantities.Objects
     {
         internal ConfigFile file { get; set; }
         public ConfigEntry<bool> enabled { get; set; }
-        public Dictionary<string, MoonPriceConfiguration> moons { get; } = new Dictionary<string, MoonPriceConfiguration>();
+        public Dictionary<SelectableLevel, MoonPriceConfiguration> moons { get; } = new Dictionary<SelectableLevel, MoonPriceConfiguration>();
     }
 
     public class MoonPriceConfiguration
@@ -499,7 +499,7 @@ namespace LethalQuantities.Objects
                 foreach (SelectableLevel moon in levelList)
                 {
                     MoonPriceConfiguration config = new MoonPriceConfiguration(level.name);
-                    MoonPriceConfiguration masterPriceConfig = masterConfig.priceConfiguration.moons[moon.name];
+                    MoonPriceConfiguration masterPriceConfig = masterConfig.priceConfiguration.moons[moon];
                     string tablename = $"Level.{moon.name.getTomlFriendlyName()}";
 
                     string priceDescription = $"The amount of credits it costs to travel to {moon.name}({moon.PlanetName}) from {level.name}({level.PlanetName})";
@@ -510,7 +510,7 @@ namespace LethalQuantities.Objects
 
                     config.price = priceConfig.BindGlobal(masterPriceConfig.price, tablename, "TravelCost", masterPriceConfig.price.DefaultValue(), priceDescription);
 
-                    price.moons.Add(moon.name, config);
+                    price.moons.Add(moon, config);
                 }
 
                 priceConfig.SaveOnConfigSet = true;

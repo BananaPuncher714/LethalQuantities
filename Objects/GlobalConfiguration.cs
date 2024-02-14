@@ -60,7 +60,7 @@ namespace LethalQuantities.Objects
         public DungeonGenerationConfiguration dungeonConfiguration { get; private set; } = new DungeonGenerationConfiguration();
         public TrapConfiguration trapConfiguration { get; private set; } = new TrapConfiguration();
         public PriceConfiguration priceConfiguration { get; private set; } = new PriceConfiguration();
-        public Dictionary<string, LevelConfiguration> levelConfigs { get; } = new Dictionary<string, LevelConfiguration>();
+        public Dictionary<SelectableLevel, LevelConfiguration> levelConfigs { get; } = new Dictionary<SelectableLevel, LevelConfiguration>();
 
         public GlobalConfiguration(GlobalInformation globalInfo)
         {
@@ -91,7 +91,7 @@ namespace LethalQuantities.Objects
                 string levelSaveDir = Path.Combine(globalInfo.moonSaveDir, level.name.getFileFriendlyName());
                 LevelInformation levelInfo = new LevelInformation(this, globalInfo, level, levelSaveDir, fileConfigFile);
 
-                levelConfigs.Add(level.name, new LevelConfiguration(levelInfo));
+                levelConfigs.Add(level, new LevelConfiguration(levelInfo));
             }
         }
 
@@ -359,7 +359,7 @@ namespace LethalQuantities.Objects
 
                     config.price = BindEmptyOrDefaultable(priceFile, tablename, "TravelCost", info.price, $"How many credits it costs to travel to {level.name}({level.PlanetName}).\nAlternate values: DEFAULT");
 
-                    priceConfiguration.moons.Add(level.name, config);
+                    priceConfiguration.moons.Add(level, config);
                 }
             }
 

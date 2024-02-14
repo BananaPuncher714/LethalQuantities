@@ -14,7 +14,7 @@ namespace LethalQuantities.Patches
         {
             if (RoundManager.Instance != null && RoundManager.Instance.currentLevel != null)
             {
-                RoundState state = Plugin.getRoundState(RoundManager.Instance.currentLevel.name);
+                RoundState state = Plugin.getRoundState(RoundManager.Instance.currentLevel);
                 if (state != null)
                 {
                     if (state.modifiedEnemyTypes.Contains(original) && !original.activeSelf)
@@ -33,7 +33,7 @@ namespace LethalQuantities.Patches
         {
             if (RoundManager.Instance != null && RoundManager.Instance.currentLevel != null)
             {
-                RoundState state = Plugin.getRoundState(RoundManager.Instance.currentLevel.name);
+                RoundState state = Plugin.getRoundState(RoundManager.Instance.currentLevel);
                 if (state != null)
                 {
                     if (state.modifiedEnemyTypes.Contains(original) && original.activeSelf)

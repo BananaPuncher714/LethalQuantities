@@ -125,7 +125,7 @@ namespace LethalQuantities.Objects
         public void initialize(SelectableLevel level)
         {
             this.level = level;
-            levelConfiguration = globalConfiguration.levelConfigs[level.name];
+            levelConfiguration = globalConfiguration.levelConfigs[level];
 
             Plugin.LETHAL_LOGGER.LogInfo("Preparing for level modification");
 

@@ -1,4 +1,7 @@
 ## Changelog
+### 1.1.15
+- Fixed configurations for moons with changed names not being found
+- Fixed potential dungeon flow duplicate entry in RoundManager's dungeon flows
 ### 1.1.14
 - Added compatibility with LethalLevelLoader so the dungeon generation config should work properly
 - Fixed dungeon flow desync as long as all players have the same dungeon generation config

@@ -160,51 +160,6 @@ namespace LethalQuantities.Patches
                     configuration = Plugin.INSTANCE.configuration;
                 }
 
-                Plugin.LETHAL_LOGGER.LogInfo("Inserting missing dungeon flows into the RoundManager");
-                // Not very good, but for each dungeon flow, add it to the RoundManager if it isn't already there
-                // Only add dungeon flows whos default rarity is greater than 0, so if the user doesn't enable
-                // any custom flows, they won't get added
-                List<DungeonFlow> flows = __instance.dungeonFlowTypes.ToList();
-                foreach (DungeonFlow flow in globalInfo.allDungeonFlows)
-                {
-                    int index = -1;
-                    for (int i = 0; i < flows.Count; i++)
-                    {
-                        if (flows[i] == flow)
-                        {
-                            index = i;
-                            break;
-                        }
-                    }
-
-                    bool used = false;
-                    foreach (LevelConfiguration levelConfig in configuration.levelConfigs.Values)
-                    {
-                        // Check if the rarity for this flow is set in any moons, and if so, then add it to the array of dungeon flows
-                        if (levelConfig.dungeon.enabled.Value && !levelConfig.dungeon.dungeonFlowConfigurations[flow.name].rarity.isUnset())
-                        {
-                            used = true;
-                            break;
-                        }
-                    }
-                    // Otherwise check if it is enabled in the global config
-                    if (!used && configuration.dungeonConfiguration.enabled.Value)
-                    {
-                        if (!configuration.dungeonConfiguration.dungeonFlowConfigurations[flow.name].rarity.isUnset())
-                        {
-                            used = true;
-                        }
-                    }
-
-                    if (index == -1 && used)
-                    {
-                        // Not added, so add it now
-                        Plugin.LETHAL_LOGGER.LogWarning($"Did not find dungeon flow {flow.name} in the global list of dungeon flows. Adding it now.");
-                        flows.Add(flow);
-                    }
-                }
-                __instance.dungeonFlowTypes = flows.ToArray();
-
                 // Set some global options here
                 if (configuration.scrapConfiguration.enabled.Value)
                 {
@@ -236,7 +191,7 @@ namespace LethalQuantities.Patches
         // Values set by this mod are meant to be overwritten, especially by mods that add events, or varying changes.
         private static void onLoadNewLevelPrefix(RoundManager __instance, ref SelectableLevel newLevel)
         {
-            RoundState state = Plugin.getRoundState(newLevel.name);
+            RoundState state = Plugin.getRoundState(newLevel);
             if (state != null)
             {
                 if (__instance.IsServer)
@@ -377,8 +332,56 @@ namespace LethalQuantities.Patches
         [HarmonyPrefix]
         private static void onGenerateNewFloorPrefix(RoundManager __instance)
         {
+            {
+                Plugin.LETHAL_LOGGER.LogInfo("Inserting missing dungeon flows into the RoundManager");
+                // Not very good, but for each dungeon flow, add it to the RoundManager if it isn't already there
+                // Only add dungeon flows whos default rarity is greater than 0, so if the user doesn't enable
+                // any custom flows, they won't get added
+                List<DungeonFlow> flows = __instance.dungeonFlowTypes.ToList();
+                DungeonFlow[] allDungeonFlows = Resources.FindObjectsOfTypeAll<DungeonFlow>();
+                foreach (DungeonFlow flow in allDungeonFlows)
+                {
+                    int index = -1;
+                    for (int i = 0; i < flows.Count; i++)
+                    {
+                        if (flows[i] == flow)
+                        {
+                            index = i;
+                            break;
+                        }
+                    }
+
+                    bool used = false;
+                    foreach (LevelConfiguration levelConfig in Plugin.INSTANCE.configuration.levelConfigs.Values)
+                    {
+                        // Check if the rarity for this flow is set in any moons, and if so, then add it to the array of dungeon flows
+                        if (levelConfig.dungeon.enabled.Value && !levelConfig.dungeon.dungeonFlowConfigurations[flow.name].rarity.isUnset())
+                        {
+                            used = true;
+                            break;
+                        }
+                    }
+                    // Otherwise check if it is enabled in the global config
+                    if (!used && Plugin.INSTANCE.configuration.dungeonConfiguration.enabled.Value)
+                    {
+                        if (!Plugin.INSTANCE.configuration.dungeonConfiguration.dungeonFlowConfigurations[flow.name].rarity.isUnset())
+                        {
+                            used = true;
+                        }
+                    }
+
+                    if (index == -1 && used)
+                    {
+                        // Not added, so add it now
+                        Plugin.LETHAL_LOGGER.LogWarning($"Did not find dungeon flow {flow.name} in the global list of dungeon flows. Adding it now.");
+                        flows.Add(flow);
+                    }
+                }
+                __instance.dungeonFlowTypes = flows.ToArray();
+            }
+
             SelectableLevel level = __instance.currentLevel;
-            RoundState state = Plugin.getRoundState(level.name);
+            RoundState state = Plugin.getRoundState(level);
             if (state != null)
             {
                 if (state.getValidDungeonGenerationConfiguration(out DungeonGenerationConfiguration configuration))

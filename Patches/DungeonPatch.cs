@@ -12,7 +12,7 @@ namespace LethalQuantities.Patches
         [HarmonyPrefix]
         static void onDungeonGenerate(RuntimeDungeon __instance)
         {
-            RoundState state = Plugin.getRoundState(RoundManager.Instance.currentLevel.name);
+            RoundState state = Plugin.getRoundState(RoundManager.Instance.currentLevel);
             if (state != null)
             {
                 if (state.getValidDungeonGenerationConfiguration(out DungeonGenerationConfiguration configuration))
