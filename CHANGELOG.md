@@ -1,4 +1,7 @@
 ## Changelog
+### 1.1.16
+- Fixed incompatibility with LethalExpansion moons
+- Fixed loading/creating a save twice in one session breaking the game
 ### 1.1.15
 - Fixed configurations for moons with changed names not being found
 - Fixed potential dungeon flow duplicate entry in RoundManager's dungeon flows

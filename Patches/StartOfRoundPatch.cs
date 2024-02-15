@@ -1,5 +1,6 @@
 ﻿using HarmonyLib;
 using LethalQuantities.Objects;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -24,7 +25,7 @@ namespace LethalQuantities.Patches
             TerminalKeyword routeWord = terminal.terminalNodes.allKeywords.First(w => w.word != null && w.word.ToLower() == "route");
 
             PriceConfiguration priceConfig = Plugin.INSTANCE.configuration.priceConfiguration;
-            if (Plugin.INSTANCE.configuration.levelConfigs.TryGetValue(level, out LevelConfiguration localConfig))
+            if (Plugin.INSTANCE.configuration.levelConfigs.TryGetValue(level.getGuid(), out LevelConfiguration localConfig))
             {
                 if (localConfig.price.enabled.Value)
                 {
@@ -81,6 +82,7 @@ namespace LethalQuantities.Patches
                     int levelId = confirm.buyRerouteToMoon;
                     if (StartOfRound.Instance.getLevelById(levelId, out SelectableLevel matched))
                     {
+                        Guid matchedGuid = matched.getGuid();
                         if (wasDefault)
                         {
                             if (!defaultPrices.TryAdd(levelId, result.itemCost))
@@ -94,12 +96,20 @@ namespace LethalQuantities.Patches
                             bool didMoonPriceUpdate = false;
                             foreach (PriceConfiguration config in priceConfigurations)
                             {
-                                if (config.moons[matched].price.DefaultValue() == -1)
+                                if (!config.moons.TryGetValue(matchedGuid, out MoonPriceConfiguration c))
                                 {
-                                    updatedConfigs = didMoonPriceUpdate = true;
-                                    config.file.SaveOnConfigSet = false;
-                                    config.moons[matched].price.setDefaultValue(result.itemCost);
+                                    Plugin.LETHAL_LOGGER.LogError("Unable to find a price config option for " + matched.name);
                                 }
+                                else
+                                {
+                                    if (config.moons[matchedGuid].price.DefaultValue() == -1)
+                                    {
+                                        updatedConfigs = didMoonPriceUpdate = true;
+                                        config.file.SaveOnConfigSet = false;
+                                        config.moons[matchedGuid].price.setDefaultValue(result.itemCost);
+                                    }
+                                }
+
                             }
                             if (didMoonPriceUpdate)
                             {
@@ -111,7 +121,7 @@ namespace LethalQuantities.Patches
                             Plugin.LETHAL_LOGGER.LogError("Expected at least 1 enabled PriceConfiguration object, got none. Was this PriceConfiguration object loaded properly?");
                         }
 
-                        if (priceConfig.moons.TryGetValue(matched, out MoonPriceConfiguration moonConfig))
+                        if (priceConfig.moons.TryGetValue(matchedGuid, out MoonPriceConfiguration moonConfig))
                         {
                             int price = defaultPrices.GetValueOrDefault(levelId, result.itemCost);
                             moonConfig.price.Set(ref price);

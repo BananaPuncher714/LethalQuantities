@@ -8,10 +8,75 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace LethalQuantities.Objects
 {
+    public static class SelectableLevelCache
+    {
+        private static List<SelectableLevelIdentifier> levels = new List<SelectableLevelIdentifier>();
+
+        internal class SelectableLevelIdentifier
+        {
+            internal static HashSet<Guid> usedGuids = new HashSet<Guid>();
+            internal WeakReference level { get; set; }
+            internal string name { get; set; }
+            internal Guid guid { get; set; }
+
+            internal SelectableLevelIdentifier(SelectableLevel level)
+            {
+                this.level = new WeakReference(level);
+                name = level.name;
+
+                do {
+                    guid = Guid.NewGuid();
+                } while (usedGuids.Contains(guid));
+                usedGuids.Add(guid);
+            }
+
+            ~SelectableLevelIdentifier()
+            {
+                usedGuids.Remove(guid);
+            }
+        }
+
+        public static Guid getGuid(this SelectableLevel level)
+        {
+            foreach (SelectableLevelIdentifier identifier in levels)
+            {
+                SelectableLevel target = (SelectableLevel) identifier.level.Target;
+                if (target == level)
+                {
+                    return identifier.guid;
+                }
+                else if (identifier.name == level.name)
+                {
+                    // Only replace the level if the target is null
+                    if (target == null)
+                    {
+                        identifier.level = new WeakReference(level);
+                    }
+                    return identifier.guid;
+                }
+            }
+
+            SelectableLevelIdentifier newIdentifier = new SelectableLevelIdentifier(level);
+            levels.Add(newIdentifier);
+            return newIdentifier.guid;
+        }
+
+        internal static void cleanIdentifiers()
+        {
+            levels.RemoveAll(id => !id.level.IsAlive);
+        }
+
+        internal static SelectableLevel getLevel(this Guid guid)
+        {
+            return (SelectableLevel) levels.Find(id => id.guid == guid).level.Target;
+        }
+    }
+
     public interface IWeightConfigurable
     {
         public CustomEntry<float> weight { get; set; }
@@ -60,7 +125,7 @@ namespace LethalQuantities.Objects
         public DungeonGenerationConfiguration dungeonConfiguration { get; private set; } = new DungeonGenerationConfiguration();
         public TrapConfiguration trapConfiguration { get; private set; } = new TrapConfiguration();
         public PriceConfiguration priceConfiguration { get; private set; } = new PriceConfiguration();
-        public Dictionary<SelectableLevel, LevelConfiguration> levelConfigs { get; } = new Dictionary<SelectableLevel, LevelConfiguration>();
+        public Dictionary<Guid, LevelConfiguration> levelConfigs { get; } = new Dictionary<Guid, LevelConfiguration>();
 
         public GlobalConfiguration(GlobalInformation globalInfo)
         {
@@ -91,7 +156,7 @@ namespace LethalQuantities.Objects
                 string levelSaveDir = Path.Combine(globalInfo.moonSaveDir, level.name.getFileFriendlyName());
                 LevelInformation levelInfo = new LevelInformation(this, globalInfo, level, levelSaveDir, fileConfigFile);
 
-                levelConfigs.Add(level, new LevelConfiguration(levelInfo));
+                levelConfigs.Add(level.getGuid(), new LevelConfiguration(levelInfo));
             }
         }
 
@@ -354,12 +419,12 @@ namespace LethalQuantities.Objects
             {
                 if (globalInfo.allSelectableLevels.TryGetValue(level, out GenericLevelInformation info))
                 {
-                    MoonPriceConfiguration config = new MoonPriceConfiguration(level.name);
+                    MoonPriceConfiguration config = new MoonPriceConfiguration(level.getGuid());
                     string tablename = $"Level.{level.name.getTomlFriendlyName()}";
 
                     config.price = BindEmptyOrDefaultable(priceFile, tablename, "TravelCost", info.price, $"How many credits it costs to travel to {level.name}({level.PlanetName}).\nAlternate values: DEFAULT");
 
-                    priceConfiguration.moons.Add(level, config);
+                    priceConfiguration.moons.Add(level.getGuid(), config);
                 }
             }
 

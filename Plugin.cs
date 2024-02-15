@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using BepInEx;
+﻿using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
@@ -8,7 +7,6 @@ using UnityEngine.SceneManagement;
 using LethalQuantities.Objects;
 using System.IO;
 using LethalQuantities.Patches;
-using Newtonsoft.Json;
 
 namespace LethalQuantities
 {
@@ -32,6 +30,7 @@ namespace LethalQuantities
             if (INSTANCE != null && INSTANCE != this)
             {
                 Destroy(this);
+                return;
             }
             else
             {
@@ -56,7 +55,7 @@ namespace LethalQuantities
             _harmony.PatchAll(typeof(ConfigEntryBasePatch));
             LETHAL_LOGGER.LogInfo("Registered ConfigEntryBase patch");
             _harmony.PatchAll(typeof(TerminalPatch));
-            LETHAL_LOGGER.LogInfo("Reigsted Terminal patch");
+            LETHAL_LOGGER.LogInfo("Registered Terminal patch");
 
             SceneManager.sceneLoaded += OnSceneLoaded;
             LETHAL_LOGGER.LogInfo("Added sceneLoaded delegate");
@@ -68,7 +67,7 @@ namespace LethalQuantities
             if (RoundManager.Instance != null)
             {
                 SelectableLevel level = RoundManager.Instance.currentLevel;
-                if (level != null && configuration.levelConfigs.ContainsKey(RoundManager.Instance.currentLevel))
+                if (level != null && configuration.levelConfigs.ContainsKey(RoundManager.Instance.currentLevel.getGuid()))
                 {
                     foreach (RoundState oldState in FindObjectsOfType<RoundState>())
                     {

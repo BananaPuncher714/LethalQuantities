@@ -200,17 +200,17 @@ namespace LethalQuantities.Objects
     {
         internal ConfigFile file { get; set; }
         public ConfigEntry<bool> enabled { get; set; }
-        public Dictionary<SelectableLevel, MoonPriceConfiguration> moons { get; } = new Dictionary<SelectableLevel, MoonPriceConfiguration>();
+        public Dictionary<Guid, MoonPriceConfiguration> moons { get; } = new Dictionary<Guid, MoonPriceConfiguration>();
     }
 
     public class MoonPriceConfiguration
     {
-        public string name { get; protected set; }
+        public Guid guid { get; protected set; }
         public CustomEntry<int> price { get; set; }
 
-        public MoonPriceConfiguration(string name)
+        public MoonPriceConfiguration(Guid name)
         {
-            this.name = name;
+            this.guid = name;
         }
     }
 
@@ -498,8 +498,8 @@ namespace LethalQuantities.Objects
                 levelList.Sort(GlobalInformation.SCRIPTABLE_OBJECT_SORTER);
                 foreach (SelectableLevel moon in levelList)
                 {
-                    MoonPriceConfiguration config = new MoonPriceConfiguration(level.name);
-                    MoonPriceConfiguration masterPriceConfig = masterConfig.priceConfiguration.moons[moon];
+                    MoonPriceConfiguration config = new MoonPriceConfiguration(level.getGuid());
+                    MoonPriceConfiguration masterPriceConfig = masterConfig.priceConfiguration.moons[moon.getGuid()];
                     string tablename = $"Level.{moon.name.getTomlFriendlyName()}";
 
                     string priceDescription = $"The amount of credits it costs to travel to {moon.name}({moon.PlanetName}) from {level.name}({level.PlanetName})";
@@ -510,7 +510,7 @@ namespace LethalQuantities.Objects
 
                     config.price = priceConfig.BindGlobal(masterPriceConfig.price, tablename, "TravelCost", masterPriceConfig.price.DefaultValue(), priceDescription);
 
-                    price.moons.Add(moon, config);
+                    price.moons.Add(moon.getGuid(), config);
                 }
 
                 priceConfig.SaveOnConfigSet = true;

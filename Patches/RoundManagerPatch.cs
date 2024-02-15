@@ -181,6 +181,9 @@ namespace LethalQuantities.Patches
         private static void onStartPostfix(RoundManager __instance)
         {
             StartOfRoundPatch.updateMoonPrices(StartOfRound.Instance.currentLevel);
+
+            // All levels should have been fully loaded by now, so remove any unused idenfitiers
+            SelectableLevelCache.cleanIdentifiers();
         }
 
         [HarmonyPatch(typeof(RoundManager), nameof(RoundManager.LoadNewLevel))]
