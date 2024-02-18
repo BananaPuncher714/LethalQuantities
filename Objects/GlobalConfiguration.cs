@@ -75,6 +75,16 @@ namespace LethalQuantities.Objects
         {
             return (SelectableLevel) levels.Find(id => id.guid == guid).level.Target;
         }
+
+        internal static string getLevelName(this Guid guid)
+        {
+            return levels.Find(id => id.guid == guid).name;
+        }
+
+        internal static string getOriginalLevelName(this SelectableLevel level)
+        {
+            return level.getGuid().getLevelName();
+        }
     }
 
     public interface IWeightConfigurable

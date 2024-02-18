@@ -7,12 +7,15 @@ using UnityEngine.SceneManagement;
 using LethalQuantities.Objects;
 using System.IO;
 using LethalQuantities.Patches;
+using LethalQuantities.Json;
+using Newtonsoft.Json;
 
 namespace LethalQuantities
 {
     [BepInPlugin(PluginInfo.PLUGIN_GUID, PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION)]
     public class Plugin : BaseUnityPlugin
     {
+        internal static readonly string EXPORT_DIRECTORY = Path.Combine(Paths.ConfigPath, PluginInfo.PLUGIN_NAME, "Advanced");
         internal static readonly string GLOBAL_SAVE_DIR = Path.Combine(Paths.ConfigPath, PluginInfo.PLUGIN_NAME, "Global");
         internal static readonly string LEVEL_SAVE_DIR = Path.Combine(Paths.ConfigPath, PluginInfo.PLUGIN_NAME, "Moons");
 
@@ -24,6 +27,8 @@ namespace LethalQuantities
 
         private Harmony _harmony;
         internal bool configInitialized = false;
+
+        internal ExportData defaultInformation;
 
         private void Awake()
         {
@@ -90,6 +95,24 @@ namespace LethalQuantities
             }
         }
 
+        internal void exportData()
+        {
+            // TODO Export the data to a file
+            /*
+            if (defaultInformation != null)
+            {
+                JsonSerializer serializer = new JsonSerializer();
+                serializer.Converters.Add(new AnimationCurveConverter());
+                LETHAL_LOGGER.LogInfo($"Exporting default data");
+                Directory.CreateDirectory(EXPORT_DIRECTORY);
+                using (StreamWriter streamWriter = new StreamWriter(Path.Combine(EXPORT_DIRECTORY, "defaults.json")))
+                using (JsonWriter writer = new JsonTextWriter(streamWriter))
+                {
+                    serializer.Serialize(writer, defaultInformation);
+                }
+            }
+            */
+        }
         internal static RoundState getRoundState(SelectableLevel level)
         {
             foreach (RoundState state in FindObjectsOfType<RoundState>())

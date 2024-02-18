@@ -56,6 +56,7 @@ namespace LethalQuantities.Patches
             if (priceConfig.enabled.Value)
             {
                 bool updatedConfigs = false;
+                bool updatedDefaultInfo = false;
                 Plugin.LETHAL_LOGGER.LogInfo("Modifying moon prices");
                 foreach (CompatibleNoun noun in routeWord.compatibleNouns)
                 {
@@ -111,6 +112,7 @@ namespace LethalQuantities.Patches
                                 }
 
                             }
+
                             if (didMoonPriceUpdate)
                             {
                                 Plugin.LETHAL_LOGGER.LogInfo($"Updated price configs with a new default price for level {matched.name}");
@@ -129,6 +131,8 @@ namespace LethalQuantities.Patches
                             result.itemCost = price;
                             confirm.itemCost = price;
                         }
+
+                        updatedDefaultInfo |= Plugin.INSTANCE.defaultInformation.updatePrice(matched, result.itemCost);
                     }
                     else
                     {
@@ -143,6 +147,11 @@ namespace LethalQuantities.Patches
                         config.file.Save();
                         config.file.SaveOnConfigSet = true;
                     }
+                }
+
+                if (updatedDefaultInfo)
+                {
+                    Plugin.INSTANCE.exportData();
                 }
             }
             else if (!wasDefault)

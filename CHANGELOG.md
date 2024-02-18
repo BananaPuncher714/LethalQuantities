@@ -1,4 +1,6 @@
 ## Changelog
+### 1.1.17
+- Fixed error with March and other moons that may have more than 1 fire exit
 ### 1.1.16
 - Fixed incompatibility with LethalExpansion moons
 - Fixed loading/creating a save twice in one session breaking the game

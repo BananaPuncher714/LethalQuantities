@@ -1,5 +1,6 @@
 ﻿using DunGen.Graph;
 using HarmonyLib;
+using LethalQuantities.Json;
 using LethalQuantities.Objects;
 using System;
 using System.Collections.Generic;
@@ -173,6 +174,10 @@ namespace LethalQuantities.Patches
                         }
                     }
                 }
+
+                // Create an exportable object
+                Plugin.INSTANCE.defaultInformation = new ExportData(__instance, globalInfo);
+                Plugin.INSTANCE.exportData();
             }
         }
 
@@ -335,13 +340,13 @@ namespace LethalQuantities.Patches
         [HarmonyPrefix]
         private static void onGenerateNewFloorPrefix(RoundManager __instance)
         {
+            DungeonFlow[] allDungeonFlows = Resources.FindObjectsOfTypeAll<DungeonFlow>();
             {
                 Plugin.LETHAL_LOGGER.LogInfo("Inserting missing dungeon flows into the RoundManager");
                 // Not very good, but for each dungeon flow, add it to the RoundManager if it isn't already there
                 // Only add dungeon flows whos default rarity is greater than 0, so if the user doesn't enable
                 // any custom flows, they won't get added
                 List<DungeonFlow> flows = __instance.dungeonFlowTypes.ToList();
-                DungeonFlow[] allDungeonFlows = Resources.FindObjectsOfTypeAll<DungeonFlow>();
                 foreach (DungeonFlow flow in allDungeonFlows)
                 {
                     int index = -1;
@@ -358,18 +363,27 @@ namespace LethalQuantities.Patches
                     foreach (LevelConfiguration levelConfig in Plugin.INSTANCE.configuration.levelConfigs.Values)
                     {
                         // Check if the rarity for this flow is set in any moons, and if so, then add it to the array of dungeon flows
-                        if (levelConfig.dungeon.enabled.Value && !levelConfig.dungeon.dungeonFlowConfigurations[flow.name].rarity.isUnset())
+                        if (levelConfig.dungeon.enabled.Value)
                         {
-                            used = true;
-                            break;
+                            if (levelConfig.dungeon.dungeonFlowConfigurations.TryGetValue(flow.name, out DungeonFlowConfiguration config))
+                            {
+                                if (!config.rarity.isUnset())
+                                {
+                                    used = true;
+                                    break;
+                                }
+                            }
                         }
                     }
                     // Otherwise check if it is enabled in the global config
                     if (!used && Plugin.INSTANCE.configuration.dungeonConfiguration.enabled.Value)
                     {
-                        if (!Plugin.INSTANCE.configuration.dungeonConfiguration.dungeonFlowConfigurations[flow.name].rarity.isUnset())
+                        if (Plugin.INSTANCE.configuration.dungeonConfiguration.dungeonFlowConfigurations.TryGetValue(flow.name, out DungeonFlowConfiguration config))
                         {
-                            used = true;
+                            if (!config.rarity.isUnset())
+                            {
+                                used = true;
+                            }
                         }
                     }
 
@@ -397,16 +411,22 @@ namespace LethalQuantities.Patches
                     {
                         flows.TryAdd(__instance.dungeonFlowTypes[entry.id].name, entry.rarity);
                     }
-                    foreach (var item in configuration.dungeonFlowConfigurations)
+                    
+                    foreach (DungeonFlow flow in allDungeonFlows)
                     {
-                        string name = item.Key;
-                        DungeonFlowConfiguration config = item.Value;
+                        string name = flow.name;
+                        if (configuration.dungeonFlowConfigurations.TryGetValue(name, out DungeonFlowConfiguration config))
+                        {
+                            int originalRarity = flows.GetValueOrDefault(name, 0);
+                            config.rarity.Set(ref originalRarity);
+                            flows[name] = originalRarity;
 
-                        int originalRarity = flows.GetValueOrDefault(name, 0);
-                        config.rarity.Set(ref originalRarity);
-                        flows[name] = originalRarity;
-
-                        Plugin.LETHAL_LOGGER.LogInfo($"Set dungeon flow rarity for {name} to {originalRarity}");
+                            Plugin.LETHAL_LOGGER.LogInfo($"Set dungeon flow rarity for {name} to {originalRarity}");
+                        }
+                        else
+                        {
+                            Plugin.LETHAL_LOGGER.LogWarning($"Unknown dungeon flow {name} with rarity {flows.GetValueOrDefault(name, 0)}");
+                        }
                     }
                     level.dungeonFlowTypes = __instance.ConvertToDungeonFlowArray(flows);
                 }

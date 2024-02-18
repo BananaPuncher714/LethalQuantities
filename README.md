@@ -172,7 +172,7 @@ The enemy spawn logic in **Lethal Company** is a bit complex, and there are many
 - The chance of an enemy spawning is `weight of enemy type / total weight`, where the total weight is the sum of the weights of all enemy types
 - The weight of an enemy type is `rarity * spawn chance at the current time` . If `UseSpawnFalloff` is enabled(like baboon hawks), then it is `rarity * spawn chance at the current time * spawn falloff multiplier at the current time`. Spawn falloff multiplier has a curve with a key that is the total amount of that mob / 10.
 ## Roadmap
+- Simple MCStacker-like webpage for editing settings easily
 - Additional settings
 - Weather customization
-- External or different configuration format
 - Lights out?
