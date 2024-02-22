@@ -184,7 +184,7 @@
             }
 
             class UniqueSelectBoundList extends BoundList {
-                constructor( obj, options ) {
+                constructor( obj, options, binder ) {
                     super( obj );
 
                     this.options = options;
@@ -197,6 +197,9 @@
                     // Map of spoilers to open and close
                     this.spoilers = {};
                     this.headers = {};
+
+                    // Binds the given object and returns a DOM element
+                    this.binder = binder;
 
                     if (!obj.value) {
                         obj.value = [];
@@ -366,7 +369,7 @@
                     }
 
                     const header = fromHtml(`<span><span style="width:200px;display:inline-block;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;">${object.name}</span></span>`);
-                    const spoiler = new BindableSpoilerElement(object, header);
+                    const spoiler = new BindableSpoilerElement(object, header, this.binder);
 
                     const superEl = super.addElement(spoiler.getElement(), object);
 
@@ -386,8 +389,8 @@
             }
 
             class UniqueRarityBoundList extends UniqueSelectBoundList {
-                constructor( obj, options ) {
-                    super( obj, options );
+                constructor( obj, options, binder ) {
+                    super( obj, options, binder );
 
                     const span = fromHtml(`<span><br><span>Display</span>`);
                     this.raritySelect = fromHtml(`<select>
@@ -493,14 +496,14 @@
             }
 
             class BindableSpoilerElement {
-                constructor(bindableElement, after = null) {
+                constructor(bindableElement, after = null, binder) {
                     const span = document.createElement("span");
 
                     const hidden = bindableElement.hidden;
                     const setting = { display: "", open: hidden };
                     const box = fromHtml(`<button>H</button>`);
                     box.onclick = () => {
-                        this.setOpen(!this.setting.open, this.inner.bind());
+                        this.setOpen(!this.setting.open);
                     };
 
                     span.appendChild(box);
@@ -508,6 +511,7 @@
                         span.appendChild(after);
                     }
 
+                    this.binder = binder;
                     this.inner = bindableElement;
                     this.setting = setting;
                     this.box = box;
@@ -524,7 +528,7 @@
                     if (option) {
                         if (!this.setting.open) {
                             this.boundNode = fromHtml(`<span><br><span class="title"></span>`);
-                            this.boundNode.appendChild(this.inner.bind());
+                            this.boundNode.appendChild(this.binder(this.inner));
                             this.el.appendChild(this.boundNode);
                             this.box.textContent = "H";
                         }
@@ -540,18 +544,8 @@
                 }
             }
 
-            function cloneInstance(obj) {
-                return Object.assign(Object.create(Object.getPrototypeOf(obj)), structuredClone(obj));
-            }
-
-            function cloneObjectInstance(obj) {
-                const copy = {};
-                for (const [id, orig] of Object.entries(obj)) {
-                    copy[id] = cloneInstance(orig);
-                }
-                return copy;
-            }
-
+            // Plain old lethal object
+            // Better than plain old optional object
             function getPOLO() {
                 return {
                     value: null,
@@ -578,20 +572,20 @@
                     this.id = "";
                 }
 
-                bind() {
+                static bind(enemy) {
                     const container = containerNode.cloneNode(true);
-                    addEntry(container, "Max enemy count", bindToggleableUnsignedInt(this.maxEnemyCount));
-                    addEntry(container, "Power level", bindToggleableUnsignedInt(this.powerLevel));
-                    addEntry(container, "Spawn chance curve", new AnimationCurveBoundList(this.spawnChanceCurve).getElement());
-                    addEntry(container, "Stun time multiplier", bindToggleableUnsignedFloat(this.stunTimeMultiplier));
-                    addEntry(container, "Door speed multiplier", bindToggleableUnsignedFloat(this.doorSpeedMultiplier));
-                    addEntry(container, "Stun game difficulty multiplier", bindToggleableUnsignedFloat(this.stunGameDifficultyMultiplier));
-                    addEntry(container, "Stunnable", bindToggleableBool(this.stunnable));
-                    addEntry(container, "Killable", bindToggleableBool(this.killable));
-                    addEntry(container, "Enemy HP", bindToggleableUnsignedInt(this.enemyHp));
-                    if (this.hasSpawnFalloff) {
-                        addEntry(container, "Spawn falloff curve", new AnimationCurveBoundList(this.spawnFalloffCurve).getElement());
-                        addEntry(container, "Use spawn falloff curve", bindToggleableBool(this.useSpawnFalloff));
+                    addEntry(container, "Max enemy count", bindToggleableUnsignedInt(enemy.maxEnemyCount));
+                    addEntry(container, "Power level", bindToggleableUnsignedInt(enemy.powerLevel));
+                    addEntry(container, "Spawn chance curve", new AnimationCurveBoundList(enemy.spawnChanceCurve).getElement());
+                    addEntry(container, "Stun time multiplier", bindToggleableUnsignedFloat(enemy.stunTimeMultiplier));
+                    addEntry(container, "Door speed multiplier", bindToggleableUnsignedFloat(enemy.doorSpeedMultiplier));
+                    addEntry(container, "Stun game difficulty multiplier", bindToggleableUnsignedFloat(enemy.stunGameDifficultyMultiplier));
+                    addEntry(container, "Stunnable", bindToggleableBool(enemy.stunnable));
+                    addEntry(container, "Killable", bindToggleableBool(enemy.killable));
+                    addEntry(container, "Enemy HP", bindToggleableUnsignedInt(enemy.enemyHp));
+                    if (enemy.hasSpawnFalloff) {
+                        addEntry(container, "Spawn falloff curve", new AnimationCurveBoundList(enemy.spawnFalloffCurve).getElement());
+                        addEntry(container, "Use spawn falloff curve", bindToggleableBool(enemy.useSpawnFalloff));
                     }
                     return container;
                 }
@@ -609,16 +603,16 @@
                     this.id = "";
                 }
 
-                bind(includeWeight = false) {
+                static bind(item, includeWeight = false) {
                     const container = containerNode.cloneNode(true);
-                    if (this.scrap) {
-                        addEntry(container, "Min value", bindToggleableUnsignedInt(this.minValue));
-                        addEntry(container, "Max value", bindToggleableUnsignedInt(this.maxValue));
+                    if (item.scrap) {
+                        addEntry(container, "Min value", bindToggleableUnsignedInt(item.minValue));
+                        addEntry(container, "Max value", bindToggleableUnsignedInt(item.maxValue));
                     }
                     if (includeWeight) {
-                        addEntry(container, "Weight", bindToggleableUnsignedFloat(this.weight));
+                        addEntry(container, "Weight", bindToggleableUnsignedFloat(item.weight));
                     }
-                    addEntry(container, "Conductive", bindToggleableBool(this.conductive));
+                    addEntry(container, "Conductive", bindToggleableBool(item.conductive));
                     return container;
                 }
             }
@@ -631,9 +625,9 @@
                     this.id = "";
                 }
 
-                bind() {
+                static bind(trap) {
                     const container = containerNode.cloneNode(true);
-                    addEntry(container, "Spawn curve", new AnimationCurveBoundList(this.spawnCurve).getElement());
+                    addEntry(container, "Spawn curve", new AnimationCurveBoundList(trap.spawnCurve).getElement());
                     return container;
                 }
             }
@@ -646,9 +640,9 @@
                     this.id = "";
                 }
 
-                bind() {
+                static bind(flow) {
                     const container = containerNode.cloneNode(true);
-                    addEntry(container, "Factory size multiplier", new bindToggleableUnsignedFloat(this.factorySizeMultiplier));
+                    addEntry(container, "Factory size multiplier", new bindToggleableUnsignedFloat(flow.factorySizeMultiplier));
                     return container;
                 }
             }
@@ -660,9 +654,9 @@
                     this.id = "";
                 }
 
-                bind() {
+                static bind(price) {
                     const container = containerNode.cloneNode(true);
-                    addEntry(container, "Price", new bindToggleableUnsignedInt(this.price));
+                    addEntry(container, "Price", new bindToggleableUnsignedInt(price.price));
                     return container;
                 }
             }
@@ -700,62 +694,68 @@
                     this.id = "";
                 }
 
-                bind() {
+                static bind(preset) {
                     const container = containerNode.cloneNode(true);
 
-                    addEntry(container, "Preset", fromHtml(`<span style="width:150px;text-align: right;display:inline-block;"><b>${this.id}</b></br></span>`));
+                    addEntry(container, "Preset", fromHtml(`<span style="width:150px;text-align: right;display:inline-block;"><b>${preset.id}</b></br></span>`));
+                    // TODO Let the name be modifiable
+                    // It will need to have additional handlers, like in the preset list, or for whatever else
+
+                    // TODO Add inheritance!! Very important feature!!
+                    // Use a select but default to none
 
                     container.appendChild(fromHtml(`<span><b>Scrap</b></br></span>`));
-                    addEntry(container, "Scrap amount multiplier", new bindToggleableUnsignedFloat(this.scrapAmountMultiplier));
-                    addEntry(container, "Scrap value multiplier", new bindToggleableUnsignedFloat(this.scrapValueMultiplier));
-                    addEntry(container, "Min scrap", new bindToggleableUnsignedInt(this.minScrap));
-                    addEntry(container, "Max scrap", new bindToggleableUnsignedInt(this.maxScrap));
-                    addEntry(container, "Scrap", new UniqueRarityBoundList(this.scrap, this.availableItems).getElement());
+                    addEntry(container, "Scrap amount multiplier", new bindToggleableUnsignedFloat(preset.scrapAmountMultiplier));
+                    addEntry(container, "Scrap value multiplier", new bindToggleableUnsignedFloat(preset.scrapValueMultiplier));
+                    addEntry(container, "Min scrap", new bindToggleableUnsignedInt(preset.minScrap));
+                    addEntry(container, "Max scrap", new bindToggleableUnsignedInt(preset.maxScrap));
+                    addEntry(container, "Scrap", new UniqueRarityBoundList(preset.scrap, preset.availableItems, ItemType.bind).getElement());
 
                     container.appendChild(fromHtml(`<span><b>Interior Enemies</b></br></span>`));
-                    addEntry(container, "Max power count", new bindToggleableUnsignedInt(this.maxPowerCount));
-                    addEntry(container, "Enemy spawn chance curve", new AnimationCurveBoundList(this.spawnCurve).getElement());
-                    addEntry(container, "Enemy spawn amount range", new bindToggleableUnsignedInt(this.spawnProbabilityRange));
-                    addEntry(container, "Enemies", new UniqueRarityBoundList(this.enemies, this.availableEnemies).getElement());
+                    addEntry(container, "Max power count", new bindToggleableUnsignedInt(preset.maxPowerCount));
+                    addEntry(container, "Enemy spawn chance curve", new AnimationCurveBoundList(preset.spawnCurve).getElement());
+                    addEntry(container, "Enemy spawn amount range", new bindToggleableUnsignedInt(preset.spawnProbabilityRange));
+                    addEntry(container, "Enemies", new UniqueRarityBoundList(preset.enemies, preset.availableEnemies, EnemyType.bind).getElement());
 
                     container.appendChild(fromHtml(`<span><b>Daytime Enemies</b></br></span>`));
-                    addEntry(container, "Max daytime power count", new bindToggleableUnsignedInt(this.maxDaytimePowerCount));
-                    addEntry(container, "Daytime enemy spawn chance curve", new AnimationCurveBoundList(this.daytimeSpawnCurve).getElement());
-                    addEntry(container, "Daytime enemy spawn amount range", new bindToggleableUnsignedInt(this.daytimeSpawnProbabilityRange));
-                    addEntry(container, "Daytime enemies", new UniqueRarityBoundList(this.daytimeEnemies, this.availableEnemies).getElement());
+                    addEntry(container, "Max daytime power count", new bindToggleableUnsignedInt(preset.maxDaytimePowerCount));
+                    addEntry(container, "Daytime enemy spawn chance curve", new AnimationCurveBoundList(preset.daytimeSpawnCurve).getElement());
+                    addEntry(container, "Daytime enemy spawn amount range", new bindToggleableUnsignedInt(preset.daytimeSpawnProbabilityRange));
+                    addEntry(container, "Daytime enemies", new UniqueRarityBoundList(preset.daytimeEnemies, preset.availableEnemies, EnemyType.bind).getElement());
 
                     container.appendChild(fromHtml(`<span><b>Outside Enemies</b></br></span>`));
-                    addEntry(container, "Max outside power count", new bindToggleableUnsignedInt(this.maxOutsidePowerCount));
-                    addEntry(container, "Outside enemy spawn chance curve", new AnimationCurveBoundList(this.outsideSpawnCurve).getElement());
-                    addEntry(container, "Outside enemies", new UniqueRarityBoundList(this.outsideEnemies, this.availableEnemies).getElement());
+                    addEntry(container, "Max outside power count", new bindToggleableUnsignedInt(preset.maxOutsidePowerCount));
+                    addEntry(container, "Outside enemy spawn chance curve", new AnimationCurveBoundList(preset.outsideSpawnCurve).getElement());
+                    addEntry(container, "Outside enemies", new UniqueRarityBoundList(preset.outsideEnemies, preset.availableEnemies, EnemyType.bind).getElement());
 
                     container.appendChild(fromHtml(`<span><b>Dungeon flows</b></br></span>`));
-                    addEntry(container, "Map size multiplier", new bindToggleableUnsignedFloat(this.mapSizeMultiplier));
-                    addEntry(container, "Dungeon flows", new UniqueRarityBoundList(this.dungeonFlows, this.availableFlows).getElement());
+                    addEntry(container, "Map size multiplier", new bindToggleableUnsignedFloat(preset.mapSizeMultiplier));
+                    addEntry(container, "Dungeon flows", new UniqueRarityBoundList(preset.dungeonFlows, preset.availableFlows, DungeonFlowType.bind).getElement());
 
                     container.appendChild(fromHtml(`<span><b>Traps</b></br></span>`));
-                    addEntry(container, "Traps", new UniqueSelectBoundList(this.traps, this.availableTraps).getElement());
+                    addEntry(container, "Traps", new UniqueSelectBoundList(preset.traps, preset.availableTraps, TrapType.bind).getElement());
 
                     container.appendChild(fromHtml(`<span><b>Prices</b></br></span>`));
-                    addEntry(container, "Prices", new UniqueSelectBoundList(this.price, this.availablePrices).getElement());
+                    addEntry(container, "Prices", new UniqueSelectBoundList(preset.price, preset.availablePrices, PriceType.bind).getElement());
 
                     return container;
                 }
             }
+
             
             class Configuration {
                 constructor(data) {
-                    // TODO the default data information should really be in the defaults node
                     this.defaults = data.defaults;
-                    this.enemies = this.generateEnemyTypes();
-                    this.items = this.generateItemTypes();
-                    this.dungeonFlows = this.generateDungeonFlows();
-                    this.traps = this.generateTrapTypes();
-                    this.prices = this.generatePrices();
-                    this.levels = {};
-                    this.presets = {};
+                    this.enemies = this.#generateEnemyTypes();
+                    this.items = this.#generateItemTypes();
+                    this.dungeonFlows = this.#generateDungeonFlows();
+                    this.traps = this.#generateTrapTypes();
+                    this.prices = this.#generatePrices();
+                    this.levels = data.levels ? data.levels : {};
+                    this.presets = data.presets ? data.presets : {};
 
                     this.generatePresets();
+                    this.updatePresets();
                 }
 
                 getNewId() {
@@ -768,8 +768,24 @@
 
                 generatePresets() {
                     for (const [levelId, levelInfo] of Object.entries(this.defaults.levels)) {
+                        // Make sure every level has a valid preset linked to it
+                        if (!this.levels[levelId]) {
+                            console.log(`No preset detected for level ${levelId}, setting to preset ${levelId}`);
+                            this.levels[levelId] = levelId;
+                        } else if (!this.presets[this.levels[levelId]]) {
+                            console.warn(`Preset ${this.levels[levelId]} for level ${levelId} does not exist, setting to preset ${levelId}`);
+                        }
+
+                        // Don't generate a default preset for this level if one already exists
+                        if (this.presets[levelId]) {
+                            console.log(`Found a default preset for ${levelId}`);
+                            continue;
+                        }
+
+                        console.log(`No preset found with the id ${levelId}, creating`);
+
                         const preset = new Preset();
-                        preset.id = this.getNewId();
+                        preset.id = levelId;
                         preset.name = (levelInfo.planet_name == null || levelInfo.planet_name === "") ? levelId : levelInfo.planet_name;
                         preset.mapSizeMultiplier.value = levelInfo.factory_size_multiplier
                         preset.scrapAmountMultiplier.value = this.defaults.scrap_amount_multiplier;
@@ -792,27 +808,54 @@
                         preset.outsideSpawnCurve.value = structuredClone(levelInfo.outside_enemy_spawn_curve);
                         preset.outsideEnemies.value = generateRaritiesFor(this.enemies, levelInfo.outside_enemies);
 
-                        preset.dungeonFlows.value = this.generateDungeonFlowsFor(levelInfo.dungeon_flows);
+                        preset.dungeonFlows.value = this.#generateDungeonFlowsFor(levelInfo.dungeon_flows);
 
-                        preset.traps.value = this.generateTrapsFor(levelInfo.spawnable_map_objects);
-
-                        preset.availableItems = cloneObjectInstance(this.items);
-                        preset.availableEnemies = cloneObjectInstance(this.enemies);
-                        preset.availableDaytimeEnemies = cloneObjectInstance(this.enemies);
-                        preset.availableOutsideEnemies = cloneObjectInstance(this.enemies);
-                        preset.availableFlows = cloneObjectInstance(this.dungeonFlows);
-                        preset.availableTraps = cloneObjectInstance(this.traps);
-                        preset.availablePrices = cloneObjectInstance(this.prices);
+                        preset.traps.value = this.#generateTrapsFor(levelInfo.spawnable_map_objects);
 
                         this.presets[preset.id] = preset;
-                        this.levels[levelId] = preset.id;
                     }
                 }
 
-                generateTrapsFor(trapValues) {
+                updatePresets() {
+                    for (const [id, preset] of Object.entries(this.presets)) {
+                        preset.availableItems = structuredClone(this.items);
+                        preset.availableEnemies = structuredClone(this.enemies);
+                        preset.availableDaytimeEnemies = structuredClone(this.enemies);
+                        preset.availableOutsideEnemies = structuredClone(this.enemies);
+                        preset.availableFlows = structuredClone(this.dungeonFlows);
+                        preset.availableTraps = structuredClone(this.traps);
+                        preset.availablePrices = structuredClone(this.prices);
+
+                        this.#removeUnknownId(preset.availableItems, preset.scrap.value);
+                        this.#removeUnknownId(preset.availableEnemies, preset.enemies.value);
+                        this.#removeUnknownId(preset.availableDaytimeEnemies, preset.daytimeEnemies.value);
+                        this.#removeUnknownId(preset.availableOutsideEnemies, preset.outsideEnemies.value);
+                        this.#removeUnknownId(preset.availableFlows, preset.dungeonFlows.value);
+                        this.#removeUnknownId(preset.availableTraps, preset.traps.value);
+                        this.#removeUnknownId(preset.availablePrices, preset.price.value);
+                    }
+
+                    for (const id of Object.keys(this.levels)) {
+                        if (!this.defaults.levels[id]) {
+                            console.log(`Found old level ${id}, removing`);
+                            delete this.levels[id];
+                        }
+                    }
+                }
+
+                #removeUnknownId(options, list) {
+                    let i = list?.length;
+                    while (i--) {
+                        if (!options[list[i].id]) {
+                            list.splice(i, 1);
+                        }
+                    }
+                }
+
+                #generateTrapsFor(trapValues) {
                     const types = [];
                     for (const [id, type] of Object.entries(this.traps)) {
-                        const copy = cloneInstance(type);
+                        const copy = structuredClone(type);
 
                         copy.spawnCurve.value = trapValues[id];
 
@@ -821,7 +864,7 @@
                     return types;
                 }
 
-                generateDungeonFlowsFor(flows) {
+                #generateDungeonFlowsFor(flows) {
                     const types = generateRaritiesFor(this.dungeonFlows, flows);
 
                     for (const type of types) {
@@ -830,7 +873,7 @@
                     return types;
                 }
 
-                generateEnemyTypes() {
+                #generateEnemyTypes() {
                     let types = {};
                     for (const [id, type] of Object.entries(this.defaults.enemies)) {
                         let jsType = new EnemyType();
@@ -854,7 +897,7 @@
                     return types;
                 }
 
-                generateItemTypes() {
+                #generateItemTypes() {
                     let types = {};
                     for (const [id, type] of Object.entries(this.defaults.items)) {
                         let jsType = new ItemType();
@@ -872,7 +915,7 @@
                     return types;
                 }
 
-                generateDungeonFlows() {
+                #generateDungeonFlows() {
                     let types = {};
                     for (const flow of this.defaults.dungeon_flows) {
                         let jsType = new DungeonFlowType();
@@ -885,7 +928,7 @@
                     return types;
                 }
 
-                generateTrapTypes() {
+                #generateTrapTypes() {
                     let types = {};
                     for (const [id, type] of Object.entries(this.defaults.traps)) {
                         let jsType = new TrapType();
@@ -899,7 +942,7 @@
                     return types;
                 }
 
-                generatePrices() {
+                #generatePrices() {
                     let prices = {};
                     for (const [id, level] of Object.entries(this.defaults.levels)) {
                         let jsType = new PriceType();
@@ -932,8 +975,9 @@
                 block.appendChild(span);
             }
 
+
             // Current configuration that is being edited
-            // Ideally, move this into some anonymous double bound object somewhere
+            // TODO Ideally, move this into some anonymous double bound object somewhere
             var configuration = null;
 
             function selectFile(event) {
@@ -941,19 +985,22 @@
                 let reader = new FileReader();
                 reader.onload = file => {
                     defaultData = JSON.parse(reader.result);
+                    console.log("Parsed input data:");
                     console.log(defaultData);
 
+                    // TODO Properly initialize the UI
                     configuration = new Configuration(defaultData);
                     for (const [id, preset] of Object.entries(configuration.presets)) {
-                        addEntry(document.getElementById("subcontainer"), preset.name, new BindableSpoilerElement(preset).getElement());
+                        addEntry(document.getElementById("subcontainer"), preset.name, new BindableSpoilerElement(preset, null, Preset.bind).getElement());
                     }
                 };
                 reader.readAsText(file);
             }
 
+            // TODO Create the button and link the method dynamically
             function downloadConfiguration() {
                 if (configuration) {
-                    const copy = cloneInstance(configuration.presets);
+                    const copy = structuredClone(configuration.presets);
                     for (const val of Object.values(copy)) {
                         // Trim useless portions
                         delete val.availableItems;
@@ -975,8 +1022,10 @@
                         levels: configuration.levels
                     };
 
+                    console.log("Exporting data:");
                     console.log(exports);
 
+                    // TODO Decide on a standard file name
                     download("presets.json", JSON.stringify(exports));
                 } else {
                     alert("Nothing to download!");
@@ -987,7 +1036,7 @@
                 const types = [];
                 for (const [id, type] of Object.entries(options)) {
                     if (rarities[id]) {
-                        const copy = cloneInstance(type);
+                        const copy = structuredClone(type);
                         copy.rarity.value = rarities[id];
                         // Set it to true for now
                         copy.rarity.set = true;
@@ -1062,16 +1111,10 @@
             }
 
             function download(filename, text) {
-                var element = document.createElement('a');
+                const element = document.createElement('a');
                 element.setAttribute('href', 'data:text/json;charset=utf-8,' + encodeURIComponent(text));
                 element.setAttribute('download', filename);
-
-                element.style.display = 'none';
-                document.body.appendChild(element);
-
                 element.click();
-
-                document.body.removeChild(element);
             }
         </script>
         <style>
@@ -1098,6 +1141,9 @@
         <input type="file" onchange="selectFile(event)">
         <button onclick="downloadConfiguration()">Download</button>
         <div class="editor" id="editor">
+            <div class="container" id="presetlist">
+                <span><b>Presets</b></span><br />
+            </div>
             <div class="container" id="subcontainer">
             </div>
         </div>
