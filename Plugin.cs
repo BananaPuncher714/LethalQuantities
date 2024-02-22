@@ -9,6 +9,7 @@ using System.IO;
 using LethalQuantities.Patches;
 using LethalQuantities.Json;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace LethalQuantities
 {
@@ -98,20 +99,34 @@ namespace LethalQuantities
         internal void exportData()
         {
             // TODO Export the data to a file
-            /*
+            
             if (defaultInformation != null)
             {
                 JsonSerializer serializer = new JsonSerializer();
                 serializer.Converters.Add(new AnimationCurveConverter());
                 LETHAL_LOGGER.LogInfo($"Exporting default data");
                 Directory.CreateDirectory(EXPORT_DIRECTORY);
-                using (StreamWriter streamWriter = new StreamWriter(Path.Combine(EXPORT_DIRECTORY, "defaults.json")))
+                string exportPath = Path.Combine(EXPORT_DIRECTORY, "defaults.json");
+                JObject jObj;
+                if (File.Exists(exportPath))
+                {
+                    jObj = JObject.Parse(File.ReadAllText(exportPath));
+                    File.Delete(exportPath);
+                }
+                else
+                {
+                    jObj = new JObject();
+                }
+
+                using (StreamWriter streamWriter = new StreamWriter(exportPath))
                 using (JsonWriter writer = new JsonTextWriter(streamWriter))
                 {
-                    serializer.Serialize(writer, defaultInformation);
+                    jObj["defaults"] = JObject.FromObject(defaultInformation, serializer);
+
+                    serializer.Serialize(writer, jObj);
                 }
             }
-            */
+            
         }
         internal static RoundState getRoundState(SelectableLevel level)
         {

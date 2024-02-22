@@ -146,6 +146,7 @@ namespace LethalQuantities.Json
         public Dictionary<string, ExportDataItem> items = new Dictionary<string, ExportDataItem>();
         public Dictionary<string, ExportDataTrap> traps = new Dictionary<string, ExportDataTrap>();
         public Dictionary<string, ExportTypeSelectableLevel> levels = new Dictionary<string, ExportTypeSelectableLevel>();
+        public List<string> dungeon_flows = new List<string>();
 
         public ExportData(RoundManager manager, GlobalInformation info)
         {
@@ -172,6 +173,11 @@ namespace LethalQuantities.Json
             foreach (var item in info.allSelectableLevels)
             {
                 levels.Add(item.Key.getOriginalLevelName(), new ExportTypeSelectableLevel(item.Key, item.Value.price));
+            }
+
+            foreach (var flow in info.allDungeonFlows)
+            {
+                dungeon_flows.Add(flow.name);
             }
         }
 

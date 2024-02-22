@@ -16,9 +16,13 @@
                 }
 
                 change( value ) {
+                    let different = this.data.value != value;
                     this.data.value = value;
                     this.element.value = value;
                     this.data.set = !( this.element.value == null || this.element.value == "" );
+                    if (different) {
+                        this.data.onchange?.();
+                    }
                 }
 
                 getElement() {
@@ -65,9 +69,12 @@
                 constructor( obj ) {
                     this.data = obj;
 
+                    // Map object to html node
+                    this.objectRows = new Map();
                     this.bar = document.createElement("span");
                     this.box = fromHtml( `<input type="checkbox">` );
                     this.container = fromHtml( `<div class="container"></div>` );
+                    this.spoilered = new SpoilerElement(obj, this.container).getElement();
 
                     this.addButton = fromHtml( `<button>+</button>` )
                     this.addButton.onclick = () => this.addElement();
@@ -84,7 +91,7 @@
 
                     const element = document.createElement( "span" );
                     element.appendChild( this.box );
-                    element.appendChild( this.container );
+                    element.appendChild( this.spoilered );
                     this.element = element;
 
                     this.selectables = document.createElement( "div" );
@@ -94,8 +101,9 @@
                 }
 
                 set( value ) {
+                    this.box.checked = value;
                     this.data.set = value;
-                    this.container.style.display = value ? "" : "none";
+                    this.spoilered.style.display = value ? "" : "none";
                 }
 
                 getElement() {
@@ -104,15 +112,18 @@
 
                 removeElement(object) {
                     this.data.value.splice(this.data.value.findIndex(o => o === object), 1);
+                    this.data.onremove?.(object);
+                    this.selectables.removeChild(this.objectRows.get(object));
+                    this.objectRows.delete(object);
                 }
 
                 addElement(element, object) {
                     const row = document.createElement( "span" );
                     const deleteButton = fromHtml( `<button>X</button>` );
                     this.data.value.push(object);
+                    this.data.onadd?.(object);
                     deleteButton.onclick = () => {
                         this.removeElement(object);
-                        this.selectables.removeChild( row );
                     };
                     row.appendChild(deleteButton);
                     if (element) {
@@ -120,6 +131,8 @@
                     }
                     row.appendChild( document.createElement( "br" ) );
                     this.selectables.appendChild( row );
+
+                    this.objectRows.set(object, row);
                     
                     return row;
                 }
@@ -138,18 +151,21 @@
                     for ( let i = 0; i < original.length; i++ ) {
                         this.addElement(null, original[i]);
                     }
+
+                    this.bar.appendChild(fromHtml(`<span style="width:100px;display:inline-block;">Key</span>`));
+                    this.bar.appendChild(fromHtml(`<span>Value</span>`));
                 }
 
                 addElement(element, frame = {value: null, time: null}) {
                     const span = document.createElement("span");
-                    const time = fromHtml(`<input type="number" min=0></input>`);
+                    const time = fromHtml(`<input type="number" min=0 style="width:100px;"></input>`);
                     time.value = frame.time;
                     time.addEventListener("change", event => {
                         switch (event.type) {
                             case "change": frame.time = time.value;
                         }
                     }, false);
-                    const value = fromHtml(`<input type="number"></input>`);
+                    const value = fromHtml(`<input type="number" style="width:100px;"></input>`);
                     value.value = frame.value;
                     value.addEventListener("change", event => {
                         switch (event.type) {
@@ -186,7 +202,7 @@
                         obj.value = [];
                     }
 
-                    const addSelect = fromHtml(`<select style="min-width:100px;max-width:250px;"></select>`);
+                    const addSelect = fromHtml(`<select style="min-width:200px;max-width:200px;"></select>`);
                     for (const [key, value] of Object.entries(options)) {
                         const optionEl = fromHtml(`<option value="${key}">${value.name}</option>`);
                         addToSelect(addSelect, optionEl);
@@ -220,13 +236,29 @@
                             }
                         }
                     };
+                    const addAll = fromHtml(`<button>Add All</button>`);
+                    addAll.onclick = () => {
+                        while (this.selected.children.length > 0) {
+                            this.addElement();
+                        }
+                    };
+                    const removeAll = fromHtml(`<button>Remove All</button>`);
+                    removeAll.onclick = () => {
+                        for (const [key, value] of Object.entries(this.availableContainers)) {
+                            if (value.style.display !== "none") {
+                                this.removeElement(this.options[key]);
+                            }
+                        }
+                    };
                     this.bar.appendChild(showAll);
                     this.bar.appendChild(hideAll);
+                    this.bar.appendChild(addAll);
+                    this.bar.appendChild(removeAll);
 
                     let original = [...obj.value];
                     obj.value.length = 0;
                     for (let i = 0; i < original.length; i++) {
-                        addElement(null, original[i].id);
+                        this.addElement(null, original[i]);
                     }
 
                     const containsAny = this.selected.children.length > 0;
@@ -238,8 +270,12 @@
                     const search = this.searchBar.value.toLowerCase().replace(/\s/g, '');
                     if (search == null || search == "") {
                         // Reset all filtered options
-                        for (const val of Object.values(this.availableContainers)) {
-                            val.style.display = "";
+                        for (const [id, val] of Object.entries(this.availableContainers)) {
+                            if (!this.isFiltered(id)) {
+                                val.style.display = "";
+                            } else {
+                                val.style.display = "none";
+                            }
                         }
                         for (let i = 0; i < this.filtered.length; i++) {
                             addToSelect(this.selected, this.filtered[i]);
@@ -282,8 +318,8 @@
                         for (const [key, val] of Object.entries(this.availableContainers)) {
                             const option = this.options[key];
                             const id = option.id?.toLowerCase().replace(/\s/g, '');
-                            const name= option.name?.toLowerCase().replace(/\s/g, '');
-                            if (id?.includes(search) || name?.includes(search)) {
+                            const name = option.name?.toLowerCase().replace(/\s/g, '');
+                            if ((id?.includes(search) || name?.includes(search)) && !this.isFiltered(key)) {
                                 val.style.display = "";
                             } else {
                                 val.style.display = "none";
@@ -294,6 +330,10 @@
                     const containsAny = this.selected.children.length > 0;
                     this.selected.disabled = !containsAny;
                     this.addButton.disabled = !containsAny;
+                }
+
+                isFiltered(key) {
+                    return false;
                 }
 
                 removeElement(object) {
@@ -308,25 +348,38 @@
                     super.removeElement(object);
                 }
 
-                addElement(element, id = this.selected.value) {
-                    let obj = cloneInstance(this.options[id]);
+                addElement(element, object) {
+                    // Should element be used?
+                    // Could clone if the data should be reset when re-added
+                    if (object) {
+                        // Set the current option to the provided object, if not null
+                        this.options[object.id] = object;
+                    } else {
+                        // Get the object if not null
+                        object = this.options[this.selected.value];
+                    }
+                    const id = object.id;
                     this.selected.removeChild(this.selectOptions[id]);
                     if (this.selected.children.length == 0) {
                         this.selected.disabled = true;
                         this.addButton.disabled = true;
                     }
 
-                    const bound = fromHtml(`<span><br></span>`)
-                    bound.appendChild(obj.bind());
-                    const header = fromHtml(`<span><span style="width:200px;display:inline-block;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;">${obj.name}</span></span>`)
-                    const spoiler = new SpoilerElement(bound, header);
+                    const header = fromHtml(`<span><span style="width:200px;display:inline-block;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;">${object.name}</span></span>`);
+                    const spoiler = new BindableSpoilerElement(object, header);
 
-                    const superEl = super.addElement(spoiler.getElement(), obj);
+                    const superEl = super.addElement(spoiler.getElement(), object);
 
                     // Add to added options
                     this.availableContainers[id] = superEl;
                     this.spoilers[id] = spoiler;
                     this.headers[id] = header;
+
+                    if (!this.isFiltered(id)) {
+                        superEl.style.display = "";
+                    } else {
+                        superEl.style.display = "none";
+                    }
 
                     return superEl;
                 }
@@ -335,27 +388,67 @@
             class UniqueRarityBoundList extends UniqueSelectBoundList {
                 constructor( obj, options ) {
                     super( obj, options );
+
+                    const span = fromHtml(`<span><br><span>Display</span>`);
+                    this.raritySelect = fromHtml(`<select>
+                    <option value="none">All</option>
+                    <option value="selected">Selected</option>
+                    <option value="deselected">Deselected</option>
+                    </select>`);
+                    this.raritySelect.addEventListener("change", event => {
+                        switch (event.type) {
+                            case "change": this.updateSearch();
+                        }
+                    }, false);
+                    span.appendChild(this.raritySelect);
+                    this.bar.appendChild(span);
                 }
 
                 removeElement(object) {
                     super.removeElement(object);
                 }
 
-                addElement(element, id = this.selected.value) {
-                    const el = super.addElement(element, id);
+                isFiltered(key) {
+                    if (!this.raritySelect) {
+                        return super.isFiltered(key);
+                    }
+
+                    const rarity = this.options[key].rarity;
+                    switch (this.raritySelect.value) {
+                        case "deselected":
+                            return rarity.set || rarity.value === 0;
+                        case "selected":
+                            return (!rarity.set || rarity.value === 0)
+                        default:
+                            return super.isFiltered(key);
+                    }
+                }
+
+                addElement(element, object) {
+                    const id = object ? object.id : this.selected.value;
+                    const el = super.addElement(element, object);
+                    const obj = this.options[id];
 
                     this.headers[id].appendChild(fromHtml(`<span>Rarity</span>`));
-                    this.headers[id].appendChild(bindToggleableInt(this.options[id].rarity, "50px"));
+                    this.headers[id].appendChild(bindToggleableInt(obj.rarity, "50px"));
+                    // TODO Add some lock to make the value modifiable or not
+                    // Or, something like that at least
+                    // Include a percentage, and slider
+                    // What to do if the inherited preset has values, but are not used?
+                    // TODO Use placeholders for some values?
+                    // TODO How to get parent value?
 
                     return el;
                 }
             }
 
+            // Kind of a redundant class, can be replaced with summary
             class SpoilerElement {
-                constructor(element, after = null) {
+                constructor(obj, element, after = null) {
                     const span = document.createElement("span");
 
-                    const setting = { display: "", open: true };
+                    const hidden = obj.hidden;
+                    const setting = { display: "", open: hidden };
                     const box = fromHtml(`<button>H</button>`);
                     box.onclick = () => {
                         this.setOpen(!this.setting.open);
@@ -365,12 +458,18 @@
                     if (after) {
                         span.appendChild(after);
                     }
-                    span.appendChild(element);
 
-                    this.inner = element;
+                    const extra = fromHtml(`<span><br><span class="title"></span></span>`);
+                    extra.appendChild(element);
+                    span.appendChild(extra);
+
+                    this.object = obj;
+                    this.inner = extra;
                     this.setting = setting;
                     this.box = box;
                     this.el = span;
+
+                    this.setOpen(!hidden);
                 }
 
                 getElement() {
@@ -388,12 +487,69 @@
                         this.inner.style.display = "none";
                         this.box.textContent = "S";
                     }
+                    this.object.hidden = !option;
+                    this.setting.open = option;
+                }
+            }
+
+            class BindableSpoilerElement {
+                constructor(bindableElement, after = null) {
+                    const span = document.createElement("span");
+
+                    const hidden = bindableElement.hidden;
+                    const setting = { display: "", open: hidden };
+                    const box = fromHtml(`<button>H</button>`);
+                    box.onclick = () => {
+                        this.setOpen(!this.setting.open, this.inner.bind());
+                    };
+
+                    span.appendChild(box);
+                    if (after) {
+                        span.appendChild(after);
+                    }
+
+                    this.inner = bindableElement;
+                    this.setting = setting;
+                    this.box = box;
+                    this.el = span;
+
+                    this.setOpen(!hidden);
+                }
+
+                getElement() {
+                    return this.el;
+                }
+
+                setOpen(option) {
+                    if (option) {
+                        if (!this.setting.open) {
+                            this.boundNode = fromHtml(`<span><br><span class="title"></span>`);
+                            this.boundNode.appendChild(this.inner.bind());
+                            this.el.appendChild(this.boundNode);
+                            this.box.textContent = "H";
+                        }
+                    } else {
+                        if (this.boundNode) {
+                            this.el.removeChild(this.boundNode);
+                        }
+                        this.boundNode = null;
+                        this.box.textContent = "S";
+                    }
+                    this.inner.hidden = !option;
                     this.setting.open = option;
                 }
             }
 
             function cloneInstance(obj) {
                 return Object.assign(Object.create(Object.getPrototypeOf(obj)), structuredClone(obj));
+            }
+
+            function cloneObjectInstance(obj) {
+                const copy = {};
+                for (const [id, orig] of Object.entries(obj)) {
+                    copy[id] = cloneInstance(orig);
+                }
+                return copy;
             }
 
             function getPOLO() {
@@ -417,6 +573,7 @@
                     this.spawnFalloffCurve = getPOLO();
                     this.useSpawnFalloff = getPOLO();
                     this.rarity = getPOLO();
+                    this.hasSpawnFalloff = true;
                     this.name = "";
                     this.id = "";
                 }
@@ -432,8 +589,10 @@
                     addEntry(container, "Stunnable", bindToggleableBool(this.stunnable));
                     addEntry(container, "Killable", bindToggleableBool(this.killable));
                     addEntry(container, "Enemy HP", bindToggleableUnsignedInt(this.enemyHp));
-                    addEntry(container, "Spawn falloff curve", new AnimationCurveBoundList(this.spawnFalloffCurve).getElement());
-                    addEntry(container, "Use spawn falloff curve", bindToggleableBool(this.useSpawnFalloff));
+                    if (this.hasSpawnFalloff) {
+                        addEntry(container, "Spawn falloff curve", new AnimationCurveBoundList(this.spawnFalloffCurve).getElement());
+                        addEntry(container, "Use spawn falloff curve", bindToggleableBool(this.useSpawnFalloff));
+                    }
                     return container;
                 }
             }
@@ -464,6 +623,298 @@
                 }
             }
 
+            class TrapType {
+                constructor() {
+                    this.spawnCurve = getPOLO();
+                    this.spawnFacingAwayFromWall = false;
+                    this.name = "";
+                    this.id = "";
+                }
+
+                bind() {
+                    const container = containerNode.cloneNode(true);
+                    addEntry(container, "Spawn curve", new AnimationCurveBoundList(this.spawnCurve).getElement());
+                    return container;
+                }
+            }
+
+            class DungeonFlowType {
+                constructor() {
+                    this.factorySizeMultiplier = getPOLO();
+                    this.rarity = getPOLO();
+                    this.name = "";
+                    this.id = "";
+                }
+
+                bind() {
+                    const container = containerNode.cloneNode(true);
+                    addEntry(container, "Factory size multiplier", new bindToggleableUnsignedFloat(this.factorySizeMultiplier));
+                    return container;
+                }
+            }
+
+            class PriceType {
+                constructor() {
+                    this.price = getPOLO();
+                    this.name = "";
+                    this.id = "";
+                }
+
+                bind() {
+                    const container = containerNode.cloneNode(true);
+                    addEntry(container, "Price", new bindToggleableUnsignedInt(this.price));
+                    return container;
+                }
+            }
+
+            class Preset {
+                constructor() {
+                    this.mapSizeMultiplier = getPOLO();
+                    this.scrapAmountMultiplier = getPOLO();
+                    this.scrapValueMultiplier = getPOLO();
+                    this.minScrap = getPOLO();
+                    this.maxScrap = getPOLO();
+                    this.maxPowerCount = getPOLO();
+                    this.maxDaytimePowerCount = getPOLO();
+                    this.maxOutsidePowerCount = getPOLO();
+                    this.spawnCurve = getPOLO();
+                    this.daytimeSpawnCurve = getPOLO();
+                    this.outsideSpawnCurve = getPOLO();
+                    this.spawnProbabilityRange = getPOLO();
+                    this.daytimeSpawnProbabilityRange = getPOLO();
+                    this.enemies = getPOLO();
+                    this.daytimeEnemies = getPOLO();
+                    this.outsideEnemies = getPOLO();
+                    this.price = getPOLO();
+                    this.traps = getPOLO();
+                    this.scrap = getPOLO();
+                    this.dungeonFlows = getPOLO();
+                    this.availableEnemies = {};
+                    this.availableDaytimeEnemies = {};
+                    this.availableOutsideEnemies = {};
+                    this.availableItems = {};
+                    this.availableFlows = {};
+                    this.availableTraps = {};
+                    this.availablePrices = {};
+                    this.name = "<unnamed>";
+                    this.id = "";
+                }
+
+                bind() {
+                    const container = containerNode.cloneNode(true);
+
+                    addEntry(container, "Preset", fromHtml(`<span style="width:150px;text-align: right;display:inline-block;"><b>${this.id}</b></br></span>`));
+
+                    container.appendChild(fromHtml(`<span><b>Scrap</b></br></span>`));
+                    addEntry(container, "Scrap amount multiplier", new bindToggleableUnsignedFloat(this.scrapAmountMultiplier));
+                    addEntry(container, "Scrap value multiplier", new bindToggleableUnsignedFloat(this.scrapValueMultiplier));
+                    addEntry(container, "Min scrap", new bindToggleableUnsignedInt(this.minScrap));
+                    addEntry(container, "Max scrap", new bindToggleableUnsignedInt(this.maxScrap));
+                    addEntry(container, "Scrap", new UniqueRarityBoundList(this.scrap, this.availableItems).getElement());
+
+                    container.appendChild(fromHtml(`<span><b>Interior Enemies</b></br></span>`));
+                    addEntry(container, "Max power count", new bindToggleableUnsignedInt(this.maxPowerCount));
+                    addEntry(container, "Enemy spawn chance curve", new AnimationCurveBoundList(this.spawnCurve).getElement());
+                    addEntry(container, "Enemy spawn amount range", new bindToggleableUnsignedInt(this.spawnProbabilityRange));
+                    addEntry(container, "Enemies", new UniqueRarityBoundList(this.enemies, this.availableEnemies).getElement());
+
+                    container.appendChild(fromHtml(`<span><b>Daytime Enemies</b></br></span>`));
+                    addEntry(container, "Max daytime power count", new bindToggleableUnsignedInt(this.maxDaytimePowerCount));
+                    addEntry(container, "Daytime enemy spawn chance curve", new AnimationCurveBoundList(this.daytimeSpawnCurve).getElement());
+                    addEntry(container, "Daytime enemy spawn amount range", new bindToggleableUnsignedInt(this.daytimeSpawnProbabilityRange));
+                    addEntry(container, "Daytime enemies", new UniqueRarityBoundList(this.daytimeEnemies, this.availableEnemies).getElement());
+
+                    container.appendChild(fromHtml(`<span><b>Outside Enemies</b></br></span>`));
+                    addEntry(container, "Max outside power count", new bindToggleableUnsignedInt(this.maxOutsidePowerCount));
+                    addEntry(container, "Outside enemy spawn chance curve", new AnimationCurveBoundList(this.outsideSpawnCurve).getElement());
+                    addEntry(container, "Outside enemies", new UniqueRarityBoundList(this.outsideEnemies, this.availableEnemies).getElement());
+
+                    container.appendChild(fromHtml(`<span><b>Dungeon flows</b></br></span>`));
+                    addEntry(container, "Map size multiplier", new bindToggleableUnsignedFloat(this.mapSizeMultiplier));
+                    addEntry(container, "Dungeon flows", new UniqueRarityBoundList(this.dungeonFlows, this.availableFlows).getElement());
+
+                    container.appendChild(fromHtml(`<span><b>Traps</b></br></span>`));
+                    addEntry(container, "Traps", new UniqueSelectBoundList(this.traps, this.availableTraps).getElement());
+
+                    container.appendChild(fromHtml(`<span><b>Prices</b></br></span>`));
+                    addEntry(container, "Prices", new UniqueSelectBoundList(this.price, this.availablePrices).getElement());
+
+                    return container;
+                }
+            }
+            
+            class Configuration {
+                constructor(data) {
+                    // TODO the default data information should really be in the defaults node
+                    this.defaults = data.defaults;
+                    this.enemies = this.generateEnemyTypes();
+                    this.items = this.generateItemTypes();
+                    this.dungeonFlows = this.generateDungeonFlows();
+                    this.traps = this.generateTrapTypes();
+                    this.prices = this.generatePrices();
+                    this.levels = {};
+                    this.presets = {};
+
+                    this.generatePresets();
+                }
+
+                getNewId() {
+                    let id = null;
+                    do {
+                        id = "id" + Math.random().toString(16).slice(2)
+                    } while (this.presets[id]);
+                    return id;
+                }
+
+                generatePresets() {
+                    for (const [levelId, levelInfo] of Object.entries(this.defaults.levels)) {
+                        const preset = new Preset();
+                        preset.id = this.getNewId();
+                        preset.name = (levelInfo.planet_name == null || levelInfo.planet_name === "") ? levelId : levelInfo.planet_name;
+                        preset.mapSizeMultiplier.value = levelInfo.factory_size_multiplier
+                        preset.scrapAmountMultiplier.value = this.defaults.scrap_amount_multiplier;
+                        preset.scrapValueMultiplier.value = this.defaults.scrap_value_multiplier;
+                        preset.minScrap.value = Math.min(levelInfo.min_scrap, levelInfo.max_scrap);
+                        preset.maxScrap.value = Math.max(levelInfo.min_scrap, levelInfo.max_scrap);
+                        preset.scrap.value = generateRaritiesFor(this.items, levelInfo.scrap);
+
+                        preset.maxPowerCount.value = levelInfo.max_power_count;
+                        preset.spawnCurve.value = structuredClone(levelInfo.enemy_spawn_curve);
+                        preset.spawnProbabilityRange.value = levelInfo.enemy_spawn_probability_range;
+                        preset.enemies.value = generateRaritiesFor(this.enemies, levelInfo.enemies);
+
+                        preset.maxDaytimePowerCount.value = levelInfo.max_daytime_power_count;
+                        preset.daytimeSpawnCurve.value = structuredClone(levelInfo.daytime_enemy_spawn_curve);
+                        preset.daytimeSpawnProbabilityRange.value = levelInfo.daytime_enemy_spawn_probability_range;
+                        preset.daytimeEnemies.value = generateRaritiesFor(this.enemies, levelInfo.daytime_enemies);
+
+                        preset.maxOutsidePowerCount.value = levelInfo.max_outside_power_count;
+                        preset.outsideSpawnCurve.value = structuredClone(levelInfo.outside_enemy_spawn_curve);
+                        preset.outsideEnemies.value = generateRaritiesFor(this.enemies, levelInfo.outside_enemies);
+
+                        preset.dungeonFlows.value = this.generateDungeonFlowsFor(levelInfo.dungeon_flows);
+
+                        preset.traps.value = this.generateTrapsFor(levelInfo.spawnable_map_objects);
+
+                        preset.availableItems = cloneObjectInstance(this.items);
+                        preset.availableEnemies = cloneObjectInstance(this.enemies);
+                        preset.availableDaytimeEnemies = cloneObjectInstance(this.enemies);
+                        preset.availableOutsideEnemies = cloneObjectInstance(this.enemies);
+                        preset.availableFlows = cloneObjectInstance(this.dungeonFlows);
+                        preset.availableTraps = cloneObjectInstance(this.traps);
+                        preset.availablePrices = cloneObjectInstance(this.prices);
+
+                        this.presets[preset.id] = preset;
+                        this.levels[levelId] = preset.id;
+                    }
+                }
+
+                generateTrapsFor(trapValues) {
+                    const types = [];
+                    for (const [id, type] of Object.entries(this.traps)) {
+                        const copy = cloneInstance(type);
+
+                        copy.spawnCurve.value = trapValues[id];
+
+                        types.push(copy);
+                    }
+                    return types;
+                }
+
+                generateDungeonFlowsFor(flows) {
+                    const types = generateRaritiesFor(this.dungeonFlows, flows);
+
+                    for (const type of types) {
+                        type.factorySizeMultiplier.value = this.defaults.map_size_multiplier;
+                    }
+                    return types;
+                }
+
+                generateEnemyTypes() {
+                    let types = {};
+                    for (const [id, type] of Object.entries(this.defaults.enemies)) {
+                        let jsType = new EnemyType();
+
+                        jsType.maxEnemyCount.value = type.max_enemy_count;
+                        jsType.powerLevel.value = type.power_level;
+                        jsType.spawnChanceCurve.value = type.spawn_chance_curve;
+                        jsType.stunTimeMultiplier.value = type.stun_time_multiplier;
+                        jsType.doorSpeedMultiplier.value = type.door_speed_multiplier;
+                        jsType.stunGameDifficultyMultiplier.value = type.stun_game_difficulty_multiplier;
+                        jsType.stunnable.value = type.stunnable;
+                        jsType.killable.value = type.killable;
+                        jsType.enemyHp.value = type.enemy_hp;
+                        jsType.spawnFalloffCurve.value = type.spawn_falloff_curve;
+                        jsType.useSpawnFalloff.value = type.use_spawn_falloff;
+                        jsType.name = type.name == null ? id : type.name;
+                        jsType.id = id;
+
+                        types[id] = jsType;
+                    }
+                    return types;
+                }
+
+                generateItemTypes() {
+                    let types = {};
+                    for (const [id, type] of Object.entries(this.defaults.items)) {
+                        let jsType = new ItemType();
+
+                        jsType.weight.value = type.weight;
+                        jsType.minValue.value = type.min_value;
+                        jsType.maxValue.value = type.max_value;
+                        jsType.conductive.value = type.conductive;
+                        jsType.scrap = type.scrap;
+                        jsType.name = type.name;
+                        jsType.id = id;
+
+                        types[id] = jsType;
+                    }
+                    return types;
+                }
+
+                generateDungeonFlows() {
+                    let types = {};
+                    for (const flow of this.defaults.dungeon_flows) {
+                        let jsType = new DungeonFlowType();
+
+                        jsType.name = flow;
+                        jsType.id = flow;
+
+                        types[flow] = jsType;
+                    }
+                    return types;
+                }
+
+                generateTrapTypes() {
+                    let types = {};
+                    for (const [id, type] of Object.entries(this.defaults.traps)) {
+                        let jsType = new TrapType();
+
+                        jsType.spawnFacingAwayFromWall = type.spawn_facing_away_from_wall;
+                        jsType.name = id;
+                        jsType.id = id;
+
+                        types[id] = jsType;
+                    }
+                    return types;
+                }
+
+                generatePrices() {
+                    let prices = {};
+                    for (const [id, level] of Object.entries(this.defaults.levels)) {
+                        let jsType = new PriceType();
+
+                        jsType.price.value = level.price;
+                        jsType.name = (level.planet_name == null || level.planet_name === "") ? id : level.planet_name;
+                        jsType.id = id;
+
+                        prices[id] = jsType;
+                    }
+                    return prices;
+                }
+            }
+
+            // Template for a container
             const containerNode = fromHtml('<div class="container"></div>');
 
             function fromHtml(html) {
@@ -481,15 +932,9 @@
                 block.appendChild(span);
             }
 
-            const animationCurve = {
-                value: [{
-                    time: 0,
-                    value: -3
-                }],
-                set: false
-            }
-
-            var defaultData = null;
+            // Current configuration that is being edited
+            // Ideally, move this into some anonymous double bound object somewhere
+            var configuration = null;
 
             function selectFile(event) {
                 let file = event.target.files[0];
@@ -498,122 +943,94 @@
                     defaultData = JSON.parse(reader.result);
                     console.log(defaultData);
 
-                    addEntry(document.getElementById("subcontainer"), "Enemies", new UniqueRarityBoundList({
-                        value: [],
-                        set: false
-                    }, generateEnemyTypes()).getElement());
-                    addEntry(document.getElementById("subcontainer"), "Items", new UniqueRarityBoundList({
-                        value: [],
-                        set: false
-                    }, generateItemTypes()).getElement());
+                    configuration = new Configuration(defaultData);
+                    for (const [id, preset] of Object.entries(configuration.presets)) {
+                        addEntry(document.getElementById("subcontainer"), preset.name, new BindableSpoilerElement(preset).getElement());
+                    }
                 };
                 reader.readAsText(file);
             }
 
-            function generateEnemyTypes() {
-                let types = {};
-                for (const [id, type] of Object.entries(defaultData.enemies)) {
-                    let jsType = new EnemyType();
+            function downloadConfiguration() {
+                if (configuration) {
+                    const copy = cloneInstance(configuration.presets);
+                    for (const val of Object.values(copy)) {
+                        // Trim useless portions
+                        delete val.availableItems;
+                        delete val.availableEnemies;
+                        delete val.availableDaytimeEnemies;
+                        delete val.availableOutsideEnemies;
+                        delete val.availableFlows;
+                        delete val.availableTraps;
+                        delete val.availablePrices;
+                    }
+                    // Follow the LQ json format
+                    // defaults: <default data>
+                    // presets: <presets>
+                    // levels: <levels>
 
-                    jsType.maxEnemyCount.value = type.max_enemy_count;
-                    jsType.powerLevel.value = type.power_level;
-                    jsType.spawnChanceCurve.value = type.spawn_chance_curve;
-                    jsType.stunTimeMultiplier.value = type.stun_time_multiplier;
-                    jsType.doorSpeedMultiplier.value = type.door_speed_multiplier;
-                    jsType.stunGameDifficultyMultiplier.value = type.stun_game_difficulty_multiplier;
-                    jsType.stunnable.value = type.stunnable;
-                    jsType.killable.value = type.killable;
-                    jsType.enemyHp.value = type.enemy_hp;
-                    jsType.spawnFalloffCurve.value = type.spawn_falloff_curve;
-                    jsType.useSpawnFalloff.value = type.use_spawn_falloff;
-                    jsType.name = type.name == null ? id : type.name;
-                    jsType.id = id;
+                    const exports = {
+                        defaults: configuration.defaults,
+                        presets: copy,
+                        levels: configuration.levels
+                    };
 
-                    types[id] = jsType;
+                    console.log(exports);
+
+                    download("presets.json", JSON.stringify(exports));
+                } else {
+                    alert("Nothing to download!");
+                }
+            }
+
+            function generateRaritiesFor(options, rarities) {
+                const types = [];
+                for (const [id, type] of Object.entries(options)) {
+                    if (rarities[id]) {
+                        const copy = cloneInstance(type);
+                        copy.rarity.value = rarities[id];
+                        // Set it to true for now
+                        copy.rarity.set = true;
+                        types.push(copy);
+                    }
                 }
                 return types;
-            }
-
-            function generateItemTypes() {
-                let types = {};
-                for (const [id, type] of Object.entries(defaultData.items)) {
-                    let jsType = new ItemType();
-
-                    jsType.weight.value = type.weight;
-                    // TODO Change it from minValue to min_value, etc
-                    jsType.minValue.value = type.min_value;
-                    jsType.maxValue.value = type.max_value;
-                    jsType.conductive.value = type.conductive;
-                    jsType.scrap = type.scrap;
-                    jsType.name = type.name;
-                    jsType.id = id;
-
-                    types[id] = jsType;
-                }
-                return types;
-            }
-
-            function doStuff() {
-                const element = fromHtml('<input type="text">');
-                const data = {
-                    value: null,
-                    set: false
-                };
-
-                const optional = {
-                    value: "",
-                    set: false
-                };
-
-                const listData = {
-                    value: [],
-                    set: false
-                }
-
-                addEntry(document.getElementById("subcontainer"), "Test", bindInt(data));
-                addEntry(document.getElementById("subcontainer"), "Test2", bindBool(optional));
-                addEntry(document.getElementById("subcontainer"), "Test2", bindList(listData));
-                addEntry(document.getElementById("subcontainer"), "Test2", new AnimationCurveBoundList(animationCurve).getElement());
-                addEntry(document.getElementById("subcontainer"), "Test enemy type", new SpoilerElement(new EnemyType().bind()).getElement());
-                addEntry(document.getElementById("subcontainer"), "Test item", new SpoilerElement(new ItemType().bind()).getElement());
-            }
-
-            function addStuff() {
-                const element = document.getElementById("data").cloneNode(true);
-                addEntry(document.getElementById("subcontainer"), "Test", element);
-            }
-
-            function loadPreset(preset) {
-                const root = containerNode.cloneNode(true);
-                // Create bound data, etc
-                // Add to root accordingly
-                // Add to lists with new function
-                // How to bind data efficiently?
-                
             }
 
             function bindToggleableInt(obj, width = "") {
-                return new ToggleableBoundElement(fromHtml(`<input type="number" step="1" style="width:${width};">`), obj).getElement();
+                const input = fromHtml(`<input type="number" step="1" style="width:${width};">`);
+                obj.placeholder && (input.placeholder = obj.placeholder);
+                return new ToggleableBoundElement(input, obj).getElement();
             }
 
             function bindToggleableUnsignedInt(obj, width = "") {
-                return new ToggleableBoundElement(fromHtml(`<input type="number" min=0 step=1 style="width:${width};">`), obj).getElement();
+                const input = fromHtml(`<input type="number" min=0 step=1 style="width:${width};">`);
+                obj.placeholder && (input.placeholder = obj.placeholder);
+                return new ToggleableBoundElement(input, obj).getElement();
             }
 
             function bindInt(obj, width = "") {
-                return new BoundElement(fromHtml(`<input type="number" step="1" style="width:${width};">`), obj).getElement();
+                const input = fromHtml(`<input type="number" step="1" style="width:${width};">`);
+                obj.placeholder && (input.placeholder = obj.placeholder);
+                return new BoundElement(input, obj).getElement();
             }
 
             function bindToggleableFloat(obj, width = "") {
-                return new ToggleableBoundElement(fromHtml(`<input type="number" style="width:${width};">`), obj).getElement();
+                const input = fromHtml(`<input type="number" style="width:${width};">`);
+                obj.placeholder && (input.placeholder = obj.placeholder);
+                return new ToggleableBoundElement(input, obj).getElement();
             }
 
             function bindToggleableUnsignedFloat(obj, width = "") {
-                return new ToggleableBoundElement(fromHtml(`<input type="number" min=1 style="width:${width};">`), obj).getElement();
+                const input = fromHtml(`<input type="number" min=1 style="width:${width};">`);
+                obj.placeholder && (input.placeholder = obj.placeholder);
+                return new ToggleableBoundElement(input, obj).getElement();
             }
 
             function bindFloat(obj, width = "") {
-                return new BoundElement(fromHtml(`<input type="number" style="width:${width};">`), obj).getElement();
+                const input = fromHtml(`<input type="number" style="width:${width};">`);
+                obj.placeholder && (input.placeholder = obj.placeholder);
+                return new BoundElement(input, obj).getElement();
             }
 
             function bindToggleableBool(obj) {
@@ -633,10 +1050,6 @@
                 return new BoundElement(select, obj).getElement();
             }
 
-            function bindList(obj) {
-                return new BoundList(obj).getElement();
-            }
-
             // Insertion sort
             function addToSelect(sel, el) {
                 let index = 0;
@@ -646,6 +1059,19 @@
                 } else {
                     sel.options.add(el, sel.options[index]);
                 }
+            }
+
+            function download(filename, text) {
+                var element = document.createElement('a');
+                element.setAttribute('href', 'data:text/json;charset=utf-8,' + encodeURIComponent(text));
+                element.setAttribute('download', filename);
+
+                element.style.display = 'none';
+                document.body.appendChild(element);
+
+                element.click();
+
+                document.body.removeChild(element);
             }
         </script>
         <style>
@@ -670,15 +1096,9 @@
     </head>
     <body>
         <input type="file" onchange="selectFile(event)">
-        <button onclick="doStuff()">Do stuff</button>
-        <button onclick="addStuff()">Add stuff</button>
+        <button onclick="downloadConfiguration()">Download</button>
         <div class="editor" id="editor">
             <div class="container" id="subcontainer">
-            </div>
-            <span class="title">More Data</span>
-            <div class="container" id="data">
-                Some more content here
-                <div class="container">Additional stuff here</div>
             </div>
         </div>
     </body>
