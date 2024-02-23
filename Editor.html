@@ -605,7 +605,7 @@
                     this.id = "";
                 }
 
-                static bind(item, includeWeight = false) {
+                static bind(item, includeWeight = true) {
                     const container = containerNode.cloneNode(true);
                     if (item.scrap) {
                         addEntry(container, "Min value", bindToggleableUnsignedInt(item.minValue));
@@ -1092,152 +1092,127 @@
             }
 
             // TODO List:
-            // - Add dynamically updating percentages for the UniqueRarityBoundLists
-            // - Add styling options, such as a more lethal company-esque UI
+            // = HIGH PRIORITY
             // - Add preset name updating, such as an event handler, etc
+            // - Add preset inheritance
+            // = Medium Priority
+            // - Add tooltips for each setting
+            // - Add dynamically updating percentages for the UniqueRarityBoundLists
             // - Add preset clone, delete and new functions
             // - Add copy paste functionality
+            // - Create more elements with document.createElement, instead of fromHtml(which was a convenience method for quick prototyping, and to prevent XSS vulnerabilities)
+            // = low priority
+            // - Add styling options, such as a more lethal company-esque UI
             // - Design the UI
             // - Change UniqueSelectBoundList to use a single object per added object, to store relevant data
-            // - Add download button only if a valid preset has been loaded
-            // - Add tooltips for each setting
-            // - Stop using global variables(configuration)
-            // - Create more elements with document.createElement, instead of fromHtml(which was a convenience method for quick prototyping)
-            // - Add preset inheritance
             // - Update how many items are visible in the scrap/enemies list
             // - Separate items into store vs scrap, in the select dropdown
             // - Allow sorting of entries in unique bound lists
             // - Allow subdirectories for presets
-            // - Drag and drop preset functionality?
-
-
-            // Current configuration that is being edited
-            // TODO Ideally, move this into some anonymous double bound object somewhere
-            var configuration = null;
-            var configurationBackup = null;
-
-            function dropHandler(event) {
-                event.preventDefault();
-
-                let file = null;                
-                if (event.dataTransfer.items) {
-                    const item = event.dataTransfer.items[0];
-                    if (item.kind === "file") {
-                        file = item.getAsFile();
-                    }
-                } else {
-                    file = event.dataTransfer.files[0];
-                }
-                
-                if (file) {
-                    let reader = new FileReader();
-                    reader.onload = file => {
-                        defaultData = JSON.parse(reader.result);
-                        console.log("Parsed input data:");
-                        console.log(defaultData);
-                        configuration = new Configuration(defaultData);
-                        configurationBackup = structuredClone(configuration);
-
-                        menu = new PresetMenu(configuration);
-
-                        document.body.appendChild(PresetMenu.bind(menu));
-                    };
-                    reader.readAsText(file);
-                }
-            }
-
-            function dragHandler(event) {
-                event.preventDefault();
-                console.log(event);
-            }
-
-            function clickHandler() {
-                document.getElementById("upload").click();
-            }
-
-            function selectFile(event) {
-                let file = event.target.files[0];
-                if (file) {
-                    let reader = new FileReader();
-                    reader.onload = file => {
-                        removeChildren(document.body);
-
-                        defaultData = JSON.parse(reader.result);
-                        console.log("Parsed input data:");
-                        console.log(defaultData);
-                        configuration = new Configuration(defaultData);
-                        createInterfaceFor(configuration);
-                        //configurationBackup = structuredClone(configuration);
-
-                        //menu = new PresetMenu(configuration);
-
-                        //document.body.appendChild(fromHtml(`<button onclick="downloadConfiguration()">Download</button>`));
-                        //document.body.appendChild(PresetMenu.bind(menu));
-                    };
-                    reader.readAsText(file);
-                }
-            }
+            // - Check for XSS vulnerabilities
 
             function readFile(file) {
                 let reader = new FileReader();
                 reader.onload = file => {
                     defaultData = JSON.parse(reader.result);
-                    console.log("Parsed input data:");
-                    console.log(defaultData);
 
-                    const configuration = new Configuration(defaultData);
-                    const configurationBackup = structuredClone(configuration);
-
-                    window.onbeforeunload = (e) => {
-                        if (JSON.stringify(configuration) !== JSON.stringify(configurationBackup)) {
-                            e.preventDefault();
-                        }
-                    };
-
-                    createInterfaceFor(configuration);
+                    loadData(defaultData);
                 };
                 reader.readAsText(file);
+            }
+
+            function loadData(data) {
+                console.log("Loading input data:");
+                console.log(data);
+
+                const configuration = new Configuration(data);
+
+                createInterfaceFor(configuration);
             }
 
             function createInterfaceFor(configuration) {
                 removeChildren(document.body);
 
+                // Keep a backup to compare for any changes
+                const configurationBackup = structuredClone(configuration);
+                window.onbeforeunload = (e) => {
+                    if (JSON.stringify(configuration) !== JSON.stringify(configurationBackup)) {
+                        console.log("Tried to exit with unsaved information");
+                        e.preventDefault();
+
+                    }
+                    localStorage.setItem("saved", JSON.stringify(exportConfiguration(configuration)));
+                };
+
                 const menu = new PresetMenu(configuration);
 
                 const downloadButton = fromHtml(`<button>Download</button>`);
                 downloadButton.addEventListener("click", () => {
-                    const copy = structuredClone(configuration.presets);
-                    for (const val of Object.values(copy)) {
-                        // Trim useless portions
-                        delete val.availableItems;
-                        delete val.availableEnemies;
-                        delete val.availableDaytimeEnemies;
-                        delete val.availableOutsideEnemies;
-                        delete val.availableFlows;
-                        delete val.availableTraps;
-                        delete val.availablePrices;
-                    }
-                    // Follow the LQ json format
-                    // defaults: <default data>
-                    // presets: <presets>
-                    // levels: <levels>
-
-                    const exports = {
-                        defaults: configuration.defaults,
-                        presets: copy,
-                        levels: configuration.levels
-                    };
-
-                    console.log("Exporting data:");
-                    console.log(exports);
-
-                    download("presets.json", JSON.stringify(exports));
+                    console.log("Saving configuration via the download button");
+                    downloadConfiguration(configuration, "presets.json");
                 });
+
+                document.addEventListener("keydown", e => {
+                    if (e.ctrlKey && e.key === 's') {
+                        console.log("Saving configuration via ctrl+s")
+                        e.preventDefault();
+                        downloadConfiguration(configuration, "presets.json");
+                    }
+                });
+
+                // Add a reset button to go back to the main screen
+                const resetButton = fromHtml(`<button>Edit another file</button>`);
+                resetButton.addEventListener("click", () => {
+                    if (confirm("Any information you have currently will be deleted. Are you sure you want to continue?")) {
+                        localStorage.removeItem("saved");
+                        delete window.onbeforeunload;
+                        initialize();
+                    }
+                });
+
                 const outer = document.createElement("div");
                 outer.appendChild(downloadButton);
+                outer.appendChild(document.createTextNode("or press Ctrl+S to save"));
+                outer.appendChild(document.createElement("br"));
+                outer.appendChild(resetButton);
                 outer.appendChild(PresetMenu.bind(menu));
 
                 document.body.appendChild(outer);
+            }
+
+            function exportConfiguration(configuration) {
+                const copy = structuredClone(configuration.presets);
+                for (const val of Object.values(copy)) {
+                    // Trim useless portions
+                    delete val.availableItems;
+                    delete val.availableEnemies;
+                    delete val.availableDaytimeEnemies;
+                    delete val.availableOutsideEnemies;
+                    delete val.availableFlows;
+                    delete val.availableTraps;
+                    delete val.availablePrices;
+                }
+
+                // Follow the LQ json format
+                // defaults: <default data>
+                // presets: <presets>
+                // levels: <levels>
+                const exports = {
+                    defaults: configuration.defaults,
+                    presets: copy,
+                    levels: configuration.levels
+                };
+
+                return exports;
+            }
+
+            function downloadConfiguration(configuration, filename) {
+                const exports = exportConfiguration(configuration);
+
+                console.log("Exporting data:");
+                console.log(exports);
+
+                download(filename, JSON.stringify(exports));
             }
 
             function removeChildren(node) {
@@ -1317,7 +1292,6 @@
                 return str.replace("&", "&amp;")
                         .replace(">", "&lt;")
                         .replace("<", "&gt;");
-
             }
 
             // Insertion sort
@@ -1339,55 +1313,56 @@
             }
 
             // Generate the drop zone as soon as the body is done loading
+            // Or, load an existing file from local storage
             function initialize() {
-                const zone = document.createElement("div");
-                zone.classList.add("zone");
-                zone.addEventListener("click", () => {
-                    const input = document.createElement("input");
-                    input.type = "file";
-                    input.addEventListener("change", event => {
-                        let file = event.target.files[0];
+                const saved = localStorage.getItem("saved");
+                if (saved) {
+                    console.log("Found saved data");
+                    loadData(JSON.parse(saved));
+                } else {
+                    removeChildren(document.body);
+                    console.log("No save data found");
+                    const zone = document.createElement("div");
+                    zone.classList.add("zone");
+                    zone.addEventListener("click", () => {
+                        const input = document.createElement("input");
+                        input.type = "file";
+                        input.accept = ".json";
+                        input.addEventListener("change", event => {
+                            let file = event.target.files[0];
+                            if (file) {
+                                readFile(file);
+                            }
+                        });
+
+                        input.click();
+                    });
+                    zone.addEventListener("drop", event => {
+                        event.preventDefault();
+
+                        let file = null;
+                        if (event.dataTransfer.items) {
+                            const item = event.dataTransfer.items[0];
+                            if (item.kind === "file") {
+                                file = item.getAsFile();
+                            }
+                        } else {
+                            file = event.dataTransfer.files[0];
+                        }
+
                         if (file) {
                             readFile(file);
                         }
                     });
+                    zone.addEventListener("dragover", event => {
+                        event.preventDefault();
+                    });
 
-                    input.click();
-                });
-                zone.addEventListener("drop", event => {
-                    event.preventDefault();
+                    const text = fromHtml(`<span>Drag & drop a file to edit<br>Or click to upload</span>`);
+                    zone.appendChild(text);
 
-                    let file = null;
-                    if (event.dataTransfer.items) {
-                        const item = event.dataTransfer.items[0];
-                        if (item.kind === "file") {
-                            file = item.getAsFile();
-                        }
-                    } else {
-                        file = event.dataTransfer.files[0];
-                    }
-
-                    if (file) {
-                        //readFile(file);
-                        let reader = new FileReader();
-                        reader.onload = file => {
-                            defaultData = JSON.parse(reader.result);
-                            console.log("Parsed input data:");
-                            console.log(defaultData);
-                            configuration = new Configuration(defaultData);
-                            configurationBackup = structuredClone(configuration);
-
-                            menu = new PresetMenu(configuration);
-
-                            document.body.appendChild(PresetMenu.bind(menu));
-                        };
-                        reader.readAsText(file);
-                    }
-                });
-                zone.addEventListener("dragover", event => {
-                    event.preventDefault();
-                });
-                document.body.appendChild(zone);
+                    document.body.appendChild(zone);
+                }
             }
         </script>
         <style>
@@ -1410,11 +1385,14 @@
                 display: inline-block;
             }
             div.zone {
+                display: flex;
                 position: fixed;
                 width: 100%;
                 height: 100%;
                 bottom: 0;
                 right: 0;
+                justify-content: center;
+                align-items: center;
             }
             span.title {
                 display: inline-block;
