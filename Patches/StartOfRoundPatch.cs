@@ -10,12 +10,12 @@ namespace LethalQuantities.Patches
     {
         private static Dictionary<int, int> defaultPrices = new Dictionary<int, int>();
 
-        [HarmonyPatch(typeof(StartOfRound), nameof(StartOfRound.ChangePlanet))]
+        [HarmonyPatch(typeof(StartOfRound), nameof(StartOfRound.ChangeLevel))]
         [HarmonyPriority(200)]
         [HarmonyPrefix]
-        private static void onPlanetChange(StartOfRound __instance)
+        private static void onPlanetChange(StartOfRound __instance, int levelID)
         {
-            updateMoonPrices(__instance.currentLevel);
+            updateMoonPrices(__instance.levels[levelID]);
         }
 
         public static void updateMoonPrices(SelectableLevel level)

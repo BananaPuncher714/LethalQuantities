@@ -692,56 +692,72 @@
                     this.availableFlows = {};
                     this.availableTraps = {};
                     this.availablePrices = {};
+                    this.parent = undefined;
                     this.name = "<unnamed>";
                     this.id = "";
                 }
 
-                static bind(preset) {
+                static bind(preset, parents = {}) {
                     const container = containerNode.cloneNode(true);
-
-                    addEntry(container, "Preset", fromHtml(`<span style="width:200px;text-align: right;display:inline-block;"><b>${format(preset.id)}</b></br></span>`));
-                    // TODO Let the name be modifiable
-                    // It will need to have additional handlers, like in the preset list, or for whatever else
-
                     // TODO Add inheritance!! Very important feature!!
                     // Use a select but default to none
 
                     const gridBox = fromHtml(`<div class="grid"></div>`);
                     const col1 = fromHtml(`<span style="grid-column: 1/2; padding:4px;"></span>`);
                     const col2 = fromHtml(`<span style="grid-column: 2/3; padding:4px;"></span>`);
-                    gridBox.appendChild(col1);
-                    gridBox.appendChild(col2);
+                    gridBox.append(col1, col2);
 
-                    col1.appendChild(fromHtml(`<span><b>Scrap</b></br></span>`));
-                    addEntry(col1, "Scrap amount multiplier", new bindToggleableUnsignedFloat(preset.scrapAmountMultiplier));
-                    addEntry(col1, "Scrap value multiplier", new bindToggleableUnsignedFloat(preset.scrapValueMultiplier));
-                    addEntry(col1, "Min scrap", new bindToggleableUnsignedInt(preset.minScrap));
-                    addEntry(col1, "Max scrap", new bindToggleableUnsignedInt(preset.maxScrap));
-                    addEntry(col1, "Scrap", new UniqueRarityBoundList(preset.scrap, preset.availableItems, ItemType.bind).getElement());
+                    const identifier = tooltip(fromHtml(`<span><b>${format(preset.name || preset.id)}</b></span>`), `ID: ${preset.id}`);
+                    const identifierSpan = fromHtml(`<span style="width:200px;text-align: right;display:inline-block;"></span>`);
+                    identifierSpan.append(identifier, document.createElement("br"));
+                    addEntry(container, fromHtml("<b>Preset</b>"), identifierSpan);
+
+                    // Set the parent here
+                    const select = document.createElement("select");
+                    select.style.maxWidth = "200px";
+                    select.options.add(new Option("", undefined, true, preset.parent));
+                    for (const [id, potential] of Object.entries(parents)) {
+                        if (id !== preset.id) {
+                            select.options.add(new Option(potential.name || potential.id, potential.id, false, id === preset.parent));
+                        }
+                    }
+
+                    select.addEventListener("change", () => {
+                        preset.parent = select.value;
+                    });
+
+                    addEntry(container, "Parent", select);
+
+                    col2.append(tooltip(fromHtml(`<span><b>Scrap</b></span>`), `Section for scrap.`), document.createElement("br"));
+                    addEntry(col2, "Scrap amount multiplier", new bindToggleableUnsignedFloat(preset.scrapAmountMultiplier));
+                    addEntry(col2, "Scrap value multiplier", new bindToggleableUnsignedFloat(preset.scrapValueMultiplier));
+                    addEntry(col2, "Min scrap", new bindToggleableUnsignedInt(preset.minScrap));
+                    addEntry(col2, "Max scrap", new bindToggleableUnsignedInt(preset.maxScrap));
+                    addEntry(col2, "Scrap", new UniqueRarityBoundList(preset.scrap, preset.availableItems, ItemType.bind).getElement());
 
                     col1.appendChild(fromHtml(`<span><b>Interior Enemies</b></br></span>`));
                     addEntry(col1, "Max power count", new bindToggleableUnsignedInt(preset.maxPowerCount));
                     addEntry(col1, "Enemy spawn chance curve", new AnimationCurveBoundList(preset.spawnCurve).getElement());
-                    addEntry(col1, "Enemy spawn amount range", new bindToggleableUnsignedInt(preset.spawnProbabilityRange));
+                    addEntry(col1, "Enemy spawn amount range", new bindToggleableUnsignedFloat(preset.spawnProbabilityRange));
                     addEntry(col1, "Enemies", new UniqueRarityBoundList(preset.enemies, preset.availableEnemies, EnemyType.bind).getElement());
 
-                    col2.appendChild(fromHtml(`<span><b>Daytime Enemies</b></br></span>`));
-                    addEntry(col2, "Max daytime power count", new bindToggleableUnsignedInt(preset.maxDaytimePowerCount));
-                    addEntry(col2, "Daytime enemy spawn chance curve", new AnimationCurveBoundList(preset.daytimeSpawnCurve).getElement());
-                    addEntry(col2, "Daytime enemy spawn amount range", new bindToggleableUnsignedInt(preset.daytimeSpawnProbabilityRange));
-                    addEntry(col2, "Daytime enemies", new UniqueRarityBoundList(preset.daytimeEnemies, preset.availableEnemies, EnemyType.bind).getElement());
+                    col1.appendChild(fromHtml(`<span><b>Outside Enemies</b></br></span>`));
+                    addEntry(col1, "Max outside power count", new bindToggleableUnsignedInt(preset.maxOutsidePowerCount));
+                    addEntry(col1, "Outside enemy spawn chance curve", new AnimationCurveBoundList(preset.outsideSpawnCurve).getElement());
+                    addEntry(col1, "Outside enemies", new UniqueRarityBoundList(preset.outsideEnemies, preset.availableEnemies, EnemyType.bind).getElement());
 
-                    col2.appendChild(fromHtml(`<span><b>Outside Enemies</b></br></span>`));
-                    addEntry(col2, "Max outside power count", new bindToggleableUnsignedInt(preset.maxOutsidePowerCount));
-                    addEntry(col2, "Outside enemy spawn chance curve", new AnimationCurveBoundList(preset.outsideSpawnCurve).getElement());
-                    addEntry(col2, "Outside enemies", new UniqueRarityBoundList(preset.outsideEnemies, preset.availableEnemies, EnemyType.bind).getElement());
+                    col1.appendChild(fromHtml(`<span><b>Daytime Enemies</b></br></span>`));
+                    addEntry(col1, "Max daytime power count", new bindToggleableUnsignedInt(preset.maxDaytimePowerCount));
+                    addEntry(col1, "Daytime enemy spawn chance curve", new AnimationCurveBoundList(preset.daytimeSpawnCurve).getElement());
+                    addEntry(col1, "Daytime enemy spawn amount range", new bindToggleableUnsignedFloat(preset.daytimeSpawnProbabilityRange));
+                    addEntry(col1, "Daytime enemies", new UniqueRarityBoundList(preset.daytimeEnemies, preset.availableEnemies, EnemyType.bind).getElement());
 
                     col2.appendChild(fromHtml(`<span><b>Dungeon flows</b></br></span>`));
                     addEntry(col2, "Map size multiplier", new bindToggleableUnsignedFloat(preset.mapSizeMultiplier));
                     addEntry(col2, "Dungeon flows", new UniqueRarityBoundList(preset.dungeonFlows, preset.availableFlows, DungeonFlowType.bind).getElement());
 
-                    col1.appendChild(fromHtml(`<span><b>Traps</b></br></span>`));
-                    addEntry(col1, "Traps", new UniqueSelectBoundList(preset.traps, preset.availableTraps, TrapType.bind).getElement());
+                    col2.appendChild(fromHtml(`<span><b>Traps</b></br></span>`));
+                    addEntry(col2, "Traps", new UniqueSelectBoundList(preset.traps, preset.availableTraps, TrapType.bind).getElement());
 
                     col2.appendChild(fromHtml(`<span><b>Prices</b></br></span>`));
                     addEntry(col2, "Prices", new UniqueSelectBoundList(preset.price, preset.availablePrices, PriceType.bind).getElement());
@@ -771,7 +787,7 @@
                 getNewId() {
                     let id = null;
                     do {
-                        id = "id" + Math.random().toString(16).slice(2)
+                        id = "preset-" + Math.random().toString(16).slice(2)
                     } while (this.presets[id]);
                     return id;
                 }
@@ -780,10 +796,11 @@
                     for (const [levelId, levelInfo] of Object.entries(this.defaults.levels)) {
                         // Make sure every level has a valid preset linked to it
                         if (!this.levels[levelId]) {
-                            console.log(`No preset detected for level ${levelId}, setting to preset ${levelId}`);
+                            console.log(`No preset detected for level ${levelId}, setting to ${levelId}`);
                             this.levels[levelId] = levelId;
                         } else if (!this.presets[this.levels[levelId]]) {
-                            console.warn(`Preset ${this.levels[levelId]} for level ${levelId} does not exist, setting to preset ${levelId}`);
+                            console.warn(`Preset ${this.levels[levelId]} for level ${levelId} does not exist, setting to ${levelId}`);
+                            this.levels[levelId] = levelId;
                         }
 
                         // Don't generate a default preset for this level if one already exists
@@ -828,13 +845,7 @@
 
                 updatePresets() {
                     for (const [id, preset] of Object.entries(this.presets)) {
-                        preset.availableItems = structuredClone(this.items);
-                        preset.availableEnemies = structuredClone(this.enemies);
-                        preset.availableDaytimeEnemies = structuredClone(this.enemies);
-                        preset.availableOutsideEnemies = structuredClone(this.enemies);
-                        preset.availableFlows = structuredClone(this.dungeonFlows);
-                        preset.availableTraps = structuredClone(this.traps);
-                        preset.availablePrices = structuredClone(this.prices);
+                        this.updatePresetOptions(preset);
 
                         this.#removeUnknownId(preset.availableItems, preset.scrap.value);
                         this.#removeUnknownId(preset.availableEnemies, preset.enemies.value);
@@ -851,6 +862,16 @@
                             delete this.levels[id];
                         }
                     }
+                }
+
+                updatePresetOptions(preset) {
+                    preset.availableItems = structuredClone(this.items);
+                    preset.availableEnemies = structuredClone(this.enemies);
+                    preset.availableDaytimeEnemies = structuredClone(this.enemies);
+                    preset.availableOutsideEnemies = structuredClone(this.enemies);
+                    preset.availableFlows = structuredClone(this.dungeonFlows);
+                    preset.availableTraps = structuredClone(this.traps);
+                    preset.availablePrices = structuredClone(this.prices);
                 }
 
                 #removeUnknownId(options, list) {
@@ -981,31 +1002,20 @@
                     gridBox.appendChild(col1);
                     gridBox.appendChild(col2);
 
-                    col1.appendChild(fromHtml(`<span><b>Presets</b><br></span>`));
-                    for (const [id, preset] of Object.entries(menu.configuration.presets)) {
-                        const nameInput = fromHtml(`<input type="text" placeholder="No preset"/>`);
-                        nameInput.value = preset.name;
-                        nameInput.addEventListener("change", e => {
-                            preset.name = nameInput.value;
+                    const levelInputs = {};
 
-                            if (menu.sidebarReferences[id]) {
-                                menu.sidebarReferences[id].textContent = format(preset.name);
-                            }
-                        });
-
-                        const copyButton = fromHtml(`<button>Copy</button>`);
-                        const deleteButton = fromHtml(`<button>Delete</button>`);
-
-                        col1.appendChild(nameInput);
-                        col1.appendChild(copyButton);
-                        col1.appendChild(deleteButton);
-                        col1.appendChild(document.createElement("br"));
-                    }
-
+                    // Set up the levels section first
                     col2.appendChild(fromHtml(`<span><b>Levels</b><br></span>`));
                     for (const [id, preset] of Object.entries(menu.configuration.levels)) {
-                        const presetInput = fromHtml(`<input type="text" readOnly="true"/>`);
-                        presetInput.value = menu.configuration.presets[preset].name
+                        const presetInput = fromHtml(`<input type="text" readOnly="true" placeholder="No preset"/>`);
+                        if (preset) {
+                            const realPreset = menu.configuration.presets[preset];
+                            if (realPreset.name) {
+                                presetInput.value = realPreset.name;
+                            } else {
+                                presetInput.value = realPreset.id;
+                            }
+                        }
                         presetInput.addEventListener("dragover", ev => {
                             ev.preventDefault();
                             ev.dataTransfer.dropEffect = "link";
@@ -1016,15 +1026,117 @@
 
                             const presetId = ev.dataTransfer.getData("text/plain");
                             menu.configuration.levels[id] = presetId;
-                            presetInput.value = menu.configuration.presets[presetId].name;
+                            const realPreset = menu.configuration.presets[presetId];
+                            presetInput.value = realPreset.name || realPreset.id;
                         });
+
+                        levelInputs[id] = presetInput;
 
                         addEntry(col2, format(id), presetInput);
                     }
 
+                    menu.presetEntryContainer = col1;
+                    col1.appendChild(fromHtml(`<span><b>Presets</b><br></span>`));
+                    const blankPreset = fromHtml(`<button>Add preset</button>`);
+                    blankPreset.addEventListener("click", () => {
+                        const preset = new Preset();
+
+                        const id = menu.configuration.getNewId();
+                        preset.id = id;
+
+                        // Add the preset
+                        menu.configuration.updatePresetOptions(preset);
+                        menu.configuration.presets[id] = preset;
+                        menu.presetList.appendChild(PresetMenu.#bindSidebarOption(menu, preset));
+
+                        col1.appendChild(PresetMenu.#bindPresetNameEntry(menu, preset, levelInputs));
+                    });
+                    col1.appendChild(blankPreset);
+                    col1.appendChild(document.createElement("br"));
+                    for (const [id, preset] of Object.entries(menu.configuration.presets)) {
+                        col1.appendChild(PresetMenu.#bindPresetNameEntry(menu, preset, levelInputs));
+                    }
+
                     container.appendChild(gridBox);
 
+
                     return container;
+                }
+
+                static #bindPresetNameEntry(menu, preset, levelInputs) {
+                    const id = preset.id;
+                    const presetNameSpan = document.createElement("span");
+                    const nameInput = fromHtml(`<input type="text"/>`);
+                    nameInput.placeholder = id;
+                    nameInput.value = preset.name;
+                    nameInput.addEventListener("change", e => {
+                        preset.name = nameInput.value;
+
+                        if (menu.sidebarReferences[id]) {
+                            // Fallback to id if the preset name is empty for some reason
+                            if (preset.name) {
+                                menu.sidebarReferences[id].textContent = preset.name;
+                            } else {
+                                menu.sidebarReferences[id].textContent = preset.id;
+                            }
+                        }
+
+                        for (const [levelId, presetId] of Object.entries(menu.configuration.levels)) {
+                            if (presetId === id) {
+                                levelInputs[levelId].value = preset.name;
+                            }
+                        }
+                    });
+
+                    const copyButton = fromHtml(`<button>Copy</button>`);
+                    copyButton.addEventListener("click", () => {
+                        const copy = structuredClone(preset);
+                        copy.id = menu.configuration.getNewId();
+                        copy.name = preset.name + "(copy)";
+
+                        // Add the preset
+                        menu.configuration.presets[copy.id] = copy;
+                        menu.presetList.appendChild(PresetMenu.#bindSidebarOption(menu, copy));
+                        menu.presetEntryContainer.appendChild(PresetMenu.#bindPresetNameEntry(menu, copy, levelInputs));
+                    });
+
+                    
+                    let clicked = false;
+                    const deleteButton = fromHtml(`<button>Delete</button>`);
+                    deleteButton.addEventListener("focusout", () => {
+                        clicked = false;
+                        deleteButton.style.color = "";
+                    });
+                    deleteButton.addEventListener("click", () => {
+                        if (clicked) {
+                            menu.sidebarSpans[id].remove();
+                            presetNameSpan.remove();
+                            delete menu.sidebarSpans[id];
+                            delete menu.configuration.presets[id];
+                            for (const [levelId, presetId] of Object.entries(menu.configuration.levels)) {
+                                if (presetId === id) {
+                                    // Set the level preset to undefined
+                                    menu.configuration.levels[levelId] = undefined;
+                                    levelInputs[levelId].value = "";
+                                }
+                            }
+
+                            for (const preset of Object.values(menu.configuration.presets)) {
+                                if (preset.parent === id) {
+                                    preset.parent = undefined;
+                                }
+                            }
+                        } else {
+                            clicked = true;
+                            deleteButton.style.color = "red";
+                        }
+                    });
+
+                    presetNameSpan.appendChild(nameInput);
+                    presetNameSpan.appendChild(copyButton);
+                    presetNameSpan.appendChild(deleteButton);
+                    presetNameSpan.appendChild(document.createElement("br"));
+                    return presetNameSpan;
                 }
 
                 static bind(menu) {
@@ -1035,6 +1147,9 @@
                     const subcontainer = fromHtml(`<div class="invis-container"></div>`);
                     const presetList = containerNode.cloneNode(true);
 
+                    menu.presetList = presetList;
+                    menu.subcontainer = subcontainer;
+
                     const presetEl = fromHtml(`<span class="preset"><button style="background:none; border:none;"><b>Presets</b></button></span>`);
                     presetList.appendChild(presetEl);
                     presetList.appendChild(document.createElement("br"));
@@ -1044,32 +1159,39 @@
                     };
 
                     for (const [id, preset] of Object.entries(menu.configuration.presets)) {
-                        const span = document.createElement("span");
-                        const button = fromHtml(`<button style="background:none; border:none;" draggable="true">${format(preset.name)}</button>`);
-                        const mainSpan = fromHtml(`<span class="preset" draggable="true">&gt;</span>`)
-                        const presetSpan = fromHtml(`<span style="text-align: right"></span>`);
-                        presetSpan.appendChild(button);
-                        mainSpan.appendChild(presetSpan);
-                        mainSpan.addEventListener("dragstart", ev => {
-                            ev.dataTransfer.setData("text/plain", id);
-                        });
-                        span.appendChild(mainSpan);
-                        span.appendChild(document.createElement("br"));
-                        presetList.appendChild(span);
-
-                        span.onclick = () => {
-                            removeChildren(subcontainer);
-                            subcontainer.appendChild(Preset.bind(preset));
-                        };
-
-                        menu.sidebarReferences[id] = button;
-                        menu.sidebarSpans[id] = span;
+                        presetList.appendChild(PresetMenu.#bindSidebarOption(menu, preset));
                     }
 
                     container.appendChild(presetList);
                     container.appendChild(subcontainer)
 
                     return container;
+                }
+
+                static #bindSidebarOption(menu, preset) {
+                    const span = document.createElement("span");
+                    // Use the preset name, but if it is empty, then use the preset id
+                    const button = fromHtml(`<button style="background:none; border:none;" draggable="true">${format(preset.name || preset.id) }</button>`);
+                    const mainSpan = fromHtml(`<span class="preset" draggable="true">&gt;</span>`)
+                    const presetSpan = fromHtml(`<span style="text-align: right"></span>`);
+                    presetSpan.appendChild(button);
+                    mainSpan.appendChild(presetSpan);
+                    mainSpan.addEventListener("dragstart", ev => {
+                        ev.dataTransfer.setData("text/plain", preset.id);
+                    });
+                    span.appendChild(mainSpan);
+                    span.appendChild(document.createElement("br"));
+
+                    span.onclick = () => {
+                        removeChildren(menu.subcontainer);
+
+                        menu.subcontainer.appendChild(Preset.bind(preset, menu.configuration.presets));
+                    };
+
+                    menu.sidebarReferences[preset.id] = button;
+                    menu.sidebarSpans[preset.id] = span;
+
+                    return span;
                 }
             }
 
@@ -1083,22 +1205,42 @@
                 return result.length === 1 ? result[0] : result;
             }
 
+            function tooltip(element, tooltip) {
+                let title = element;
+                if (typeof element === "string" || element instanceof String) {
+                    title = fromHtml(`<span class="title">${format(element)}</span>`);
+                }
+                title.classList.add("tooltip");
+
+                let tipbox = fromHtml(`<span class="tooltiptext"></span>`);
+                if (typeof tooltip === "string" || tooltip instanceof String) {
+                    tipbox.textContent = tooltip;
+                } else {
+                    tipbox.appendChild(tooltip);
+                }
+
+                title.appendChild(tipbox);
+                return title;
+            }
+
             function addEntry(block, title, element) {
                 const span = document.createElement("span");
-                span.appendChild(fromHtml(`<span class="title">${title}</span>`));
-                span.appendChild(element);
-                span.appendChild(document.createElement("br"));
+                const titleSpan = fromHtml(`<span class="title"></span>`);
+                if (typeof title === "string" || title instanceof String) {
+                    titleSpan.appendChild(document.createTextNode(title));
+                } else {
+                    titleSpan.appendChild(title);
+                }
+                span.append(titleSpan, element, document.createElement("br"));
                 block.appendChild(span);
             }
 
             // TODO List:
             // = HIGH PRIORITY
-            // - Add preset name updating, such as an event handler, etc
-            // - Add preset inheritance
-            // = Medium Priority
             // - Add tooltips for each setting
+            // - Use append instead of appendChild
+            // = Medium Priority
             // - Add dynamically updating percentages for the UniqueRarityBoundLists
-            // - Add preset clone, delete and new functions
             // - Add copy paste functionality
             // - Create more elements with document.createElement, instead of fromHtml(which was a convenience method for quick prototyping, and to prevent XSS vulnerabilities)
             // = low priority
@@ -1290,8 +1432,8 @@
 
             function format(str) {
                 return str.replace("&", "&amp;")
-                        .replace(">", "&lt;")
-                        .replace("<", "&gt;");
+                        .replace(">", "&gt;")
+                        .replace("<", "&lt;");
             }
 
             // Insertion sort
@@ -1407,6 +1549,29 @@
             }
             span.preset:hover {
                 background-color: #FE6C07;
+            }
+            .tooltip {
+                position: relative;
+                display: inline-block;
+            }
+            .tooltiptext {
+                opacity: 0;
+                padding: 1px;
+                border-radius: 2px;
+                outline-style: solid;
+                background-color: black;
+                width: max-content;
+                max-width: 500px;
+                color: white;
+                display: block;
+                text-align: left;
+
+                pointer-events: none;
+                position: absolute;
+                z-index: 1;
+            }
+            .tooltip:hover .tooltiptext{
+                opacity: 1;
             }
         </style>
     </head>
