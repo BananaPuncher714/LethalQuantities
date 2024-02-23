@@ -1,8 +1,8 @@
-<DOCTYPE! html>
+<!DOCTYPE html>
 <html>
     <head>
         <title>Lethal Quantities Web Editor</title>
-        <script>
+        <script async>
             class BoundElement {
                 constructor( element, obj ) {
                     this.data = obj;
@@ -527,7 +527,9 @@
                 setOpen(option) {
                     if (option) {
                         if (!this.setting.open) {
-                            this.boundNode = fromHtml(`<span><br><span class="title"></span>`);
+                            // As long as certain things aren't spoilered, I think this is fine
+                            this.boundNode = fromHtml(`<span><br></span>`);
+                            //this.boundNode = fromHtml(`<span><br><span class="title"></span>`);
                             this.boundNode.appendChild(this.binder(this.inner));
                             this.el.appendChild(this.boundNode);
                             this.box.textContent = "H";
@@ -697,46 +699,54 @@
                 static bind(preset) {
                     const container = containerNode.cloneNode(true);
 
-                    addEntry(container, "Preset", fromHtml(`<span style="width:150px;text-align: right;display:inline-block;"><b>${preset.id}</b></br></span>`));
+                    addEntry(container, "Preset", fromHtml(`<span style="width:200px;text-align: right;display:inline-block;"><b>${format(preset.id)}</b></br></span>`));
                     // TODO Let the name be modifiable
                     // It will need to have additional handlers, like in the preset list, or for whatever else
 
                     // TODO Add inheritance!! Very important feature!!
                     // Use a select but default to none
 
-                    container.appendChild(fromHtml(`<span><b>Scrap</b></br></span>`));
-                    addEntry(container, "Scrap amount multiplier", new bindToggleableUnsignedFloat(preset.scrapAmountMultiplier));
-                    addEntry(container, "Scrap value multiplier", new bindToggleableUnsignedFloat(preset.scrapValueMultiplier));
-                    addEntry(container, "Min scrap", new bindToggleableUnsignedInt(preset.minScrap));
-                    addEntry(container, "Max scrap", new bindToggleableUnsignedInt(preset.maxScrap));
-                    addEntry(container, "Scrap", new UniqueRarityBoundList(preset.scrap, preset.availableItems, ItemType.bind).getElement());
+                    const gridBox = fromHtml(`<div class="grid"></div>`);
+                    const col1 = fromHtml(`<span style="grid-column: 1/2; padding:4px;"></span>`);
+                    const col2 = fromHtml(`<span style="grid-column: 2/3; padding:4px;"></span>`);
+                    gridBox.appendChild(col1);
+                    gridBox.appendChild(col2);
 
-                    container.appendChild(fromHtml(`<span><b>Interior Enemies</b></br></span>`));
-                    addEntry(container, "Max power count", new bindToggleableUnsignedInt(preset.maxPowerCount));
-                    addEntry(container, "Enemy spawn chance curve", new AnimationCurveBoundList(preset.spawnCurve).getElement());
-                    addEntry(container, "Enemy spawn amount range", new bindToggleableUnsignedInt(preset.spawnProbabilityRange));
-                    addEntry(container, "Enemies", new UniqueRarityBoundList(preset.enemies, preset.availableEnemies, EnemyType.bind).getElement());
+                    col1.appendChild(fromHtml(`<span><b>Scrap</b></br></span>`));
+                    addEntry(col1, "Scrap amount multiplier", new bindToggleableUnsignedFloat(preset.scrapAmountMultiplier));
+                    addEntry(col1, "Scrap value multiplier", new bindToggleableUnsignedFloat(preset.scrapValueMultiplier));
+                    addEntry(col1, "Min scrap", new bindToggleableUnsignedInt(preset.minScrap));
+                    addEntry(col1, "Max scrap", new bindToggleableUnsignedInt(preset.maxScrap));
+                    addEntry(col1, "Scrap", new UniqueRarityBoundList(preset.scrap, preset.availableItems, ItemType.bind).getElement());
 
-                    container.appendChild(fromHtml(`<span><b>Daytime Enemies</b></br></span>`));
-                    addEntry(container, "Max daytime power count", new bindToggleableUnsignedInt(preset.maxDaytimePowerCount));
-                    addEntry(container, "Daytime enemy spawn chance curve", new AnimationCurveBoundList(preset.daytimeSpawnCurve).getElement());
-                    addEntry(container, "Daytime enemy spawn amount range", new bindToggleableUnsignedInt(preset.daytimeSpawnProbabilityRange));
-                    addEntry(container, "Daytime enemies", new UniqueRarityBoundList(preset.daytimeEnemies, preset.availableEnemies, EnemyType.bind).getElement());
+                    col1.appendChild(fromHtml(`<span><b>Interior Enemies</b></br></span>`));
+                    addEntry(col1, "Max power count", new bindToggleableUnsignedInt(preset.maxPowerCount));
+                    addEntry(col1, "Enemy spawn chance curve", new AnimationCurveBoundList(preset.spawnCurve).getElement());
+                    addEntry(col1, "Enemy spawn amount range", new bindToggleableUnsignedInt(preset.spawnProbabilityRange));
+                    addEntry(col1, "Enemies", new UniqueRarityBoundList(preset.enemies, preset.availableEnemies, EnemyType.bind).getElement());
 
-                    container.appendChild(fromHtml(`<span><b>Outside Enemies</b></br></span>`));
-                    addEntry(container, "Max outside power count", new bindToggleableUnsignedInt(preset.maxOutsidePowerCount));
-                    addEntry(container, "Outside enemy spawn chance curve", new AnimationCurveBoundList(preset.outsideSpawnCurve).getElement());
-                    addEntry(container, "Outside enemies", new UniqueRarityBoundList(preset.outsideEnemies, preset.availableEnemies, EnemyType.bind).getElement());
+                    col2.appendChild(fromHtml(`<span><b>Daytime Enemies</b></br></span>`));
+                    addEntry(col2, "Max daytime power count", new bindToggleableUnsignedInt(preset.maxDaytimePowerCount));
+                    addEntry(col2, "Daytime enemy spawn chance curve", new AnimationCurveBoundList(preset.daytimeSpawnCurve).getElement());
+                    addEntry(col2, "Daytime enemy spawn amount range", new bindToggleableUnsignedInt(preset.daytimeSpawnProbabilityRange));
+                    addEntry(col2, "Daytime enemies", new UniqueRarityBoundList(preset.daytimeEnemies, preset.availableEnemies, EnemyType.bind).getElement());
 
-                    container.appendChild(fromHtml(`<span><b>Dungeon flows</b></br></span>`));
-                    addEntry(container, "Map size multiplier", new bindToggleableUnsignedFloat(preset.mapSizeMultiplier));
-                    addEntry(container, "Dungeon flows", new UniqueRarityBoundList(preset.dungeonFlows, preset.availableFlows, DungeonFlowType.bind).getElement());
+                    col2.appendChild(fromHtml(`<span><b>Outside Enemies</b></br></span>`));
+                    addEntry(col2, "Max outside power count", new bindToggleableUnsignedInt(preset.maxOutsidePowerCount));
+                    addEntry(col2, "Outside enemy spawn chance curve", new AnimationCurveBoundList(preset.outsideSpawnCurve).getElement());
+                    addEntry(col2, "Outside enemies", new UniqueRarityBoundList(preset.outsideEnemies, preset.availableEnemies, EnemyType.bind).getElement());
 
-                    container.appendChild(fromHtml(`<span><b>Traps</b></br></span>`));
-                    addEntry(container, "Traps", new UniqueSelectBoundList(preset.traps, preset.availableTraps, TrapType.bind).getElement());
+                    col2.appendChild(fromHtml(`<span><b>Dungeon flows</b></br></span>`));
+                    addEntry(col2, "Map size multiplier", new bindToggleableUnsignedFloat(preset.mapSizeMultiplier));
+                    addEntry(col2, "Dungeon flows", new UniqueRarityBoundList(preset.dungeonFlows, preset.availableFlows, DungeonFlowType.bind).getElement());
 
-                    container.appendChild(fromHtml(`<span><b>Prices</b></br></span>`));
-                    addEntry(container, "Prices", new UniqueSelectBoundList(preset.price, preset.availablePrices, PriceType.bind).getElement());
+                    col1.appendChild(fromHtml(`<span><b>Traps</b></br></span>`));
+                    addEntry(col1, "Traps", new UniqueSelectBoundList(preset.traps, preset.availableTraps, TrapType.bind).getElement());
+
+                    col2.appendChild(fromHtml(`<span><b>Prices</b></br></span>`));
+                    addEntry(col2, "Prices", new UniqueSelectBoundList(preset.price, preset.availablePrices, PriceType.bind).getElement());
+
+                    container.appendChild(gridBox);
 
                     return container;
                 }
@@ -957,6 +967,112 @@
                 }
             }
 
+            class PresetMenu {
+                constructor(configuration) {
+                    this.configuration = configuration;
+                }
+
+                static #bindEditor(menu) {
+                    const container = containerNode.cloneNode(true);
+
+                    const gridBox = fromHtml(`<div class="grid"></div>`);
+                    const col1 = fromHtml(`<span style="grid-column: 1/2; padding:4px;"></span>`);
+                    const col2 = fromHtml(`<span style="grid-column: 2/3; padding:4px;"></span>`);
+                    gridBox.appendChild(col1);
+                    gridBox.appendChild(col2);
+
+                    col1.appendChild(fromHtml(`<span><b>Presets</b><br></span>`));
+                    for (const [id, preset] of Object.entries(menu.configuration.presets)) {
+                        const nameInput = fromHtml(`<input type="text" placeholder="No preset"/>`);
+                        nameInput.value = preset.name;
+                        nameInput.addEventListener("change", e => {
+                            preset.name = nameInput.value;
+
+                            if (menu.sidebarReferences[id]) {
+                                menu.sidebarReferences[id].textContent = format(preset.name);
+                            }
+                        });
+
+                        const copyButton = fromHtml(`<button>Copy</button>`);
+                        const deleteButton = fromHtml(`<button>Delete</button>`);
+
+                        col1.appendChild(nameInput);
+                        col1.appendChild(copyButton);
+                        col1.appendChild(deleteButton);
+                        col1.appendChild(document.createElement("br"));
+                    }
+
+                    col2.appendChild(fromHtml(`<span><b>Levels</b><br></span>`));
+                    for (const [id, preset] of Object.entries(menu.configuration.levels)) {
+                        const presetInput = fromHtml(`<input type="text" readOnly="true"/>`);
+                        presetInput.value = menu.configuration.presets[preset].name
+                        presetInput.addEventListener("dragover", ev => {
+                            ev.preventDefault();
+                            ev.dataTransfer.dropEffect = "link";
+                        });
+                        presetInput.addEventListener("drop", ev => {
+                            ev.preventDefault();
+                            ev.dataTransfer.dropEffect = "link";
+
+                            const presetId = ev.dataTransfer.getData("text/plain");
+                            menu.configuration.levels[id] = presetId;
+                            presetInput.value = menu.configuration.presets[presetId].name;
+                        });
+
+                        addEntry(col2, format(id), presetInput);
+                    }
+
+                    container.appendChild(gridBox);
+
+                    return container;
+                }
+
+                static bind(menu) {
+                    menu.sidebarReferences = {};
+                    menu.sidebarSpans = {};
+
+                    const container = document.createElement("div");
+                    const subcontainer = fromHtml(`<div class="invis-container"></div>`);
+                    const presetList = containerNode.cloneNode(true);
+
+                    const presetEl = fromHtml(`<span class="preset"><button style="background:none; border:none;"><b>Presets</b></button></span>`);
+                    presetList.appendChild(presetEl);
+                    presetList.appendChild(document.createElement("br"));
+                    presetEl.onclick = () => {
+                        removeChildren(subcontainer);
+                        subcontainer.appendChild(PresetMenu.#bindEditor(menu));
+                    };
+
+                    for (const [id, preset] of Object.entries(menu.configuration.presets)) {
+                        const span = document.createElement("span");
+                        const button = fromHtml(`<button style="background:none; border:none;" draggable="true">${format(preset.name)}</button>`);
+                        const mainSpan = fromHtml(`<span class="preset" draggable="true">&gt;</span>`)
+                        const presetSpan = fromHtml(`<span style="text-align: right"></span>`);
+                        presetSpan.appendChild(button);
+                        mainSpan.appendChild(presetSpan);
+                        mainSpan.addEventListener("dragstart", ev => {
+                            ev.dataTransfer.setData("text/plain", id);
+                        });
+                        span.appendChild(mainSpan);
+                        span.appendChild(document.createElement("br"));
+                        presetList.appendChild(span);
+
+                        span.onclick = () => {
+                            removeChildren(subcontainer);
+                            subcontainer.appendChild(Preset.bind(preset));
+                        };
+
+                        menu.sidebarReferences[id] = button;
+                        menu.sidebarSpans[id] = span;
+                    }
+
+                    container.appendChild(presetList);
+                    container.appendChild(subcontainer)
+
+                    return container;
+                }
+            }
+
             // Template for a container
             const containerNode = fromHtml('<div class="container"></div>');
 
@@ -975,31 +1091,121 @@
                 block.appendChild(span);
             }
 
+            // TODO List:
+            // - Add dynamically updating percentages for the UniqueRarityBoundLists
+            // - Add styling options, such as a more lethal company-esque UI
+            // - Add preset name updating, such as an event handler, etc
+            // - Add preset clone, delete and new functions
+            // - Add copy paste functionality
+            // - Design the UI
+            // - Change UniqueSelectBoundList to use a single object per added object, to store relevant data
+            // - Add download button only if a valid preset has been loaded
+            // - Add tooltips for each setting
+            // - Stop using global variables(configuration)
+            // - Create more elements with document.createElement, instead of fromHtml(which was a convenience method for quick prototyping)
+            // - Add preset inheritance
+            // - Update how many items are visible in the scrap/enemies list
+            // - Separate items into store vs scrap, in the select dropdown
+            // - Allow sorting of entries in unique bound lists
+            // - Allow subdirectories for presets
+            // - Drag and drop preset functionality?
+
 
             // Current configuration that is being edited
             // TODO Ideally, move this into some anonymous double bound object somewhere
             var configuration = null;
+            var configurationBackup = null;
+
+            function dropHandler(event) {
+                event.preventDefault();
+
+                let file = null;                
+                if (event.dataTransfer.items) {
+                    const item = event.dataTransfer.items[0];
+                    if (item.kind === "file") {
+                        file = item.getAsFile();
+                    }
+                } else {
+                    file = event.dataTransfer.files[0];
+                }
+                
+                if (file) {
+                    let reader = new FileReader();
+                    reader.onload = file => {
+                        defaultData = JSON.parse(reader.result);
+                        console.log("Parsed input data:");
+                        console.log(defaultData);
+                        configuration = new Configuration(defaultData);
+                        configurationBackup = structuredClone(configuration);
+
+                        menu = new PresetMenu(configuration);
+
+                        document.body.appendChild(PresetMenu.bind(menu));
+                    };
+                    reader.readAsText(file);
+                }
+            }
+
+            function dragHandler(event) {
+                event.preventDefault();
+                console.log(event);
+            }
+
+            function clickHandler() {
+                document.getElementById("upload").click();
+            }
 
             function selectFile(event) {
                 let file = event.target.files[0];
+                if (file) {
+                    let reader = new FileReader();
+                    reader.onload = file => {
+                        removeChildren(document.body);
+
+                        defaultData = JSON.parse(reader.result);
+                        console.log("Parsed input data:");
+                        console.log(defaultData);
+                        configuration = new Configuration(defaultData);
+                        createInterfaceFor(configuration);
+                        //configurationBackup = structuredClone(configuration);
+
+                        //menu = new PresetMenu(configuration);
+
+                        //document.body.appendChild(fromHtml(`<button onclick="downloadConfiguration()">Download</button>`));
+                        //document.body.appendChild(PresetMenu.bind(menu));
+                    };
+                    reader.readAsText(file);
+                }
+            }
+
+            function readFile(file) {
                 let reader = new FileReader();
                 reader.onload = file => {
                     defaultData = JSON.parse(reader.result);
                     console.log("Parsed input data:");
                     console.log(defaultData);
 
-                    // TODO Properly initialize the UI
-                    configuration = new Configuration(defaultData);
-                    for (const [id, preset] of Object.entries(configuration.presets)) {
-                        addEntry(document.getElementById("subcontainer"), preset.name, new BindableSpoilerElement(preset, null, Preset.bind).getElement());
-                    }
+                    const configuration = new Configuration(defaultData);
+                    const configurationBackup = structuredClone(configuration);
+
+                    window.onbeforeunload = (e) => {
+                        if (JSON.stringify(configuration) !== JSON.stringify(configurationBackup)) {
+                            e.preventDefault();
+                        }
+                    };
+
+                    createInterfaceFor(configuration);
                 };
                 reader.readAsText(file);
             }
 
-            // TODO Create the button and link the method dynamically
-            function downloadConfiguration() {
-                if (configuration) {
+            function createInterfaceFor(configuration) {
+                removeChildren(document.body);
+
+                const menu = new PresetMenu(configuration);
+
+                const downloadButton = fromHtml(`<button>Download</button>`);
+                downloadButton.addEventListener("click", () => {
                     const copy = structuredClone(configuration.presets);
                     for (const val of Object.values(copy)) {
                         // Trim useless portions
@@ -1025,10 +1231,18 @@
                     console.log("Exporting data:");
                     console.log(exports);
 
-                    // TODO Decide on a standard file name
                     download("presets.json", JSON.stringify(exports));
-                } else {
-                    alert("Nothing to download!");
+                });
+                const outer = document.createElement("div");
+                outer.appendChild(downloadButton);
+                outer.appendChild(PresetMenu.bind(menu));
+
+                document.body.appendChild(outer);
+            }
+
+            function removeChildren(node) {
+                while (node.firstChild) {
+                    node.removeChild(node.lastChild);
                 }
             }
 
@@ -1099,6 +1313,13 @@
                 return new BoundElement(select, obj).getElement();
             }
 
+            function format(str) {
+                return str.replace("&", "&amp;")
+                        .replace(">", "&lt;")
+                        .replace("<", "&gt;");
+
+            }
+
             // Insertion sort
             function addToSelect(sel, el) {
                 let index = 0;
@@ -1116,10 +1337,65 @@
                 element.setAttribute('download', filename);
                 element.click();
             }
+
+            // Generate the drop zone as soon as the body is done loading
+            function initialize() {
+                const zone = document.createElement("div");
+                zone.classList.add("zone");
+                zone.addEventListener("click", () => {
+                    const input = document.createElement("input");
+                    input.type = "file";
+                    input.addEventListener("change", event => {
+                        let file = event.target.files[0];
+                        if (file) {
+                            readFile(file);
+                        }
+                    });
+
+                    input.click();
+                });
+                zone.addEventListener("drop", event => {
+                    event.preventDefault();
+
+                    let file = null;
+                    if (event.dataTransfer.items) {
+                        const item = event.dataTransfer.items[0];
+                        if (item.kind === "file") {
+                            file = item.getAsFile();
+                        }
+                    } else {
+                        file = event.dataTransfer.files[0];
+                    }
+
+                    if (file) {
+                        //readFile(file);
+                        let reader = new FileReader();
+                        reader.onload = file => {
+                            defaultData = JSON.parse(reader.result);
+                            console.log("Parsed input data:");
+                            console.log(defaultData);
+                            configuration = new Configuration(defaultData);
+                            configurationBackup = structuredClone(configuration);
+
+                            menu = new PresetMenu(configuration);
+
+                            document.body.appendChild(PresetMenu.bind(menu));
+                        };
+                        reader.readAsText(file);
+                    }
+                });
+                zone.addEventListener("dragover", event => {
+                    event.preventDefault();
+                });
+                document.body.appendChild(zone);
+            }
         </script>
         <style>
             div.editor {
                 display: block;
+            }
+            div.grid {
+                display: inline-grid;
             }
             div.container {
                 vertical-align: text-top;
@@ -1129,23 +1405,33 @@
                 margin: 5px;
                 display: inline-block;
             }
+            div.invis-container {
+                vertical-align: text-top;
+                display: inline-block;
+            }
+            div.zone {
+                position: fixed;
+                width: 100%;
+                height: 100%;
+                bottom: 0;
+                right: 0;
+            }
             span.title {
                 display: inline-block;
                 margin-top: 5px;
                 width: 200px;
                 text-align: right;
             }
+            span.preset {
+                display: inline-block;
+                padding: 2px;
+                min-width: 150px;
+            }
+            span.preset:hover {
+                background-color: #FE6C07;
+            }
         </style>
     </head>
-    <body>
-        <input type="file" onchange="selectFile(event)">
-        <button onclick="downloadConfiguration()">Download</button>
-        <div class="editor" id="editor">
-            <div class="container" id="presetlist">
-                <span><b>Presets</b></span><br />
-            </div>
-            <div class="container" id="subcontainer">
-            </div>
-        </div>
+    <body onload="initialize()">
     </body>
 </html>
