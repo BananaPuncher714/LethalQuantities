@@ -21,9 +21,20 @@ namespace LethalQuantities.Json
                 reader.Read();
                 AnimationCurve curve = new AnimationCurve();
                 while (reader.TokenType != JsonToken.EndArray) {
-                    curve.AddKey((float) reader.ReadAsDouble(), (float) reader.ReadAsDouble());
+                    reader.Read();
+                    float time = float.Parse(reader.ReadAsString());
+                    reader.Read();
+                    float value = float.Parse(reader.ReadAsString());
+                    reader.Read();
+
+                    curve.AddKey(time, value);
+
+                    if (reader.TokenType != JsonToken.EndArray)
+                    {
+                        reader.Read();
+                    }
                 }
-                reader.Read();
+                return curve;
             }
             return new AnimationCurve();
         }

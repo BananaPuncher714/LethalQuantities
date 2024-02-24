@@ -52,7 +52,7 @@ namespace LethalQuantities.Json
 
         public ExportDataItem(Item item)
         {
-            weight = ((item.weight - 1) * 100);
+            weight = (item.weight - 1) * 100;
             min_value = Math.Min(item.minValue, item.maxValue);
             max_value = Math.Max(item.minValue, item.maxValue);
             scrap = item.isScrap;

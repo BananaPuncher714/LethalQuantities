@@ -178,6 +178,9 @@ namespace LethalQuantities.Patches
                 // Create an exportable object
                 Plugin.INSTANCE.defaultInformation = new ExportData(__instance, globalInfo);
                 Plugin.INSTANCE.exportData();
+
+                // Load the data from file
+                Plugin.INSTANCE.loadData();
             }
         }
 

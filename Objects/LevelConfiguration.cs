@@ -19,11 +19,19 @@ namespace LethalQuantities.Objects
         public bool isDefault();
     }
 
-    public interface IValidatableConfiguration : IEnableConfigurable, IDefaultable
+    public interface IValidatableConfiguration : IEnableConfigurable, ISettable
     {
         public virtual bool isValid()
         {
             return enabled.Value && !isDefault();
+        }
+    }
+
+    public interface ISettable : IDefaultable
+    {
+        public virtual bool isSet()
+        {
+            return !isDefault();
         }
     }
 
@@ -38,6 +46,11 @@ namespace LethalQuantities.Objects
         {
             return enemyTypes.isDefault() && maxPowerCount.isDefault() && spawnAmountCurve.isDefault();
         }
+
+        public virtual bool isSet()
+        {
+            return enabled.Value && (enemyTypes.isSet() || maxPowerCount.isLocallySet() || spawnAmountCurve.isLocallySet());
+        }
     }
 
     public class EnemyConfiguration<T> : OutsideEnemyConfiguration<T> where T: DaytimeEnemyTypeConfiguration 
@@ -48,9 +61,14 @@ namespace LethalQuantities.Objects
         {
             return base.isDefault() && spawnAmountRange.isDefault();
         }
+
+        public override bool isSet()
+        {
+            return base.enabled.Value && (base.isSet() || spawnAmountRange.isLocallySet());
+        }
     }
 
-    public class DaytimeEnemyTypeConfiguration : IDefaultable
+    public class DaytimeEnemyTypeConfiguration : ISettable
     {
         public EnemyType type { get; protected set; }
         public DaytimeEnemyTypeConfiguration(EnemyType type)
@@ -81,6 +99,20 @@ namespace LethalQuantities.Objects
                     && killable.isDefault()
                     && enemyHp.isDefault();
         }
+
+        public virtual bool isSet()
+        {
+            return rarity.isLocallySet()
+                    || maxEnemyCount.isLocallySet()
+                    || powerLevel.isLocallySet()
+                    || spawnCurve.isLocallySet()
+                    || stunTimeMultiplier.isLocallySet()
+                    || doorSpeedMultiplier.isLocallySet()
+                    || stunGameDifficultyMultiplier.isLocallySet()
+                    || stunnable.isLocallySet()
+                    || killable.isLocallySet()
+                    || enemyHp.isLocallySet();
+        }
     }
 
     public class EnemyTypeConfiguration : DaytimeEnemyTypeConfiguration
@@ -91,6 +123,16 @@ namespace LethalQuantities.Objects
 
         public CustomEntry<AnimationCurve> spawnFalloffCurve { get; set; }
         public CustomEntry<bool> useSpawnFalloff { get; set; }
+
+        public override bool isDefault()
+        {
+            return base.isDefault() && spawnFalloffCurve.isDefault() && useSpawnFalloff.isDefault();
+        }
+
+        public override bool isSet()
+        {
+            return base.isSet() || spawnFalloffCurve.isLocallySet() || useSpawnFalloff.isLocallySet();
+        }
     }
 
     public class ScrapConfiguration : IValidatableConfiguration
@@ -106,9 +148,14 @@ namespace LethalQuantities.Objects
         {
             return items.isDefault() && minScrap.isDefault() && maxScrap.isDefault() && scrapAmountMultiplier.isDefault() && scrapValueMultiplier.isDefault();
         }
+
+        public virtual bool isSet()
+        {
+            return enabled.Value && (minScrap.isLocallySet() || maxScrap.isLocallySet() || scrapAmountMultiplier.isLocallySet() || scrapValueMultiplier.isLocallySet() || items.isSet());
+        }
     }
 
-    public class ItemConfiguration : IDefaultable
+    public class ItemConfiguration : ISettable
     {
         public Item item { get; protected set; }
         internal ItemConfiguration(Item item)
@@ -124,6 +171,11 @@ namespace LethalQuantities.Objects
             // The weight of the item don't count towards being default or not since they are global options and not set per round
             return rarity.isDefault() && conductive.isDefault();
         }
+
+        public virtual bool isSet()
+        {
+            return rarity.isLocallySet() || conductive.isLocallySet();
+        }
     }
 
     public interface IScrappableConfiguration
@@ -132,7 +184,7 @@ namespace LethalQuantities.Objects
         public CustomEntry<int> maxValue { get; set; }
     }
 
-    public class ScrapItemConfiguration : ItemConfiguration, IScrappableConfiguration, IDefaultable
+    public class ScrapItemConfiguration : ItemConfiguration, IScrappableConfiguration, ISettable
     {
         internal ScrapItemConfiguration(Item item) : base(item)
         {
@@ -144,6 +196,11 @@ namespace LethalQuantities.Objects
         public override bool isDefault()
         {
             return base.isDefault() && maxValue.isDefault() && minValue.isDefault();
+        }
+
+        public override bool isSet()
+        {
+            return base.isSet() || minValue.isLocallySet() || maxValue.isLocallySet();
         }
     }
 
@@ -157,9 +214,14 @@ namespace LethalQuantities.Objects
         {
             return dungeonFlowConfigurations.isDefault() && mapSizeMultiplier.isDefault();
         }
+
+        public virtual bool isSet()
+        {
+            return enabled.Value && (mapSizeMultiplier.isLocallySet() || dungeonFlowConfigurations.isSet());
+        }
     }
 
-    public class DungeonFlowConfiguration : IDefaultable
+    public class DungeonFlowConfiguration : ISettable
     {
         public CustomEntry<int> rarity { get; set; }
         public CustomEntry<float> factorySizeMultiplier { get; set; }
@@ -167,6 +229,11 @@ namespace LethalQuantities.Objects
         public virtual bool isDefault()
         {
             return rarity.isDefault();
+        }
+
+        public virtual bool isSet()
+        {
+            return rarity.isLocallySet() || factorySizeMultiplier.isLocallySet();
         }
     }
 
@@ -179,9 +246,14 @@ namespace LethalQuantities.Objects
         {
             return traps.isDefault();
         }
+
+        public virtual bool isSet()
+        {
+            return enabled.Value && (traps.isSet());
+        }
     }
 
-    public class SpawnableMapObjectConfiguration : IDefaultable
+    public class SpawnableMapObjectConfiguration : ISettable
     {
         public DirectionalSpawnableMapObject spawnableObject { get; }
         public CustomEntry<AnimationCurve> numberToSpawn { get; set; }
@@ -195,15 +267,30 @@ namespace LethalQuantities.Objects
         {
             return numberToSpawn.isDefault();
         }
+
+        public virtual bool isSet()
+        {
+            return numberToSpawn.isLocallySet();
+        }
     }
-    public class PriceConfiguration
+    public class PriceConfiguration : ISettable
     {
         internal ConfigFile file { get; set; }
         public ConfigEntry<bool> enabled { get; set; }
         public Dictionary<Guid, MoonPriceConfiguration> moons { get; } = new Dictionary<Guid, MoonPriceConfiguration>();
+
+        public virtual bool isDefault()
+        {
+            return moons.isDefault();
+        }
+
+        public virtual bool isSet()
+        {
+            return enabled.Value && (moons.isSet());
+        }
     }
 
-    public class MoonPriceConfiguration
+    public class MoonPriceConfiguration : ISettable
     {
         public Guid guid { get; protected set; }
         public CustomEntry<int> price { get; set; }
@@ -212,9 +299,19 @@ namespace LethalQuantities.Objects
         {
             this.guid = name;
         }
+
+        public virtual bool isDefault()
+        {
+            return price.isDefault();
+        }
+
+        public virtual bool isSet()
+        {
+            return price.isLocallySet();
+        }
     }
 
-    public class LevelConfiguration
+    public class LevelConfiguration : ISettable
     {
         public EnemyConfiguration<EnemyTypeConfiguration> enemies { get; } = new EnemyConfiguration<EnemyTypeConfiguration>();
         public EnemyConfiguration<DaytimeEnemyTypeConfiguration> daytimeEnemies { get; } = new EnemyConfiguration<DaytimeEnemyTypeConfiguration>();
@@ -223,6 +320,16 @@ namespace LethalQuantities.Objects
         public DungeonGenerationConfiguration dungeon { get; } = new DungeonGenerationConfiguration();
         public TrapConfiguration trap { get; } = new TrapConfiguration();
         public PriceConfiguration price { get; } = new PriceConfiguration();
+
+        public virtual bool isDefault()
+        {
+            return enemies.isDefault() && daytimeEnemies.isDefault() && outsideEnemies.isDefault() && scrap.isDefault() && dungeon.isDefault() && trap.isDefault() && price.isDefault();
+        }
+
+        public virtual bool isSet()
+        {
+            return enemies.isSet() || daytimeEnemies.isSet() || outsideEnemies.isSet() || scrap.isSet() || dungeon.isSet() || trap.isSet() || price.isSet();
+        }
 
         public LevelConfiguration(LevelInformation levelInfo)
         {
@@ -429,7 +536,7 @@ namespace LethalQuantities.Objects
                 GlobalConfiguration masterConfig = levelInfo.masterConfig;
                 ConfigFile dungeonConfig = new ConfigFile(Path.Combine(levelInfo.levelSaveDir, GlobalConfiguration.DUNGEON_GENERATION_CFG_NAME), true);
                 dungeonConfig.SaveOnConfigSet = false;
-                dungeon.mapSizeMultiplier = dungeonConfig.BindGlobal(masterConfig.dungeonConfiguration.mapSizeMultiplier, "General", "MapSizeMultiplier", levelInfo.globalInfo.manager.mapSizeMultiplier, "Size modifier of the dungeon generated.\nAlternate values: DEFAULT, GLOBAL");
+                dungeon.mapSizeMultiplier = dungeonConfig.BindGlobal(masterConfig.dungeonConfiguration.mapSizeMultiplier, "General", "MapSizeMultiplier", level.factorySizeMultiplier, "Size modifier of the dungeon generated.\nAlternate values: DEFAULT, GLOBAL");
                 Dictionary<DungeonFlow, int> flowRarities = new Dictionary<DungeonFlow, int>();
                 foreach (IntWithRarity flow in level.dungeonFlowTypes)
                 {
@@ -444,7 +551,7 @@ namespace LethalQuantities.Objects
                     dungeonFlowConfig.rarity = dungeonConfig.BindGlobal(masterFlowConfig.rarity, "Rarity", flow.name, flowRarities.GetValueOrDefault(flow, 0), $"Rarity of creating a dungeon using {flow.name} as the generator.\nAlternate values: DEFAULT, GLOBAL");
 
                     string tablename = $"DungeonFlow.{flow.name.getTomlFriendlyName()}";
-                    dungeonFlowConfig.factorySizeMultiplier = dungeonConfig.BindGlobal(masterFlowConfig.factorySizeMultiplier, tablename, "FactorySizeMultiplier", level.factorySizeMultiplier, $"Size of the dungeon when using this dungeon flow.\nAlternate values: DEFAULT, GLOBAL");
+                    dungeonFlowConfig.factorySizeMultiplier = dungeonConfig.BindGlobal(masterFlowConfig.factorySizeMultiplier, tablename, "FactorySizeMultiplier", levelInfo.globalInfo.manager.mapSizeMultiplier, $"Size of the dungeon when using this dungeon flow.\nAlternate values: DEFAULT, GLOBAL");
 
                     dungeon.dungeonFlowConfigurations.Add(flow.name, dungeonFlowConfig);
                 }
@@ -570,6 +677,30 @@ namespace LethalQuantities.Objects
                 }
             }
             return true;
+        }
+
+        public static bool isSet<T>(this IEnumerable<T> enumerable) where T : ISettable
+        {
+            foreach (T def in enumerable)
+            {
+                if (def.isSet())
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public static bool isSet<K, V>(this IEnumerable<KeyValuePair<K, V>> enumerable) where V : ISettable
+        {
+            foreach (var def in enumerable)
+            {
+                if (def.Value.isSet())
+                {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 

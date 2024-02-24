@@ -27,6 +27,12 @@ namespace LethalQuantities.Objects
         {
             return isDefault();
         }
+
+        public virtual bool isLocallySet()
+        {
+            return !isDefault();
+        }
+
         public abstract bool Set(ref T value);
         public override Type SettingType()
         {
@@ -140,6 +146,11 @@ namespace LethalQuantities.Objects
         public override bool isUnset()
         {
             return isDefault() || (isGlobal() && (parentEntry.isDefault() || (parentEntry is GlobalConfigEntry<T> && (parentEntry as GlobalConfigEntry<T>).isUnset())));
+        }
+
+        public override bool isLocallySet()
+        {
+            return !(isDefault() || isGlobal());
         }
 
         public override bool Set(ref T value)

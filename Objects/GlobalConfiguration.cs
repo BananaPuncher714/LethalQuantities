@@ -1,5 +1,6 @@
 ﻿using BepInEx;
 using BepInEx.Configuration;
+using DunGen;
 using DunGen.Graph;
 using HarmonyLib;
 using LethalQuantities.Patches;
@@ -10,6 +11,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace LethalQuantities.Objects
 {
@@ -105,6 +107,11 @@ namespace LethalQuantities.Objects
         {
             return base.isDefault() && minValue.isDefault() && maxValue.isDefault();
         }
+
+        public override bool isSet()
+        {
+            return base.isSet() || minValue.isLocallySet() || maxValue.isLocallySet();
+        }
     }
 
     public class GlobalItemConfiguration : ItemConfiguration, IWeightConfigurable
@@ -115,9 +122,19 @@ namespace LethalQuantities.Objects
         }
 
         public CustomEntry<float> weight { get; set; }
+
+        public override bool isDefault()
+        {
+            return base.isDefault() && weight.isDefault();
+        }
+
+        public override bool isSet()
+        {
+            return base.isSet() || weight.isLocallySet();
+        }
     }
 
-    public class GlobalConfiguration
+    public class GlobalConfiguration : ISettable
     {
         public static readonly string ENEMY_CFG_NAME = "Enemies.cfg";
         public static readonly string DAYTIME_ENEMY_CFG_NAME = "DaytimeEnemies.cfg";
@@ -136,7 +153,14 @@ namespace LethalQuantities.Objects
         public TrapConfiguration trapConfiguration { get; private set; } = new TrapConfiguration();
         public PriceConfiguration priceConfiguration { get; private set; } = new PriceConfiguration();
         public Dictionary<Guid, LevelConfiguration> levelConfigs { get; } = new Dictionary<Guid, LevelConfiguration>();
-
+        public virtual bool isDefault()
+        {
+            return enemyConfiguration.isDefault() && daytimeEnemyConfiguration.isDefault() && outsideEnemyConfiguration.isDefault() && scrapConfiguration.isDefault() && dungeonConfiguration.isDefault() && trapConfiguration.isDefault() && priceConfiguration.isDefault();
+        }
+        public virtual bool isSet()
+        {
+            return enemyConfiguration.isSet() || daytimeEnemyConfiguration.isSet() || outsideEnemyConfiguration.isSet() || scrapConfiguration.isSet() || dungeonConfiguration.isSet() || trapConfiguration.isSet() || priceConfiguration.isSet();
+        }
         public GlobalConfiguration(GlobalInformation globalInfo)
         {
             instantiateConfigs(globalInfo);
@@ -365,14 +389,14 @@ namespace LethalQuantities.Objects
                 dungeonFile.SaveOnConfigSet = false;
             }
 
-            dungeonConfiguration.mapSizeMultiplier = BindEmptyOrDefaultable(dungeonFile, "General", "MapSizeMultiplier", globalInfo.manager.mapSizeMultiplier, "The multiplier to use for determining the size of the dungeon.\nAlternate values: DEFAULT");
+            dungeonConfiguration.mapSizeMultiplier = BindEmptyOrNonDefaultable<float>(dungeonFile, "General", "MapSizeMultiplier", "The multiplier to use for determining the size of the dungeon.\nAlternate values: DEFAULT");
             foreach (DungeonFlow flow in globalInfo.allDungeonFlows)
             {
                 DungeonFlowConfiguration configuration = new DungeonFlowConfiguration();
                 configuration.rarity = BindEmptyOrNonDefaultable<int>(dungeonFile, "Rarity", flow.name.getTomlFriendlyName(), $"Rarity of a moon using a {flow.name} dungeon generator as the interior. A higher rarity increases the chance that the moon will use this dungeon flow.\nLeave blank or DEFAULT to use the moon's default rarity.");
 
                 string tablename = $"DungeonFlow.{flow.name.getTomlFriendlyName()}";
-                configuration.factorySizeMultiplier = BindEmptyOrNonDefaultable<float>(dungeonFile, tablename, "FactorySizeMultiplier", $"Size of the dungeon when using this dungeon flow.\nLeave blank or DEFAULT to use the moon's default factory size multiplier.\nAlternate values: DEFAULT");
+                configuration.factorySizeMultiplier = BindEmptyOrDefaultable(dungeonFile, tablename, "FactorySizeMultiplier", globalInfo.manager.mapSizeMultiplier, $"Size of the dungeon when using this dungeon flow.\nLeave blank or DEFAULT to use the moon's default factory size multiplier.\nAlternate values: DEFAULT");
 
                 dungeonConfiguration.dungeonFlowConfigurations.Add(flow.name, configuration);
             }
