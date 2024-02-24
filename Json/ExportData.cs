@@ -2,6 +2,7 @@
 using MonoMod.Utils;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -34,7 +35,7 @@ namespace LethalQuantities.Json
             stunnable = type.canBeStunned;
             killable = type.canDie;
             enemy_hp = health;
-            spawn_falloff_curve = type.numberSpawnedFalloff;
+            spawn_falloff_curve = new AnimationCurve(type.numberSpawnedFalloff.keys.Select(key => new Keyframe(key.time * 10, key.value)).ToArray());
             use_spawn_falloff = type.useNumberSpawnedFalloff;
             name = type.getFriendlyName();
         }
@@ -51,7 +52,7 @@ namespace LethalQuantities.Json
 
         public ExportDataItem(Item item)
         {
-            weight = item.weight;
+            weight = ((item.weight - 1) * 100);
             min_value = Math.Min(item.minValue, item.maxValue);
             max_value = Math.Max(item.minValue, item.maxValue);
             scrap = item.isScrap;
