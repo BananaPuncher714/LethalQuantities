@@ -1560,8 +1560,6 @@
 
                         const presetId = ev.dataTransfer.getData("text/plain");
                         if (presetId !== preset.id && menu.sidebarSpans[presetId]) {
-                            menu.presetList.insertBefore(menu.sidebarSpans[presetId], span);
-
                             // Move around the presets
                             const keys = Object.keys(menu.configuration.presets);
                             const oldPos = keys.indexOf(presetId);
@@ -1571,6 +1569,8 @@
                             const entry = entries.splice(oldPos, 1)[0];
                             entries.splice(newPos, 0, entry);
                             menu.configuration.presets = Object.fromEntries(entries);
+
+                            menu.presetList.insertBefore(menu.sidebarSpans[presetId], oldPos < newPos ? span.nextSibling : span);
                         }
                     });
 
