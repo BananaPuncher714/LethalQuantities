@@ -474,7 +474,8 @@ namespace LethalQuantities.Objects
                     SpawnableMapObjectConfiguration configuration = new SpawnableMapObjectConfiguration(mapObject);
 
                     string tablename = $"Trap.{mapObject.obj.name.getTomlFriendlyName()}";
-                    configuration.numberToSpawn = trapConfig.BindGlobal(masterTrapConfig.numberToSpawn, tablename, "SpawnAmount", defaultSpawnAmounts.GetValueOrDefault(mapObject.obj, new AnimationCurve()), $"The amount of this trap to spawn. 'Y Axis is the amount to be spawned; X axis should be from 0 to 1 and is randomly picked from.'\nAlternate values: DEFAULT, GLOBAL");
+                    string trapName = mapObject.getName();
+                    configuration.numberToSpawn = trapConfig.BindGlobal(masterTrapConfig.numberToSpawn, tablename, "SpawnAmount", defaultSpawnAmounts.GetValueOrDefault(mapObject.obj, new AnimationCurve()), $"The amount of {trapName} to spawn. 'Y Axis is the amount to be spawned; X axis should be from 0 to 1 and is randomly picked from.'\nAlternate values: DEFAULT, GLOBAL");
 
                     trap.traps.Add(mapObject.obj, configuration);
                 }

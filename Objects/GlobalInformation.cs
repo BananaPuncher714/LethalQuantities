@@ -16,6 +16,26 @@ namespace LethalQuantities.Objects
             this.obj = obj;
             this.faceAwayFromWall = faceAwayFromWall;
         }
+
+        public string getName()
+        {
+            ScanNodeProperties node = obj.GetComponentInChildren<ScanNodeProperties>();
+            if (node != null)
+            {
+                return node.headerText;
+            }
+            return obj.name;
+        }
+
+        public string getDescription()
+        {
+            ScanNodeProperties node = obj.GetComponentInChildren<ScanNodeProperties>();
+            if (node != null)
+            {
+                return node.subText;
+            }
+            return "";
+        }
     }
 
     public class GenericLevelInformation
@@ -108,7 +128,7 @@ namespace LethalQuantities.Objects
                 }
             }
 
-            return type.name;
+            return type.enemyName;
         }
     }
 }

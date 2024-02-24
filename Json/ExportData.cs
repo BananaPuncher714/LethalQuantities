@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace LethalQuantities.Json
 {
@@ -62,10 +63,14 @@ namespace LethalQuantities.Json
     public class ExportDataTrap
     {
         public bool spawn_facing_away_from_wall;
+        public string name;
+        public string description;
 
-        public ExportDataTrap(bool spawn_facing_away_from_wall)
+        public ExportDataTrap(DirectionalSpawnableMapObject obj)
         {
-            this.spawn_facing_away_from_wall = spawn_facing_away_from_wall;
+            this.spawn_facing_away_from_wall = obj.faceAwayFromWall;
+            this.name = obj.getName();
+            this.description = obj.getDescription();
         }
     }
 
@@ -167,7 +172,7 @@ namespace LethalQuantities.Json
 
             foreach (DirectionalSpawnableMapObject type in info.allSpawnableMapObjects)
             {
-                traps.Add(type.obj.name, new ExportDataTrap(type.faceAwayFromWall));
+                traps.Add(type.obj.name, new ExportDataTrap(type));
             }
 
             foreach (var item in info.allSelectableLevels)
