@@ -3,16 +3,122 @@
     <head>
         <title>Lethal Quantities Web Editor</title>
         <script async>
+            // Slow method, only for prototyping!!
+            function fromHtml(html) {
+                const template = document.createElement("template");
+                template.innerHTML = html;
+                const result = template.content.children;
+                return result.length === 1 ? result[0] : result;
+            }
+
+            // Template for a container
+            const prefabs = {
+                container: fromHtml('<div class="container"></div>')
+            };
+            function createPrefabs() {
+                prefabs.animationCurveKey = tooltip("Key", "The X-axis");
+
+                {
+                    const animationCurveValueBox = fromHtml("<span style=\"width:100px;display:inline-block;\"></span>");
+                    animationCurveValueBox.appendChild(tooltip("Value", "The Y-axis"));
+                    prefabs.animationCurveValue = animationCurveValueBox;
+                }
+                {
+                    const link = document.createElement("a");
+                    link.href = "https://lethal.miraheze.org/wiki/Mechanics";
+                    link.target = "_blank";
+                    link.textContent = "Animation Curves?";
+                    prefabs.animationCurveLink = link;
+                }
+                {
+                    prefabs.itemTypeMinValue = tooltip("Min value", "The minimum value of this item, inclusive. For example, a minimum value of 10 means the item can be sold for at least 10 credits.");
+                    prefabs.itemTypeMaxValue = tooltip("Max value", "The maximum value of this item, exclusive. For example, a maximum value of 10 means this item can be sold for at most 9 credits.");
+                    prefabs.itemTypeWeight = tooltip("Weight", "The weight in pounds of this item. You should make this consistent, otherwise certain values may not be properly calculate in-game(such as player weight). For example, create a global preset that all other presets inherit from, and set the weight there.");
+                    prefabs.itemTypeConductive = tooltip("Conductive", "Whether or not this can be struck by lightning.");
+                }
+                {
+                    prefabs.presetParent = tooltip("Parent", "Which preset to inherit from. Any disabled values in this preset will fallback to the parent preset, or the base game if none are set. By default none is selected. You can drag and drop a preset from the sidebar here to set the parent.");
+
+                    prefabs.presetTitleScrap = tooltip(fromHtml(`<span><b>Scrap</b></span>`), "Settings for scrap items that spawn in the dungeon");
+                    prefabs.presetScrapAmountMultiplier = tooltip("Scrap amount multiplier", "A multiplier that gets applied to the amount of scrap that will spawn. A multiplier of 1 means that the normal amount of scrap will spawn, while 0.5 means half, and 2 means twice as much, etc.");
+                    prefabs.presetScrapValueMultiplier = tooltip("Scrap value multiplier", "A multiplier that gets applied to the value of each piece of scrap spawned. A multiplier of 1 means that the value will be unchanged, while 0.5 means the value will be halved, and 2 means the scrap will be worth twice as much.");
+                    prefabs.presetScrapMin = tooltip("Min scrap", "The minimum amount of scrap that will be spawned(inclusive, so a value of 1 means that down to 1 piece of scrap can be spawned). The final amount is affected by the scrap amount multiplier. This includes ALL items in the scrap list(even store items). Less scrap may spawn if the dungeon does not provide enough scrap spawning locations.");
+                    prefabs.presetScrapMax = tooltip("Max scrap", "The maximum amount of scrap that will be spawned(exclusive, so a value of 10 means that up to 9 pieces of scrap can be spawned). The final amount is affected by the scrap amount multiplier. This includes ALL items in the scrap list(even store items).");
+                    prefabs.presetScrap = tooltip("Scrap", "The list of all spawnable items. This includes store items, which do not have a minimum or maximum value. Only items in this list will be allowed to spawn, regardless of the parent's scrap list. If you would like to include scrap from the parent's scrap list, you must add it to this list, but you do not have to set the rarity.");
+
+                    prefabs.presetTitleEnemies = tooltip(fromHtml(`<span><b>Interior Enemies</b></span>`), "Settings for enemies that spawn inside");
+                    prefabs.presetEnemiesMaxPower = tooltip("Max power count", "The maximum power count for enemies that spawn inside. Each enemy has a power level, which gets added to the level's power count when they are spawned. Once the level's power count is equal to this value, no more enemies are able to spawn. For example, a maximum power count of 10 means that 10 enemies with a power level of 1 can spawn. Enemies who would increase the power level above this value cannot be spawned. You should try to keep this value smaller than the total power count of all spawnable enemies(for example, 10 centipedes = 10 power).");
+                    prefabs.presetEnemiesSpawnCurve = tooltip("Enemy spawn chance curve", "An animation curve describing the amount of enemies that can spawn at the given time. The key is represented by a value from 0 to 1, where 0 is when the day starts, and 1 is the latest time that the ship can leave. The value is the amount of enemies that will be spawned at the key.");
+                    prefabs.presetEnemiesSpawnRange = tooltip("Enemy spawn amount range", "How much the value from the spawn chance curve can deviate. The total amount of enemies that will be spawned is randomly chosen from the spawn chance curve value minus the range, to the spawn chance curve value plus the range. For example, if the spawn chance curve value is 2, and the amount range is 3, then anywhere between 0 and 5 enemies can spawn.");
+                    prefabs.presetEnemies = tooltip("Enemies", "The list of all spawnable interior enemies. Only enemies in this list will be allowed to spawn, regardless of the parent's enemies list. If you would like to include enemies from the parent's enemies list, you must add it to this list, but you do not have to set the rarity.");
+
+                    prefabs.presetTitleOutside = tooltip(fromHtml(`<span><b>Outside Enemies</b></span>`), "Settings for enemies that spawn outside, normally at night. The spawn amount range is hardcoded to 3, and cannot be changed.");
+                    prefabs.presetOutsideMaxPower = tooltip("Max outside power count", "The maximum power count for enemies that spawn outside(not including daytime enemies). Each enemy has a power level, which gets added to the level's power count when they are spawned. Once the level's power count is equal to this value, no more enemies are able to spawn. For example, a maximum power count of 10 means that 10 enemies with a power level of 1 can spawn. Enemies who would increase the power level above this value cannot be spawned. You should try to keep this value smaller than the total power count of all spawnable enemies(for example, 10 centipedes = 10 power).");
+                    prefabs.presetOutsideSpawnCurve = tooltip("Outside enemy spawn chance curve", "An animation curve describing the amount of enemies that can spawn at the given time. The key is represented by a value from 0 to 1, where 0 is when the day starts, and 1 is the latest time that the ship can leave. The value is the amount of enemies that will be spawned at the key. You can set the curve so that enemies spawn outside early in the day.");
+                    prefabs.presetOutside = tooltip("Outside enemies", "The list of all spawnable outside enemies. Only enemies in this list will be allowed to spawn, regardless of the parent's outside enemies list. If you would like to include enemies from the parent's enemies list, you must add it to this list, but you do not have to set the rarity.");
+
+                    prefabs.presetTitleDaytime = tooltip(fromHtml(`<span><b>Daytime Enemies</b></span>`), "Settings for enemies that spawn outside, normally during the daytime");
+                    prefabs.presetDaytimeMaxPower = tooltip("Max daytime power count", "The maximum power count for enemies that spawn outside(not including outside enemies). Each enemy has a power level, which gets added to the level's power count when they are spawned. Once the level's power count is equal to this value, no more enemies are able to spawn. For example, a maximum power count of 10 means that 10 enemies with a power level of 1 can spawn. Enemies who would increase the power level above this value cannot be spawned. You should try to keep this value smaller than the total power count of all spawnable enemies(for example, 10 centipedes = 10 power).");
+                    prefabs.presetDaytimeSpawnCurve = tooltip("Daytime enemy spawn chance curve", "An animation curve describing the amount of enemies that can spawn at the given time. The key is represented by a value from 0 to 1, where 0 is when the day starts, and 1 is the latest time that the ship can leave. The value is the amount of enemies that will be spawned at the key. You can set the curve so that enemies spawn outside at night.");
+                    prefabs.presetDaytimeSpawnRange = tooltip("Daytime enemy spawn amount range", "How much the value from the spawn chance curve can deviate. The total amount of enemies that will be spawned is randomly chosen from the spawn chance curve value minus the range, to the spawn chance curve value plus the range. For example, if the spawn chance curve value is 2, and the amount range is 3, then anywhere between 0 and 5 enemies can spawn.");
+                    prefabs.presetDaytime = tooltip("Daytime enemies", "The list of all spawnable daytime enemies. Only enemies in this list will be allowed to spawn, regardless of the parent's daytime enemies list. If you would like to include enemies from the parent's enemies list, you must add it to this list, but you do not have to set the rarity.");
+
+                    prefabs.presetTitleDungeons = tooltip(fromHtml(`<span><b>Dungeon flows</b></span>`), "Settings for dungeon flows. The overall map size is equal to the map size multiplier times the factory size multiplier");
+                    prefabs.presetDungeonsMapSize = tooltip("Map size multiplier", "A multiplier that gets applied to the size of the dungeon flow. A value of 1 means that it generates at its regular size, while 0.5 means half, and 2 means twice as large. This value is multiplier by the factory size multiplier of the dungeon flow to find the final multiplier.");
+                    prefabs.presetDungeons = tooltip("Dungeon flows", "The list of all available dungeon flows. Only dungeon flows in this list can be selected, regardless of the parent's dungeon flows list. If you would like to include flows from the parent's dungeon flows list, you must add it to this list, but you do not have to set the rarity.");
+
+                    prefabs.presetTitleTraps = tooltip(fromHtml(`<span><b>Traps</b></span>`), "Settings for interior map objects, such as turrets, landmines, etc.");
+                    prefabs.presetTraps = tooltip("Traps", "The list of all spawnable traps. Only objects in this list can be spawned, regardless of the parent's traps list. If you would like to include objects from the parent's traps list, you must add it to this list, but you do not have to set the spawn amount.");
+
+                    prefabs.presetTitlePrices = tooltip(fromHtml(`<span><b>Prices</b></span>`), "Settings for prices of each moon. This is per-preset, so going to another moon with a different preset can result in different prices.");
+                    prefabs.presetPrices = tooltip("Prices", "The list of prices for each moon. Moons not in this list will have their price set to the default. If you would like to use the parent's price for a particular moon, you must add it to this list but you do not have to set the price.");
+                }
+                {
+                    prefabs.enemyTypeMaxCount = tooltip("Max enemy count", `The maximum amount of this enemy that can spawn`);
+                    prefabs.enemyTypePowerLevel = tooltip("Power level", `How much one of this enemy contributes to the level's power count`);
+                    prefabs.enemyTypeSpawnCurve = tooltip("Spawn chance curve", fromHtml(`<span>An animation curve controlling how likely this enemy to spawn throughout the day.<ul><li>The key ranges from 0 to 1, where 0 is the start of the day, and 1 is the latest time that the ship can leave.</li>
+                            <li>The value is a multiplier that is multiplied by the rarity to find the final rarity to use when determining which enemy to spawn.</li></ul></span>`));
+                    prefabs.enemyTypeStunMultiplier = tooltip("Stun time multiplier", "The multiplier on how long a stun grenade stuns this enemy. It is multiplied by the stun grenade effect duration(5 seconds) to find the total stun duration.");
+                    prefabs.enemyTypeDoorMultiplier = tooltip("Door speed multiplier", "Probably how fast this enemy opens doors");
+                    prefabs.enemyTypeStunDifficultyMultiplier = tooltip("Stun game difficulty multiplier", "I don't know what this setting is for");
+                    prefabs.enemyTypeStunnable = tooltip("Stunnable", "Whether or not this enemy can be stunned. May not affect enemies that cannot be stunned by default.");
+                    prefabs.enemyTypeKillable = tooltip("Killable", "Whether or not this enemy can be killed. Does not affect enemies that cannot be killed by default.");
+                    prefabs.enemyTypeHp = tooltip("Enemy HP", "How many hitpoints this enemy has. By default, one shovel does one point of damage, while a shotgun does 5 damage.");
+                    prefabs.enemyTypeSpawnFalloff = tooltip("Spawn falloff curve", fromHtml(`<span>An animation curve controlling how likely this enemy is to spawn based on how many of this enemy are already spawned.<ul><li>The key is how many have been spawned.</li><li>The value is a multiplier that is multiplied by the spawn chance multiplier to find the final multiplier.</li></ul>Only has an effect if <b>Use spawn falloff curve</b> is true.</span>`));
+                    prefabs.enemyTypeUseFalloff = tooltip("Use spawn falloff curve", fromHtml(`<span>Whether or not to use the spawn falloff when calculating this enemy's rarity/weight.<ul><li>If enabled, the final rarity/weight of this enemy is the spawn falloff curve multiplier times the spawn chance multiplier times the rarity/weight.</li><li>If disabled, then the final rarity/weight of this enemy is the spawn chance multiplier times the rarity/weight</li></ul></span>`));
+                }
+                {
+                    prefabs.trapTypeSpawnAmount = tooltip("Spawn amount", "How many of this trap will spawn. The key ranges from 0 to 1, and the value is the amount that will spawn. The key is randomly selected when generating the dungeon to find the final amount of this trap to spawn.");
+                }
+                {
+                    prefabs.dungeonFlowSizeFactorySize = tooltip("Factory size multiplier", "The factory size multiplier of this particular dungeon flow. A value of 1 means that it generates at its regular size, while 0.5 means half, and 2 means twice as large. This value is multiplier by the map size multiplier to find the final multiplier.");
+                }
+                {
+                    prefabs.priceTypePrice = tooltip("Price", "How many credits it costs to travel to this moon. If unset, it will use the parent's price value, or default value.");
+                }
+
+                {
+                    prefabs.uniqueSelectBoundListEntryHeaderInner = fromHtml('<div style="text-overflow:ellipsis;white-space:nowrap;overflow:hidden;"></div>');
+                    prefabs.uniqueSelectBoundListEntryHeaderOuter = fromHtml('<span style="max-width:200px;display:inline-block;vertical-align:bottom;"></span>');
+                }
+                {
+                    prefabs.uniqueRarityBoundListRarity = tooltip("Rarity", "The rarity/weight of this entry. The probability of this entry being chosen is equal to this rarity/weight divided by the total sum of all the rarities/weights.");
+                }
+                {
+                    prefabs.presetMenuBindEditorLevels = tooltip(fromHtml("<span><b>Levels</b></span>"), fromHtml("<span>Each level accepts a single preset, which is by default the autogenerated preset for that level. However, you can change it simply by dragging a preset from the sidebar on the left to the box on the right of a level.</span>"));
+                    prefabs.presetMenuBindEditorPresets = tooltip(fromHtml(`<span><b>Presets</b></span>`), fromHtml(`<span>You can create more presets by clicking the <b>Add preset</b> button, or by clicking the <b>Copy</b> button next to an existing preset. You can change a preset's name by modifying
+                            the text in the box, or delete a preset by clicking the <b>Delete</b> button twice.<br><br>There is one preset per level, which is autogenerated if it does not exist. If you mess up on a default preset, and would like to regenerate it, you can delete it then reload the page. However,
+                            it is advised that you create a copy of the default preset that you want to modify, then modify your copy.</span>`));
+                }
+            }
+            createPrefabs();
+
             class BoundElement {
                 constructor( element, obj ) {
                     this.data = obj;
                     this.element = element;
                     element.value = obj.value;
-                    element.addEventListener( "change", event => {
-                        switch ( event.type ) {
-                            case "change": this.change( this.element.value );
-                        }
-                    }, false );
+                    element.addEventListener("change", event => this.change(this.element.value));
                 }
 
                 change( value ) {
@@ -30,18 +136,14 @@
                 constructor(input, obj) {
                     super(input, obj);
 
+                    this.box = document.createElement("input");
+                    this.box.type = "checkbox";
+                    this.box.checked = obj.set;
+                    this.box.addEventListener("change", event => this.set());
+
                     this.bar = document.createElement("span");
-                    this.box = fromHtml(`<input type="checkbox">`);
-
-                    this.box.addEventListener("change", event => {
-                        switch (event.type) {
-                            case "change": this.set();
-                        }
-                    }, false);
-
                     this.bar.append(this.box, this.element);
 
-                    this.box.checked = obj.set;
                     this.set();
                 }
 
@@ -66,30 +168,33 @@
 
                     // Map object to html node
                     this.objectRows = new Map();
+
+                    this.addButton = document.createElement("button");
+                    this.addButton.textContent = "+";
+                    this.addButton.onclick = () => this.addElement();
+
                     this.bar = document.createElement("span");
-                    this.box = fromHtml( `<input type="checkbox">` );
-                    this.container = fromHtml( `<div class="container"></div>` );
+                    this.bar.appendChild( this.addButton );
+
+                    // Container for holding entries
+                    this.selectables = document.createElement( "div" );
+
+                    this.container = document.createElement("div");
+                    this.container.classList.add("container");
+                    this.container.appendChild(this.bar, document.createElement("br") );
+                    this.container.appendChild( this.selectables );
+
                     this.spoiler = new SpoilerElement(obj, this.container);
                     this.spoilered = this.spoiler.getElement();
 
-                    this.addButton = fromHtml( `<button>+</button>` )
-                    this.addButton.onclick = () => this.addElement();
-
-                    this.bar.appendChild( this.addButton );
-                    this.container.appendChild(this.bar, document.createElement("br") );
-
-                    this.box.addEventListener( "change", event => {
-                        switch ( event.type ) {
-                            case "change": this.set( this.box.checked );
-                        }
-                    }, false );
+                    this.box = document.createElement("input");
+                    this.box.type = "checkbox";
+                    this.box.addEventListener("change", event => this.set(this.box.checked));
 
                     const element = document.createElement( "span" );
                     element.append( this.box, this.spoilered );
-                    this.element = element;
 
-                    this.selectables = document.createElement( "div" );
-                    this.container.appendChild( this.selectables );
+                    this.element = element;
 
                     this.set( obj.set );
                 }
@@ -112,20 +217,21 @@
                 }
 
                 addElement(element, object) {
-                    const row = document.createElement( "span" );
-                    const deleteButton = fromHtml( `<button>X</button>` );
-                    this.data.value.push(object);
-                    this.data.onadd?.(object);
+                    const deleteButton = document.createElement("button");
+                    deleteButton.textContent = "X";
                     deleteButton.onclick = () => {
                         this.removeElement(object);
                     };
+
+                    const row = document.createElement( "span" );
                     row.appendChild(deleteButton);
                     if (element) {
                         row.appendChild(element);
                     }
                     row.appendChild( document.createElement( "br" ) );
-                    this.selectables.appendChild( row );
 
+                    this.selectables.appendChild( row );
+                    this.data.value.push(object);
                     this.objectRows.set(object, row);
                     
                     return row;
@@ -146,26 +252,25 @@
                         this.addElement(null, original[i]);
                     }
 
-                    const keyTip = tooltip("Key", "The X-axis");
-                    const valueTip = tooltip("Value", "The Y-axis");
-                    const keyBox = fromHtml(`<span style="width:100px;display:inline-block;"></span>`);
-                    keyBox.appendChild(keyTip);
-
-                    this.bar.append(keyBox, valueTip);
-
-                    this.spoiler.header.appendChild(fromHtml(`<a href="https://lethal.miraheze.org/wiki/Mechanics" target="_blank">Animation Curves?</a>`));
+                    this.bar.append(prefabs.animationCurveKey.cloneNode(true), prefabs.animationCurveValue.cloneNode(true));
+                    this.spoiler.header.appendChild(prefabs.animationCurveLink.cloneNode(true));
                 }
 
                 addElement(element, frame = {value: null, time: null}) {
-                    const span = document.createElement("span");
-                    const time = fromHtml(`<input type="number" min=0 style="width:100px;"></input>`);
+                    const time = document.createElement("input");
+                    time.type = "number";
+                    time.min = 0;
+                    time.style.width = "100px";
                     time.value = frame.time;
                     time.addEventListener("change", event => {
                         switch (event.type) {
                             case "change": frame.time = time.value;
                         }
                     }, false);
-                    const value = fromHtml(`<input type="number" style="width:100px;"></input>`);
+
+                    const value = document.createElement("input");
+                    value.type = "number";
+                    value.style.width = "100px";
                     value.value = frame.value;
                     value.addEventListener("change", event => {
                         switch (event.type) {
@@ -173,6 +278,7 @@
                         }
                     }, false);
 
+                    const span = document.createElement("span");
                     span.append(time, value);
                     if (element) {
                         span.appendChild(element);
@@ -219,24 +325,25 @@
                         }
                     }
 
-                    const addSelect = fromHtml(`<select style="min-width:200px;max-width:200px;"></select>`);
+                    const addSelect = document.createElement("select");
+                    addSelect.style.minWidth = "200px";
+                    addSelect.style.maxWidth = "200px";
                     for (const [key, value] of Object.entries(options)) {
-                        const optionEl = fromHtml(`<option value="${key}">${this.duplicates[key] ? `${value.name}(${value.id})` : value.name}</option>`);
+                        const optionEl = new Option(this.duplicates[key] ? (value.name + "(" + value.id + ")") : value.name, key);
                         addToSelect(addSelect, optionEl);
                         this.selectOptions[key] = optionEl;
                     }
-                    this.bar.appendChild(addSelect);
+                    this.selected = addSelect;
 
-                    this.searchBar = fromHtml(`<input type="search">`);
+                    this.searchBar = document.createElement("input");
+                    this.searchBar.type = "search";
                     this.searchBar.addEventListener("input", e => {
                         this.updateSearch();
                         this.onBigUpdate();
                     });
-                    this.bar.appendChild(this.searchBar);
-                    this.selected = addSelect;
 
-                    this.bar.appendChild(document.createElement("br"));
-                    const showAll = fromHtml(`<button>Show All</button>`);
+                    const showAll = document.createElement("button");
+                    showAll.textContent = "Show All"
                     showAll.onclick = () => {
                         for (const [key, entry] of Object.entries(this.entries)) {
                             if (entry.container.style.display !== "none") {
@@ -244,7 +351,9 @@
                             }
                         }
                     };
-                    const hideAll = fromHtml(`<button>Hide All</button>`);
+
+                    const hideAll = document.createElement("button");
+                    hideAll.textContent = "Hide all";
                     hideAll.onclick = () => {
                         for (const [key, entry] of Object.entries(this.entries)) {
                             if (entry.container.style.display !== "none") {
@@ -252,8 +361,10 @@
                             }
                         }
                     };
+
                     let addClicked = false;
-                    const addAll = fromHtml(`<button>Add All</button>`);
+                    const addAll = document.createElement("button");
+                    addAll.textContent = "Add all";
                     addAll.addEventListener("focusout", () => {
                         addClicked = false;
                         addAll.style.color = "";
@@ -274,7 +385,8 @@
                     });
 
                     let removeClicked = false;
-                    const removeAll = fromHtml(`<button>Remove All</button>`);
+                    const removeAll = document.createElement("button");
+                    removeAll.textContent = "Remove all";
                     removeAll.addEventListener("focusout", () => {
                         removeClicked = false;
                         removeAll.style.color = "";
@@ -296,7 +408,7 @@
                             removeAll.style.color = "orange";
                         }
                     });
-                    this.bar.append(showAll, hideAll, addAll, removeAll);
+                    this.bar.append(addSelect, this.searchBar, document.createElement("br"), showAll, hideAll, addAll, removeAll);
 
                     let original = [...obj.value];
                     obj.value.length = 0;
@@ -410,14 +522,26 @@
                         this.addButton.disabled = true;
                     }
 
-                    const header = document.createElement("span");
-                    const tooltipBox = fromHtml(`<span style="width:200px;display:inline-block;"></span>`);
-                    const descriptionBox = fromHtml(`<span>Name: ${format(object.name)}<br>ID: ${format(id)}</span>`);
+                    const innerEl = prefabs.uniqueSelectBoundListEntryHeaderInner.cloneNode(true);
+                    innerEl.textContent = this.duplicates[id] ? `${object.name}(${id})` : object.name;
+
+                    const outerEl = prefabs.uniqueSelectBoundListEntryHeaderOuter.cloneNode(true);
+                    outerEl.appendChild(innerEl);
+
+                    const descriptionBox = document.createElement("span");
+                    descriptionBox.append(`Name: ${object.name}`, document.createElement("br"), `ID: ${id}`);
                     if (object.description) {
-                        descriptionBox.append(document.createElement("br"), document.createTextNode(`Description: ${object.description}`));
+                        descriptionBox.append(document.createElement("br"), `Description: ${object.description}`);
                     }
-                    tooltipBox.appendChild(tooltip(fromHtml(`<span style="max-width:200px;display:inline-block;vertical-align:bottom;"><div style="text-overflow:ellipsis;white-space:nowrap;overflow:hidden;">${format(this.duplicates[id] ? `${object.name}(${id})` : object.name)}</div></span>`), descriptionBox));
+
+                    const tooltipBox = document.createElement("span");
+                    tooltipBox.style.width = "200px";
+                    tooltipBox.style.display = "inline-block";
+                    tooltipBox.appendChild(tooltip(outerEl, descriptionBox));
+
+                    const header = document.createElement("span");
                     header.appendChild(tooltipBox);
+
                     const spoiler = new BindableSpoilerElement(object, header, this.binder);
 
                     const superEl = super.addElement(spoiler.getElement(), object);
@@ -443,7 +567,32 @@
                 constructor( obj, options, binder ) {
                     super( obj, options, binder );
 
-                    const selectAll = fromHtml(`<button>Enable All</button>`);
+                    this.raritySelect = document.createElement("select");
+                    this.raritySelect.options.add(new Option("All", "none", true));
+                    this.raritySelect.options.add(new Option("Enabled", "selected", true));
+                    this.raritySelect.options.add(new Option("Disabled", "deselected", true));
+                    this.raritySelect.addEventListener("change", event => {
+                        this.updateSearch();
+
+                        this.onBigUpdate();
+                    });
+
+                    this.visibleCounter = document.createElement("span");
+                    this.visibleCounter.style.width = "40px";
+                    this.visibleCounter.style.display = "inline-block";
+
+                    const weightTitle = document.createElement("span");
+                    weightTitle.classList.add("title");
+                    weightTitle.textContent = "Total rarity/weight:";
+
+                    this.weightCounter = document.createElement("span");
+                    this.updateRarities();
+
+                    const span = document.createElement("span");
+                    span.append(document.createElement("br"), "Display", this.raritySelect, this.visibleCounter, weightTitle, this.weightCounter);
+
+                    const selectAll = document.createElement("button");
+                    selectAll.textContent = "Enable all";
                     selectAll.addEventListener("click", () => {
                         for (const [key, entry] of Object.entries(this.entries)) {
                             if (entry.container.style.display !== "none") {
@@ -452,7 +601,8 @@
                         }
                         this.updateRarities();
                     });
-                    const deselectAll = fromHtml(`<button>Disable All</button>`);
+                    const deselectAll = document.createElement("button");
+                    deselectAll.textContent = "Disable all";
                     deselectAll.addEventListener("click", () => {
                         for (const [key, entry] of Object.entries(this.entries)) {
                             if (entry.container.style.display !== "none") {
@@ -462,24 +612,6 @@
                         this.updateRarities();
                     });
 
-                    const span = fromHtml(`<span><br>Display</span>`);
-                    this.raritySelect = fromHtml(`<select>
-                    <option value="none">All</option>
-                    <option value="selected">Enabled</option>
-                    <option value="deselected">Disabled</option>
-                    </select>`);
-                    this.visibleCounter = fromHtml(`<span style="width: 40px;display: inline-block;"></span>`);
-                    const weightTitle = fromHtml(`<span class="title"></span>`);
-                    weightTitle.textContent = "Total rarity/weight:";
-                    this.weightCounter = document.createElement("span");
-                    this.updateRarities();
-
-                    this.raritySelect.addEventListener("change", event => {
-                        this.updateSearch();
-
-                        this.onBigUpdate();
-                    });
-                    span.append(this.raritySelect, this.visibleCounter, weightTitle, this.weightCounter);
                     this.bar.append(selectAll, deselectAll, span);
                     this.onBigUpdate();
                 }
@@ -516,14 +648,19 @@
                     const obj = this.options[id];
 
                     // We want to handle the rarity with more control, so implement the binding ourselves
+                    const box = document.createElement("input");
+                    box.type = "checkbox";
+
+                    const input = document.createElement("input");
+                    input.type = "number";
+                    input.step = 1;
+                    input.style.width = "50px";
+
+                    const probability = document.createElement("input");
+                    probability.disabled = true;
+                    probability.style.width = "50px";
+
                     const rarity = obj.rarity;
-
-                    const bar = document.createElement("span");
-                    const input = fromHtml(`<input type="number" step="1" style="width:50px;">`);
-                    const probability = fromHtml(`<input disabled=true style="width:50px;">`);
-                    const box = fromHtml(`<input type="checkbox">`);
-                    bar.append(box, input, probability);
-
                     this.entries[id].rarity = rarity;
                     this.entries[id].rarityBox = probability;
 
@@ -558,7 +695,11 @@
                         set(true);
                     };
 
-                    this.entries[id].header.append(tooltip("Rarity", "The rarity/weight of this entry. The probability of this entry being chosen is equal to this rarity/weight divided by the total sum of all the rarities/weights."), bar);
+                    // Optional, just for organization
+                    const bar = document.createElement("span");
+                    bar.append(box, input, probability);
+
+                    this.entries[id].header.append(prefabs.uniqueRarityBoundListRarity.cloneNode(true), bar);
                     // TODO Fine tune this, with like a slider, locking the weight, etc
 
                     return el;
@@ -588,24 +729,28 @@
             // Kind of a redundant class, can be replaced with summary
             class SpoilerElement {
                 constructor(obj, element, after = null) {
-                    const span = document.createElement("span");
 
                     const hidden = obj.hidden;
                     const setting = { display: "", open: hidden };
-                    const box = fromHtml(`<button>H</button>`);
+                    const box = document.createElement("button");
+                    box.textContent = "H";
                     box.onclick = () => {
                         this.setOpen(!this.setting.open);
                     };
 
+                    const span = document.createElement("span");
                     span.appendChild(box);
                     if (after) {
                         span.appendChild(after);
                     }
-                    this.header = document.createElement("span");
-                    span.appendChild(this.header);
 
-                    const extra = fromHtml(`<span><br><span class="title"></span></span>`);
-                    extra.appendChild(element);
+                    const spacer = document.createElement("span");
+                    spacer.classList.add("title");
+                    const extra = document.createElement("span");
+                    extra.append(document.createElement("br"), spacer, element);
+
+                    this.header = document.createElement("span");
+                    span.appendChild(this.header, extra);
                     span.appendChild(extra);
 
                     this.object = obj;
@@ -639,15 +784,16 @@
 
             class BindableSpoilerElement {
                 constructor(bindableElement, after = null, binder) {
-                    const span = document.createElement("span");
 
                     const hidden = bindableElement.hidden;
                     const setting = { display: "", open: hidden };
-                    const box = fromHtml(`<button>H</button>`);
+                    const box = document.createElement("button");
+                    box.textContent = "H";
                     box.onclick = () => {
                         this.setOpen(!this.setting.open);
                     };
 
+                    const span = document.createElement("span");
                     span.appendChild(box);
                     if (after) {
                         span.appendChild(after);
@@ -671,10 +817,13 @@
                 setOpen(option) {
                     if (option) {
                         if (!this.setting.open) {
-                            // As long as certain things aren't spoilered, I think this is fine
-                            this.boundNode = fromHtml(`<span><br></span>`);
-                            //this.boundNode = fromHtml(`<span><br><span class="title"></span>`);
-                            this.boundNode.appendChild(this.binder(this.inner));
+                            this.boundNode = document.createElement("span");
+                            // As long as certain things aren't spoilered with this, not adding in a spacer is fine
+                            //const spacer = document.createElement("span");
+                            //spacer.classList.add("title");
+                            //this.boundNode.append(document.createElement("br"), spacer, this.binder(this.inner));
+                            this.boundNode.append(document.createElement("br"), this.binder(this.inner));
+
                             this.el.appendChild(this.boundNode);
                             this.box.textContent = "H";
                         }
@@ -719,20 +868,19 @@
                 }
 
                 static bind(enemy) {
-                    const container = containerNode.cloneNode(true);
-                    addEntry(container, tooltip("Max enemy count", `The maximum amount of this enemy that can spawn`), bindToggleableUnsignedInt(enemy.maxEnemyCount));
-                    addEntry(container, tooltip("Power level", `How much one of this enemy contributes to the level's power count`), bindToggleableUnsignedInt(enemy.powerLevel));
-                    addEntry(container, tooltip("Spawn chance curve", fromHtml(`<span>An animation curve controlling how likely this enemy to spawn throughout the day.<ul><li>The key ranges from 0 to 1, where 0 is the start of the day, and 1 is the latest time that the ship can leave.</li>
-                            <li>The value is a multiplier that is multiplied by the rarity to find the final rarity to use when determining which enemy to spawn.</li></ul></span>`)), new AnimationCurveBoundList(enemy.spawnChanceCurve).getElement());
-                    addEntry(container, tooltip("Stun time multiplier", "The multiplier on how long a stun grenade stuns this enemy. It is multiplied by the stun grenade effect duration(5 seconds) to find the total stun duration." ), bindToggleableUnsignedFloat(enemy.stunTimeMultiplier));
-                    addEntry(container, tooltip("Door speed multiplier", "Probably how fast this enemy opens doors"), bindToggleableUnsignedFloat(enemy.doorSpeedMultiplier));
-                    addEntry(container, tooltip("Stun game difficulty multiplier", "I don't know what this setting is for"), bindToggleableUnsignedFloat(enemy.stunGameDifficultyMultiplier));
-                    addEntry(container, tooltip("Stunnable", "Whether or not this enemy can be stunned. May not affect enemies that cannot be stunned by default."), bindToggleableBool(enemy.stunnable));
-                    addEntry(container, tooltip("Killable", "Whether or not this enemy can be killed. Does not affect enemies that cannot be killed by default."), bindToggleableBool(enemy.killable));
-                    addEntry(container, tooltip("Enemy HP", "How many hitpoints this enemy has. By default, one shovel does one point of damage, while a shotgun does 5 damage."), bindToggleableUnsignedInt(enemy.enemyHp));
+                    const container = prefabs.container.cloneNode(true);
+                    addEntry(container, prefabs.enemyTypeMaxCount.cloneNode(true), bindToggleableUnsignedInt(enemy.maxEnemyCount));
+                    addEntry(container, prefabs.enemyTypePowerLevel.cloneNode(true), bindToggleableUnsignedInt(enemy.powerLevel));
+                    addEntry(container, prefabs.enemyTypeSpawnCurve.cloneNode(true), new AnimationCurveBoundList(enemy.spawnChanceCurve).getElement());
+                    addEntry(container, prefabs.enemyTypeStunMultiplier.cloneNode(true), bindToggleableUnsignedFloat(enemy.stunTimeMultiplier));
+                    addEntry(container, prefabs.enemyTypeDoorMultiplier.cloneNode(true), bindToggleableUnsignedFloat(enemy.doorSpeedMultiplier));
+                    addEntry(container, prefabs.enemyTypeStunDifficultyMultiplier.cloneNode(true), bindToggleableUnsignedFloat(enemy.stunGameDifficultyMultiplier));
+                    addEntry(container, prefabs.enemyTypeStunnable.cloneNode(true), bindToggleableBool(enemy.stunnable));
+                    addEntry(container, prefabs.enemyTypeKillable.cloneNode(true), bindToggleableBool(enemy.killable));
+                    addEntry(container, prefabs.enemyTypeHp.cloneNode(true), bindToggleableUnsignedInt(enemy.enemyHp));
                     if (enemy.hasSpawnFalloff) {
-                        addEntry(container, tooltip("Spawn falloff curve", fromHtml(`<span>An animation curve controlling how likely this enemy is to spawn based on how many of this enemy are already spawned.<ul><li>The key is how many have been spawned.</li><li>The value is a multiplier that is multiplied by the spawn chance multiplier to find the final multiplier.</li></ul>Only has an effect if <b>Use spawn falloff curve</b> is true.</span>`)), new AnimationCurveBoundList(enemy.spawnFalloffCurve).getElement());
-                        addEntry(container, tooltip("Use spawn falloff curve", fromHtml(`<span>Whether or not to use the spawn falloff when calculating this enemy's rarity/weight.<ul><li>If enabled, the final rarity/weight of this enemy is the spawn falloff curve multiplier times the spawn chance multiplier times the rarity/weight.</li><li>If disabled, then the final rarity/weight of this enemy is the spawn chance multiplier times the rarity/weight</li></ul></span>`)), bindToggleableBool(enemy.useSpawnFalloff));
+                        addEntry(container, prefabs.enemyTypeSpawnFalloff.cloneNode(true), new AnimationCurveBoundList(enemy.spawnFalloffCurve).getElement());
+                        addEntry(container, prefabs.enemyTypeUseFalloff.cloneNode(true), bindToggleableBool(enemy.useSpawnFalloff));
                     }
                     return container;
                 }
@@ -751,15 +899,15 @@
                 }
 
                 static bind(item, includeWeight = true) {
-                    const container = containerNode.cloneNode(true);
+                    const container = prefabs.container.cloneNode(true);
                     if (item.scrap) {
-                        addEntry(container, tooltip("Min value", `The minimum value of this item, inclusive. For example, a minimum value of 10 means the item can be sold for at least 10 credits.`), bindToggleableUnsignedInt(item.minValue));
-                        addEntry(container, tooltip("Max value", `The maximum value of this item, exclusive. For example, a maximum value of 10 means this item can be sold for at most 9 credits.`), bindToggleableUnsignedInt(item.maxValue));
+                        addEntry(container, prefabs.itemTypeMinValue.cloneNode(true), bindToggleableUnsignedInt(item.minValue));
+                        addEntry(container, prefabs.itemTypeMaxValue.cloneNode(true), bindToggleableUnsignedInt(item.maxValue));
                     }
                     if (includeWeight) {
-                        addEntry(container, tooltip("Weight", `The weight in pounds of this item. You should make this consistent, otherwise certain values may not be properly calculate in-game(such as player weight). For example, create a global preset that all other presets inherit from, and set the weight there.`), bindToggleableUnsignedFloat(item.weight));
+                        addEntry(container, prefabs.itemTypeWeight.cloneNode(true), bindToggleableUnsignedFloat(item.weight));
                     }
-                    addEntry(container, tooltip("Conductive", `Whether or not this can be struck by lightning.`), bindToggleableBool(item.conductive));
+                    addEntry(container, prefabs.itemTypeConductive.cloneNode(true), bindToggleableBool(item.conductive));
                     return container;
                 }
             }
@@ -774,8 +922,8 @@
                 }
 
                 static bind(trap) {
-                    const container = containerNode.cloneNode(true);
-                    addEntry(container, tooltip("Spawn amount", `How many of this trap will spawn. The key ranges from 0 to 1, and the value is the amount that will spawn. The key is randomly selected when generating the dungeon to find the final amount of this trap to spawn.`), new AnimationCurveBoundList(trap.spawnCurve).getElement());
+                    const container = prefabs.container.cloneNode(true);
+                    addEntry(container, prefabs.trapTypeSpawnAmount.cloneNode(true), new AnimationCurveBoundList(trap.spawnCurve).getElement());
                     return container;
                 }
             }
@@ -789,8 +937,8 @@
                 }
 
                 static bind(flow) {
-                    const container = containerNode.cloneNode(true);
-                    addEntry(container, tooltip("Factory size multiplier", `The factory size multiplier of this particular dungeon flow. A value of 1 means that it generates at its regular size, while 0.5 means half, and 2 means twice as large. This value is multiplier by the map size multiplier to find the final multiplier.`), new bindToggleableUnsignedFloat(flow.factorySizeMultiplier));
+                    const container = prefabs.container.cloneNode(true);
+                    addEntry(container, prefabs.dungeonFlowSizeFactorySize.cloneNode(true), new bindToggleableUnsignedFloat(flow.factorySizeMultiplier));
                     return container;
                 }
             }
@@ -803,8 +951,8 @@
                 }
 
                 static bind(price) {
-                    const container = containerNode.cloneNode(true);
-                    addEntry(container, tooltip("Price", `How many credits it costs to travel to this moon. If unset, it will use the parent's price value, or default value.`), new bindToggleableUnsignedInt(price.price));
+                    const container = prefabs.container.cloneNode(true);
+                    addEntry(container, prefabs.priceTypePrice.cloneNode(true), new bindToggleableUnsignedInt(price.price));
                     return container;
                 }
             }
@@ -844,17 +992,25 @@
                 }
 
                 static bind(preset, parents = {}) {
-                    const container = containerNode.cloneNode(true);
+                    const boldIdentifier = document.createElement("b");
+                    boldIdentifier.textContent = preset.name || preset.id;
+                    const identifierTooltip = document.createElement("span");
+                    identifierTooltip.appendChild(boldIdentifier);
+                    const identifierText = document.createElement("span");
+                    identifierText.append(`Name: ${preset.name}`, document.createElement("br"), `ID: ${preset.id}`);
+                    const identifier = tooltip(identifierTooltip, identifierText);
 
-                    const gridBox = fromHtml(`<div class="grid"></div>`);
-                    const col1 = fromHtml(`<span style="grid-column: 1/2; padding:4px;"></span>`);
-                    const col2 = fromHtml(`<span style="grid-column: 2/3; padding:4px;"></span>`);
-                    gridBox.append(col1, col2);
-
-                    const identifier = tooltip(fromHtml(`<span><b>${format(preset.name || preset.id)}</b></span>`), fromHtml(`<span>Name: ${preset.name}<br>ID: ${preset.id}</span>`));
-                    const identifierSpan = fromHtml(`<span style="width:200px;text-align: right;display:inline-block;"></span>`);
+                    const identifierSpan = document.createElement("span");
+                    identifierSpan.style.width = "200px";
+                    identifierSpan.style.textAlign = "right";
+                    identifierSpan.style.display = "inline-block";
                     identifierSpan.append(identifier, document.createElement("br"));
-                    addEntry(container, fromHtml("<b>Preset</b>"), identifierSpan);
+
+                    const presetTitle = document.createElement("b");
+                    presetTitle.textContent = "Preset";
+
+                    const container = prefabs.container.cloneNode(true);
+                    addEntry(container, presetTitle, identifierSpan);
 
                     // Set the parent here
                     const select = document.createElement("select");
@@ -884,42 +1040,53 @@
                         }
                     });
 
-                    addEntry(container, tooltip("Parent", "Which preset to inherit from. Any disabled values in this preset will fallback to the parent preset, or the base game if none are set. By default none is selected."), select);
+                    addEntry(container, prefabs.presetParent.cloneNode(true), select);
 
-                    col2.append(tooltip(fromHtml(`<span><b>Scrap</b></span>`), `Settings for scrap items that spawn in the dungeon`), document.createElement("br"));
-                    addEntry(col2, tooltip("Scrap amount multiplier", "A multiplier that gets applied to the amount of scrap that will spawn. A multiplier of 1 means that the normal amount of scrap will spawn, while 0.5 means half, and 2 means twice as much, etc."), new bindToggleableUnsignedFloat(preset.scrapAmountMultiplier));
-                    addEntry(col2, tooltip("Scrap value multiplier", "A multiplier that gets applied to the value of each piece of scrap spawned. A multiplier of 1 means that the value will be unchanged, while 0.5 means the value will be halved, and 2 means the scrap will be worth twice as much."), new bindToggleableUnsignedFloat(preset.scrapValueMultiplier));
-                    addEntry(col2, tooltip("Min scrap", "The minimum amount of scrap that will be spawned(inclusive, so a value of 1 means that down to 1 piece of scrap can be spawned). The final amount is affected by the scrap amount multiplier. This includes ALL items in the scrap list(even store items). Less scrap may spawn if the dungeon does not provide enough scrap spawning locations."), new bindToggleableUnsignedInt(preset.minScrap));
-                    addEntry(col2, tooltip("Max scrap", "The maximum amount of scrap that will be spawned(exclusive, so a value of 10 means that up to 9 pieces of scrap can be spawned). The final amount is affected by the scrap amount multiplier. This includes ALL items in the scrap list(even store items)."), new bindToggleableUnsignedInt(preset.maxScrap));
-                    addEntry(col2, tooltip("Scrap", "The list of all spawnable items. This includes store items, which do not have a minimum or maximum value. Only items in this list will be allowed to spawn, regardless of the parent's scrap list. If you would like to include scrap from the parent's scrap list, you must add it to this list, but you do not have to set the rarity."), new UniqueRarityBoundList(preset.scrap, preset.availableItems, ItemType.bind).getElement());
+                    const col1 = document.createElement("span");
+                    col1.style.gridColumn = "1/2";
+                    col1.style.padding = "4px";
+                    const col2 = document.createElement("span");
+                    col2.style.gridColumn = "2/3";
+                    col2.style.padding = "4px";
 
-                    col1.append(tooltip(fromHtml(`<span><b>Interior Enemies</b></span>`), "Settings for enemies that spawn inside"), document.createElement("br"));
-                    addEntry(col1, tooltip("Max power count", "The maximum power count for enemies that spawn inside. Each enemy has a power level, which gets added to the level's power count when they are spawned. Once the level's power count is equal to this value, no more enemies are able to spawn. For example, a maximum power count of 10 means that 10 enemies with a power level of 1 can spawn. Enemies who would increase the power level above this value cannot be spawned. You should try to keep this value smaller than the total power count of all spawnable enemies(for example, 10 centipedes = 10 power)."), new bindToggleableUnsignedInt(preset.maxPowerCount));
-                    addEntry(col1, tooltip("Enemy spawn chance curve", "An animation curve describing the amount of enemies that can spawn at the given time. The key is represented by a value from 0 to 1, where 0 is when the day starts, and 1 is the latest time that the ship can leave. The value is the amount of enemies that will be spawned at the key."), new AnimationCurveBoundList(preset.spawnCurve).getElement());
-                    addEntry(col1, tooltip("Enemy spawn amount range", "How much the value from the spawn chance curve can deviate. The total amount of enemies that will be spawned is randomly chosen from the spawn chance curve value minus the range, to the spawn chance curve value plus the range. For example, if the spawn chance curve value is 2, and the amount range is 3, then anywhere between 0 and 5 enemies can spawn."), new bindToggleableUnsignedFloat(preset.spawnProbabilityRange));
-                    addEntry(col1, tooltip("Enemies", "The list of all spawnable interior enemies. Only enemies in this list will be allowed to spawn, regardless of the parent's enemies list. If you would like to include enemies from the parent's enemies list, you must add it to this list, but you do not have to set the rarity."), new UniqueRarityBoundList(preset.enemies, preset.availableEnemies, EnemyType.bind).getElement());
+                    // Don't really have to clone these spoilers, since they're used only once
+                    col2.append(prefabs.presetTitleScrap.cloneNode(true), document.createElement("br"));
+                    addEntry(col2, prefabs.presetScrapAmountMultiplier.cloneNode(true), new bindToggleableUnsignedFloat(preset.scrapAmountMultiplier));
+                    addEntry(col2, prefabs.presetScrapAmountMultiplier.cloneNode(true), new bindToggleableUnsignedFloat(preset.scrapValueMultiplier));
+                    addEntry(col2, prefabs.presetScrapMin.cloneNode(true), new bindToggleableUnsignedInt(preset.minScrap));
+                    addEntry(col2, prefabs.presetScrapMax.cloneNode(true), new bindToggleableUnsignedInt(preset.maxScrap));
+                    addEntry(col2, prefabs.presetScrap.cloneNode(true), new UniqueRarityBoundList(preset.scrap, preset.availableItems, ItemType.bind).getElement());
 
-                    col1.append(tooltip(fromHtml(`<span><b>Outside Enemies</b></span>`), "Settings for enemies that spawn outside, normally at night. The spawn amount range is hardcoded to 3, and cannot be changed."), document.createElement("br"));
-                    addEntry(col1, tooltip("Max outside power count", "The maximum power count for enemies that spawn outside(not including daytime enemies). Each enemy has a power level, which gets added to the level's power count when they are spawned. Once the level's power count is equal to this value, no more enemies are able to spawn. For example, a maximum power count of 10 means that 10 enemies with a power level of 1 can spawn. Enemies who would increase the power level above this value cannot be spawned. You should try to keep this value smaller than the total power count of all spawnable enemies(for example, 10 centipedes = 10 power)."), new bindToggleableUnsignedInt(preset.maxOutsidePowerCount));
-                    addEntry(col1, tooltip("Outside enemy spawn chance curve", "An animation curve describing the amount of enemies that can spawn at the given time. The key is represented by a value from 0 to 1, where 0 is when the day starts, and 1 is the latest time that the ship can leave. The value is the amount of enemies that will be spawned at the key. You can set the curve so that enemies spawn outside early in the day."), new AnimationCurveBoundList(preset.outsideSpawnCurve).getElement());
-                    addEntry(col1, tooltip("Outside enemies", "The list of all spawnable outside enemies. Only enemies in this list will be allowed to spawn, regardless of the parent's outside enemies list. If you would like to include enemies from the parent's enemies list, you must add it to this list, but you do not have to set the rarity."), new UniqueRarityBoundList(preset.outsideEnemies, preset.availableOutsideEnemies, EnemyType.bind).getElement());
+                    col1.append(prefabs.presetTitleEnemies.cloneNode(true), document.createElement("br"));
+                    addEntry(col1, prefabs.presetEnemiesMaxPower.cloneNode(true), new bindToggleableUnsignedInt(preset.maxPowerCount));
+                    addEntry(col1, prefabs.presetEnemiesSpawnCurve.cloneNode(true), new AnimationCurveBoundList(preset.spawnCurve).getElement());
+                    addEntry(col1, prefabs.presetEnemiesSpawnRange.cloneNode(true), new bindToggleableUnsignedFloat(preset.spawnProbabilityRange));
+                    addEntry(col1, prefabs.presetEnemies.cloneNode(true), new UniqueRarityBoundList(preset.enemies, preset.availableEnemies, EnemyType.bind).getElement());
 
-                    col1.append(tooltip(fromHtml(`<span><b>Daytime Enemies</b></span>`), "Settings for enemies that spawn outside, normally during the daytime"), document.createElement("br"));
-                    addEntry(col1, tooltip("Max daytime power count", "The maximum power count for enemies that spawn outside(not including outside enemies). Each enemy has a power level, which gets added to the level's power count when they are spawned. Once the level's power count is equal to this value, no more enemies are able to spawn. For example, a maximum power count of 10 means that 10 enemies with a power level of 1 can spawn. Enemies who would increase the power level above this value cannot be spawned. You should try to keep this value smaller than the total power count of all spawnable enemies(for example, 10 centipedes = 10 power)."), new bindToggleableUnsignedInt(preset.maxDaytimePowerCount));
-                    addEntry(col1, tooltip("Daytime enemy spawn chance curve", "An animation curve describing the amount of enemies that can spawn at the given time. The key is represented by a value from 0 to 1, where 0 is when the day starts, and 1 is the latest time that the ship can leave. The value is the amount of enemies that will be spawned at the key. You can set the curve so that enemies spawn outside at night."), new AnimationCurveBoundList(preset.daytimeSpawnCurve).getElement());
-                    addEntry(col1, tooltip("Daytime enemy spawn amount range", "How much the value from the spawn chance curve can deviate. The total amount of enemies that will be spawned is randomly chosen from the spawn chance curve value minus the range, to the spawn chance curve value plus the range. For example, if the spawn chance curve value is 2, and the amount range is 3, then anywhere between 0 and 5 enemies can spawn."), new bindToggleableUnsignedFloat(preset.daytimeSpawnProbabilityRange));
-                    addEntry(col1, tooltip("Daytime enemies", "The list of all spawnable daytime enemies. Only enemies in this list will be allowed to spawn, regardless of the parent's daytime enemies list. If you would like to include enemies from the parent's enemies list, you must add it to this list, but you do not have to set the rarity."), new UniqueRarityBoundList(preset.daytimeEnemies, preset.availableDaytimeEnemies, EnemyType.bind).getElement());
+                    col1.append(prefabs.presetTitleOutside.cloneNode(true), document.createElement("br"));
+                    addEntry(col1, prefabs.presetOutsideMaxPower.cloneNode(true), new bindToggleableUnsignedInt(preset.maxOutsidePowerCount));
+                    addEntry(col1, prefabs.presetOutsideSpawnCurve.cloneNode(true), new AnimationCurveBoundList(preset.outsideSpawnCurve).getElement());
+                    addEntry(col1, prefabs.presetOutside.cloneNode(true), new UniqueRarityBoundList(preset.outsideEnemies, preset.availableOutsideEnemies, EnemyType.bind).getElement());
 
-                    col2.append(tooltip(fromHtml(`<span><b>Dungeon flows</b></span>`), "Settings for dungeon flows. The overall map size is equal to the map size multiplier times the factory size multiplier"), document.createElement("br"));
-                    addEntry(col2, tooltip("Map size multiplier", "A multiplier that gets applied to the size of the dungeon flow. A value of 1 means that it generates at its regular size, while 0.5 means half, and 2 means twice as large. This value is multiplier by the factory size multiplier of the dungeon flow to find the final multiplier."), new bindToggleableUnsignedFloat(preset.mapSizeMultiplier));
-                    addEntry(col2, tooltip("Dungeon flows", "The list of all available dungeon flows. Only dungeon flows in this list can be selected, regardless of the parent's dungeon flows list. If you would like to include flows from the parent's dungeon flows list, you must add it to this list, but you do not have to set the rarity."), new UniqueRarityBoundList(preset.dungeonFlows, preset.availableFlows, DungeonFlowType.bind).getElement());
+                    col1.append(prefabs.presetTitleDaytime.cloneNode(true), document.createElement("br"));
+                    addEntry(col1, prefabs.presetDaytimeMaxPower.cloneNode(true), new bindToggleableUnsignedInt(preset.maxDaytimePowerCount));
+                    addEntry(col1, prefabs.presetDaytimeSpawnCurve.cloneNode(true), new AnimationCurveBoundList(preset.daytimeSpawnCurve).getElement());
+                    addEntry(col1, prefabs.presetDaytimeSpawnRange.cloneNode(true), new bindToggleableUnsignedFloat(preset.daytimeSpawnProbabilityRange));
+                    addEntry(col1, prefabs.presetDaytime.cloneNode(true), new UniqueRarityBoundList(preset.daytimeEnemies, preset.availableDaytimeEnemies, EnemyType.bind).getElement());
 
-                    col2.append(tooltip(fromHtml(`<span><b>Traps</b></span>`), "Settings for interior map objects, such as turrets, landmines, etc."), document.createElement("br"));
-                    addEntry(col2, tooltip("Traps", "The list of all spawnable traps. Only objects in this list can be spawned, regardless of the parent's traps list. If you would like to include objects from the parent's traps list, you must add it to this list, but you do not have to set the spawn amount."), new UniqueSelectBoundList(preset.traps, preset.availableTraps, TrapType.bind).getElement());
+                    col2.append(prefabs.presetTitleDungeons.cloneNode(true), document.createElement("br"));
+                    addEntry(col2, prefabs.presetDungeonsMapSize.cloneNode(true), new bindToggleableUnsignedFloat(preset.mapSizeMultiplier));
+                    addEntry(col2, prefabs.presetDungeons.cloneNode(true), new UniqueRarityBoundList(preset.dungeonFlows, preset.availableFlows, DungeonFlowType.bind).getElement());
 
-                    col2.append(tooltip(fromHtml(`<span><b>Prices</b></span>`), "Settings for prices of each moon. This is per-preset, so going to another moon with a different preset can result in different prices."), document.createElement("br"));
-                    addEntry(col2, tooltip("Prices", "The list of prices for each moon. Moons not in this list will have their price set to the default. If you would like to use the parent's price for a particular moon, you must add it to this list but you do not have to set the price."), new UniqueSelectBoundList(preset.price, preset.availablePrices, PriceType.bind).getElement());
+                    col2.append(prefabs.presetTitleTraps.cloneNode(true), document.createElement("br"));
+                    addEntry(col2, prefabs.presetTraps.cloneNode(true), new UniqueSelectBoundList(preset.traps, preset.availableTraps, TrapType.bind).getElement());
 
+                    col2.append(prefabs.presetTitlePrices.cloneNode(true), document.createElement("br"));
+                    addEntry(col2, prefabs.presetPrices.cloneNode(true), new UniqueSelectBoundList(preset.price, preset.availablePrices, PriceType.bind).getElement());
+
+                    const gridBox = document.createElement("div");
+                    gridBox.classList.add("grid");
+                    gridBox.append(col1, col2);
                     container.appendChild(gridBox);
 
                     return container;
@@ -1152,20 +1319,23 @@
                 }
 
                 static #bindEditor(menu) {
-                    const container = containerNode.cloneNode(true);
-
-                    const gridBox = fromHtml(`<div class="grid"></div>`);
-                    const col1 = fromHtml(`<span style="grid-column: 1/2; padding:4px;"></span>`);
-                    const col2 = fromHtml(`<span style="grid-column: 2/3; padding:4px;"></span>`);
-                    gridBox.append(col1, col2);
+                    const col1 = document.createElement("span");
+                    col1.style.gridColumn = "1/2";
+                    col1.style.padding = "4px";
+                    const col2 = document.createElement("span");
+                    col2.style.gridColumn = "2/3";
+                    col2.style.padding = "4px";
 
                     const levelInputs = {};
 
                     // Set up the levels section first
-                    col2.append(tooltip(fromHtml(`<span><b>Levels</b></span>`), fromHtml(`<span>Each level accepts a single preset, which is by default the autogenerated preset for that level. However, you can change it simply by dragging a preset from the 
-                            sidebar on the left to the box on the right of a level.</span>`)), document.createElement("br"));
+                    col2.append(prefabs.presetMenuBindEditorLevels.cloneNode(true), document.createElement("br"));
                     for (const [id, preset] of Object.entries(menu.configuration.levels)) {
-                        const presetInput = fromHtml(`<input type="text" readOnly="true" placeholder="No preset"/>`);
+                        const presetInput = document.createElement("input");
+                        presetInput.type = "text";
+                        presetInput.readOnly = true;
+                        presetInput.placeholder = "No preset";
+
                         if (preset) {
                             const realPreset = menu.configuration.presets[preset];
                             if (realPreset.name) {
@@ -1196,10 +1366,9 @@
                     }
 
                     menu.presetEntryContainer = col1;
-                    col1.append(tooltip(fromHtml(`<span><b>Presets</b></span>`), fromHtml(`<span>You can create more presets by clicking the <b>Add preset</b> button, or by clicking the <b>Copy</b> button next to an existing preset. You can change a preset's name by modifying
-                            the text in the box, or delete a preset by clicking the <b>Delete</b> button twice.<br><br>There is one preset per level, which is autogenerated if it does not exist. If you mess up on a default preset, and would like to regenerate it, you can delete it then reload the page. However,
-                            it is advised that you create a copy of the default preset that you want to modify, then modify your copy.</span>`)), document.createElement("br"));
-                    const blankPreset = fromHtml(`<button>Add preset</button>`);
+                    col1.append(prefabs.presetMenuBindEditorPresets.cloneNode(true), document.createElement("br"));
+                    const blankPreset = document.createElement("button");
+                    blankPreset.textContent = "Add preset";
                     blankPreset.addEventListener("click", () => {
                         const preset = new Preset();
 
@@ -1218,6 +1387,11 @@
                         col1.appendChild(PresetMenu.#bindPresetNameEntry(menu, preset, levelInputs));
                     }
 
+                    const gridBox = document.createElement("div");
+                    gridBox.classList.add("grid");
+                    gridBox.append(col1, col2);
+
+                    const container = prefabs.container.cloneNode(true);
                     container.appendChild(gridBox);
 
 
@@ -1226,8 +1400,8 @@
 
                 static #bindPresetNameEntry(menu, preset, levelInputs) {
                     const id = preset.id;
-                    const presetNameSpan = document.createElement("span");
-                    const nameInput = fromHtml(`<input type="text"/>`);
+                    const nameInput = document.createElement("input");
+                    nameInput.type = "text";
                     nameInput.placeholder = id;
                     nameInput.value = preset.name;
                     nameInput.addEventListener("change", e => {
@@ -1249,7 +1423,8 @@
                         }
                     });
 
-                    const copyButton = fromHtml(`<button>Copy</button>`);
+                    const copyButton = document.createElement("button");
+                    copyButton.textContent = "Copy";
                     copyButton.addEventListener("click", () => {
                         const copy = structuredClone(preset);
                         copy.id = menu.configuration.getNewId();
@@ -1261,9 +1436,11 @@
                         menu.presetEntryContainer.appendChild(PresetMenu.#bindPresetNameEntry(menu, copy, levelInputs));
                     });
 
+                    const presetNameSpan = document.createElement("span");
                     
                     let clicked = false;
-                    const deleteButton = fromHtml(`<button>Delete</button>`);
+                    const deleteButton = document.createElement("button");
+                    deleteButton.textContent = "Delete";
                     deleteButton.addEventListener("focusout", () => {
                         clicked = false;
                         deleteButton.style.color = "";
@@ -1301,46 +1478,76 @@
                     menu.sidebarReferences = {};
                     menu.sidebarSpans = {};
 
-                    const container = document.createElement("div");
-                    const subcontainer = fromHtml(`<div class="invis-container"></div>`);
-                    const presetList = containerNode.cloneNode(true);
+                    const subcontainer = document.createElement("div");
+                    subcontainer.classList.add("invis-container");
 
-                    menu.presetList = presetList;
-                    menu.subcontainer = subcontainer;
-
-                    const presetEl = fromHtml(`<span class="preset"><button style="background:none; border:none;"><b>Presets</b></button></span>`);
-                    presetList.append(presetEl, document.createElement("br"));
+                    const presetTitle = document.createElement("b");
+                    presetTitle.textContent = "Presets";
+                    const presetButton = document.createElement("button");
+                    presetButton.style.background = "none";
+                    presetButton.style.border = "none";
+                    presetButton.appendChild(presetTitle);
+                    const presetEl = document.createElement("span");
+                    presetEl.classList.add("preset");
+                    presetEl.appendChild(presetButton);
                     presetEl.onclick = () => {
                         removeChildren(subcontainer);
+
+                        if (menu.selected) {
+                            menu.selected.style.backgroundColor = "";
+                            delete menu.selected;
+                        }
+
                         subcontainer.appendChild(PresetMenu.#bindEditor(menu));
                     };
 
+                    const presetList = prefabs.container.cloneNode(true);
+                    presetList.append(presetEl, document.createElement("br"));
                     for (const [id, preset] of Object.entries(menu.configuration.presets)) {
                         presetList.appendChild(PresetMenu.#bindSidebarOption(menu, preset));
                     }
 
+                    menu.presetList = presetList;
+                    menu.subcontainer = subcontainer;
+
+                    const container = document.createElement("div");
                     container.append(presetList, subcontainer);
 
                     return container;
                 }
 
                 static #bindSidebarOption(menu, preset) {
-                    const span = document.createElement("span");
                     // Use the preset name, but if it is empty, then use the preset id
-                    const button = fromHtml(`<button style="background:none; border:none;" draggable="true">${format(preset.name || preset.id) }</button>`);
-                    const mainSpan = fromHtml(`<span class="preset" draggable="true">&gt;</span>`)
-                    const presetSpan = fromHtml(`<span style="text-align: right"></span>`);
+                    const button = document.createElement("button");
+                    button.style.background = "none";
+                    button.style.border = "none";
+                    button.draggable = true;
+                    button.textContent = preset.name || preset.id;
+                    const presetSpan = document.createElement("span");
+                    presetSpan.style.textAlign = "right";
                     presetSpan.appendChild(button);
-                    mainSpan.appendChild(presetSpan);
+                    const mainSpan = document.createElement("span");
+                    mainSpan.classList.add("preset");
+                    mainSpan.draggable = true;
+                    mainSpan.append(">", presetSpan);
                     mainSpan.addEventListener("dragstart", ev => {
                         ev.dataTransfer.setData("text/plain", preset.id);
                     });
+
+                    const span = document.createElement("span");
                     span.append(mainSpan, document.createElement("br"));
-
                     span.onclick = () => {
-                        removeChildren(menu.subcontainer);
+                        if (menu.selected != mainSpan) {
+                            removeChildren(menu.subcontainer);
 
-                        menu.subcontainer.appendChild(Preset.bind(preset, menu.configuration.presets));
+                            if (menu.selected) {
+                                menu.selected.style.backgroundColor = "";
+                            }
+                            menu.selected = mainSpan;
+                            mainSpan.style.backgroundColor = "lightgray";
+
+                            menu.subcontainer.appendChild(Preset.bind(preset, menu.configuration.presets));
+                        }
                     };
 
                     menu.sidebarReferences[preset.id] = button;
@@ -1350,51 +1557,45 @@
                 }
             }
 
-            // Template for a container
-            const containerNode = fromHtml('<div class="container"></div>');
-
-            function fromHtml(html) {
-                const template = document.createElement("template");
-                template.innerHTML = html;
-                const result = template.content.children;
-                return result.length === 1 ? result[0] : result;
-            }
-
             function tooltip(element, tooltip) {
-                let title = element;
-                if (typeof element === "string" || element instanceof String) {
-                    title = fromHtml(`<span>${format(element)}</span>`);
-                }
-                title.classList.add("tooltip");
-
-                let tipbox = fromHtml(`<span class="tooltiptext"></span>`);
+                let tipbox = document.createElement("span");
+                tipbox.classList.add("tooltiptext");
                 if (typeof tooltip === "string" || tooltip instanceof String) {
                     tipbox.textContent = tooltip;
                 } else {
                     tipbox.appendChild(tooltip);
                 }
 
+                let title = element;
+                if (typeof element === "string" || element instanceof String) {
+                    title = document.createElement("span");
+                    title.textContent = element;
+                }
+                title.classList.add("tooltip");
                 title.appendChild(tipbox);
                 return title;
             }
 
             function addEntry(block, title, element) {
-                const span = document.createElement("span");
-                const titleSpan = fromHtml(`<span class="title"></span>`);
+                const titleSpan = document.createElement("span");
+                titleSpan.classList.add("title");
                 if (typeof title === "string" || title instanceof String) {
                     titleSpan.appendChild(document.createTextNode(title));
                 } else {
                     titleSpan.appendChild(title);
                 }
+                const span = document.createElement("span");
                 span.append(titleSpan, element, document.createElement("br"));
                 block.appendChild(span);
             }
 
             // TODO List:
             // = HIGH PRIORITY
-            // - Create more elements with document.createElement, instead of fromHtml(which was a convenience method for quick prototyping, and to prevent XSS vulnerabilities), currently it's taking 200 ms to bind a preset...
             // = Medium Priority
             // - Add copy paste functionality
+            // - Make addElement faster
+            // - Make lists faster
+            // - Make addToSelect faster
             // = low priority
             // - Add styling options, such as a more lethal company-esque UI
             // - Design the UI
@@ -1444,7 +1645,8 @@
 
                 const menu = new PresetMenu(configuration);
 
-                const downloadButton = fromHtml(`<button>Download</button>`);
+                const downloadButton = document.createElement("button");
+                downloadButton.textContent = "Download";
                 downloadButton.addEventListener("click", () => {
                     console.log("Saving configuration via the download button");
                     downloadConfiguration(configuration, "presets.json");
@@ -1459,7 +1661,8 @@
                 });
 
                 // Add a reset button to go back to the main screen
-                const resetButton = fromHtml(`<button>Edit another file</button>`);
+                const resetButton = document.createElement("button");
+                resetButton.textContent = "Edit another file";
                 resetButton.addEventListener("click", () => {
                     if (confirm("Any information you have currently will be deleted. Are you sure you want to continue?")) {
                         localStorage.removeItem("saved");
@@ -1530,55 +1733,70 @@
             }
 
             function bindToggleableInt(obj, width = "") {
-                const input = fromHtml(`<input type="number" step="1" style="width:${width};">`);
+                const input = document.createElement("input");
+                input.type = "number";
+                input.step = 1;
+                input.style.width = width;
                 obj.placeholder && (input.placeholder = obj.placeholder);
                 return new ToggleableBoundElement(input, obj).getElement();
             }
 
             function bindToggleableUnsignedInt(obj, width = "") {
-                const input = fromHtml(`<input type="number" min=0 step=1 style="width:${width};">`);
+                const input = document.createElement("input");
+                input.type = "number";
+                input.min = 0;
+                input.step = 1;
+                input.style.width = width;
                 obj.placeholder && (input.placeholder = obj.placeholder);
                 return new ToggleableBoundElement(input, obj).getElement();
             }
 
             function bindInt(obj, width = "") {
-                const input = fromHtml(`<input type="number" step="1" style="width:${width};">`);
+                const input = document.createElement("input");
+                input.type = "number";
+                input.step = 1;
+                input.style.width = width;
                 obj.placeholder && (input.placeholder = obj.placeholder);
                 return new BoundElement(input, obj).getElement();
             }
 
             function bindToggleableFloat(obj, width = "") {
-                const input = fromHtml(`<input type="number" style="width:${width};">`);
+                const input = document.createElement("input");
+                input.type = "number";
+                input.style.width = width;
                 obj.placeholder && (input.placeholder = obj.placeholder);
                 return new ToggleableBoundElement(input, obj).getElement();
             }
 
             function bindToggleableUnsignedFloat(obj, width = "") {
-                const input = fromHtml(`<input type="number" min=1 style="width:${width};">`);
+                const input = document.createElement("input");
+                input.type = "number";
+                input.min = 0;
+                input.style.width = width;
                 obj.placeholder && (input.placeholder = obj.placeholder);
                 return new ToggleableBoundElement(input, obj).getElement();
             }
 
             function bindFloat(obj, width = "") {
-                const input = fromHtml(`<input type="number" style="width:${width};">`);
+                const input = document.createElement("input");
+                input.type = "number";
+                input.style.width = width;
                 obj.placeholder && (input.placeholder = obj.placeholder);
                 return new BoundElement(input, obj).getElement();
             }
 
             function bindToggleableBool(obj) {
-                const select = fromHtml(`<select>
-                <option value=true>True</option>
-                <option value=false>False</option>
-                </select>`);
+                const select = document.createElement("select");
+                select.add(new Option("True", "true"));
+                select.add(new Option("False", "false"));
                 return new ToggleableBoundElement(select, obj).getElement();
             }
 
             function bindBool(obj) {
-                const select = fromHtml(`<select>
-                <option value=null></option>
-                <option value=true>True</option>
-                <option value=false>False</option>
-                </select>`);
+                const select = document.createElement("select");
+                select.add(new Option("", null, true));
+                select.add(new Option("True", "true"));
+                select.add(new Option("False", "false"));
                 return new BoundElement(select, obj).getElement();
             }
 
@@ -1652,8 +1870,9 @@
                         event.preventDefault();
                     });
 
-                    const text = fromHtml(`<span>Drag & drop a file to edit<br>Or click to upload</span>`);
-                    zone.appendChild(text);
+                    const textSpan = document.createElement("span");
+                    textSpan.append("Drag & drop a file to edit", document.createElement("br"), "Or click to upload");
+                    zone.appendChild(textSpan);
 
                     document.body.appendChild(zone);
                 }
