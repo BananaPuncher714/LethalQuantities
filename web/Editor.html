@@ -1550,6 +1550,30 @@
                         }
                     };
 
+                    mainSpan.addEventListener("dragover", ev => {
+                        ev.preventDefault();
+                        ev.dataTransfer.dropEffect = "move";
+                    });
+                    mainSpan.addEventListener("drop", ev => {
+                        ev.preventDefault();
+                        ev.dataTransfer.dropEffect = "move";
+
+                        const presetId = ev.dataTransfer.getData("text/plain");
+                        if (presetId !== preset.id && menu.sidebarSpans[presetId]) {
+                            menu.presetList.insertBefore(menu.sidebarSpans[presetId], span);
+
+                            // Move around the presets
+                            const keys = Object.keys(menu.configuration.presets);
+                            const oldPos = keys.indexOf(presetId);
+                            const newPos = keys.indexOf(preset.id);
+
+                            const entries = Object.entries(menu.configuration.presets);
+                            const entry = entries.splice(oldPos, 1)[0];
+                            entries.splice(newPos, 0, entry);
+                            menu.configuration.presets = Object.fromEntries(entries);
+                        }
+                    });
+
                     menu.sidebarReferences[preset.id] = button;
                     menu.sidebarSpans[preset.id] = span;
 
@@ -1599,8 +1623,6 @@
             // = low priority
             // - Add styling options, such as a more lethal company-esque UI
             // - Design the UI
-            // - Change UniqueSelectBoundList to use a single object per added object, to store relevant data
-            // - Update how many items are visible in the scrap/enemies list
             // - Separate items into store vs scrap, in the select dropdown
             // - Allow sorting of entries in unique bound lists
             // - Allow subdirectories for presets
