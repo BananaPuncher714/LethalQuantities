@@ -180,7 +180,7 @@ namespace LethalQuantities.Patches
                 Plugin.INSTANCE.exportData();
 
                 // Load the data from file
-                Plugin.INSTANCE.loadData();
+                Plugin.INSTANCE.loadData(globalInfo.allSpawnableMapObjects);
             }
         }
 

@@ -3,12 +3,14 @@ using BepInEx.Configuration;
 using DunGen;
 using DunGen.Graph;
 using HarmonyLib;
+using LethalQuantities.Json;
 using LethalQuantities.Patches;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -86,6 +88,18 @@ namespace LethalQuantities.Objects
         internal static string getOriginalLevelName(this SelectableLevel level)
         {
             return level.getGuid().getLevelName();
+        }
+
+        internal static Optional<Guid> getGuid(string name)
+        {
+            foreach (SelectableLevelIdentifier identifier in levels)
+            {
+                if (identifier.name == name)
+                {
+                    return new Optional<Guid>(identifier.guid);
+                }
+            }
+            return Optional<Guid>.Empty();
         }
     }
 

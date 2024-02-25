@@ -1,16 +1,24 @@
 ﻿using LethalQuantities.Objects;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using System.Reflection;
 using UnityEngine;
-using static UnityEngine.UIElements.UIR.Implementation.UIRStylePainter;
+using static UnityEngine.ParticleSystem.PlaybackState;
+using Object = System.Object;
 
 namespace LethalQuantities.Json
 {
     // Quick easy to edit hardcoded ad-hoc json solution for now
 
-    public class Optional<T>
+    public interface IOptional
+    {
+        public bool isSet();
+        public Object getValue();
+    }
+
+    public class Optional<T> : IOptional
     {
         public T value;
         public bool set;
@@ -32,6 +40,12 @@ namespace LethalQuantities.Json
             this.set = set;
         }
 
+        public void setValue(T val)
+        {
+            this.value = val;
+            set = val != null;
+        }
+
         public Optional(CustomEntry<T> entry)
         {
             value = entry.Value(value);
@@ -51,12 +65,27 @@ namespace LethalQuantities.Json
         {
             return new Optional<T>();
         }
+
+        public bool isSet()
+        {
+            return set;
+        }
+
+        public Object getValue()
+        {
+            return value;
+        }
     }
 
-    public class ItemOptions
+    public interface Identifiable
+    {
+        public string id { get; set; }
+    }
+
+    public class ItemOptions : Identifiable
     {
         public string name;
-        public string id;
+        public string id { get; set; }
         public bool scrap;
         public Optional<bool> conductive = new Optional<bool>();
         public Optional<int> minValue = new Optional<int>();
@@ -92,9 +121,9 @@ namespace LethalQuantities.Json
         }
     }
 
-    public class EnemyTypeOptions
+    public class EnemyTypeOptions : Identifiable
     {
-        public string id = "";
+        public string id { get; set; } = "";
         public string name = "";
         public Optional<float> doorSpeedMultiplier = new Optional<float>();
         public Optional<int> enemyHp = new Optional<int>();
@@ -138,9 +167,9 @@ namespace LethalQuantities.Json
         }
     }
 
-    public class DungeonFlowOptions
+    public class DungeonFlowOptions : Identifiable
     {
-        public string id = "";
+        public string id { get; set; } = "";
         public string name = "";
         public Optional<float> factorySizeMultiplier = new Optional<float>();
         public Optional<int> rarity = new Optional<int>();
@@ -156,9 +185,9 @@ namespace LethalQuantities.Json
         }
     }
 
-    public class TrapOptions
+    public class TrapOptions : Identifiable
     {
-        public string id = "";
+        public string id { get; set; } = "";
         public string name = "";
         public string description = "";
         public Optional<AnimationCurve> spawnCurve = new Optional<AnimationCurve>();
@@ -177,9 +206,9 @@ namespace LethalQuantities.Json
         }
     }
 
-    public class PriceOptions
+    public class PriceOptions : Identifiable
     {
-        public string id = "";
+        public string id { get; set; } = "";
         public string name = "";
         public Optional<int> price = new Optional<int>();
 
@@ -193,10 +222,10 @@ namespace LethalQuantities.Json
         }
     }
 
-    public class Preset
+    public class Preset : Identifiable
     {
         public string name = "";
-        public string id = "";
+        public string id { get; set; } = "";
         public string parent = "";
         public Optional<List<EnemyTypeOptions>> daytimeEnemies = new Optional<List<EnemyTypeOptions>>();
         public Optional<AnimationCurve> daytimeSpawnCurve = new Optional<AnimationCurve>();
@@ -504,5 +533,448 @@ namespace LethalQuantities.Json
     {
         public Dictionary<string, Preset> presets = new Dictionary<string, Preset>();
         public Dictionary<string, string> levels = new Dictionary<string, string>();
+
+        // Create a single preset per levels
+        public Dictionary<Guid, LevelPreset> generate(List<DirectionalSpawnableMapObject> spawnableMapObjects)
+        {
+            Dictionary<Guid, LevelPreset> levelPresets = new Dictionary<Guid, LevelPreset>();
+            foreach (var entry in levels)
+            {
+                Optional<Guid> foundGuid = SelectableLevelCache.getGuid(entry.Key);
+                if (foundGuid.set)
+                {
+                    if (presets.ContainsKey(entry.Value))
+                    {
+                        List<Preset> parents = getChain(presets[entry.Value]);
+                        LevelPreset levelPreset = new LevelPreset();
+
+                        levelPreset.maxPowerCount = set<int>(parents, nameof(Preset.maxPowerCount));
+                        levelPreset.spawnCurve = set<AnimationCurve>(parents, nameof(Preset.spawnCurve));
+                        levelPreset.spawnProbabilityRange = set<float>(parents, nameof(Preset.spawnProbabilityRange));
+
+                        levelPreset.maxDaytimePowerCount = set<int>(parents, nameof(Preset.maxDaytimePowerCount));
+                        levelPreset.daytimeSpawnCurve = set<AnimationCurve>(parents, nameof(Preset.daytimeSpawnCurve));
+                        levelPreset.daytimeSpawnProbabilityRange = set<float>(parents, nameof(Preset.daytimeSpawnProbabilityRange));
+
+                        levelPreset.maxOutsidePowerCount = set<int>(parents, nameof(Preset.maxOutsidePowerCount));
+                        levelPreset.outsideSpawnCurve = set<AnimationCurve>(parents, nameof(Preset.outsideSpawnCurve));
+
+                        levelPreset.scrapAmountMultiplier = set<float>(parents, nameof(Preset.scrapAmountMultiplier));
+                        levelPreset.scrapValueMultiplier = set<float>(parents, nameof(Preset.scrapValueMultiplier));
+                        levelPreset.minScrap = set<int>(parents, nameof(Preset.minScrap));
+                        levelPreset.maxScrap = set<int>(parents, nameof(Preset.maxScrap));
+
+                        levelPreset.mapSizeMultiplier = set<float>(parents, nameof(Preset.mapSizeMultiplier));
+
+                        {
+                            Optional<List<EnemyTypeOptions>> enemyOptions = set<List<EnemyTypeOptions>>(parents, nameof(Preset.enemies));
+                            if (enemyOptions.isSet())
+                            {
+                                Dictionary<string, LevelPresetEnemyType> enemies = new Dictionary<string, LevelPresetEnemyType>();
+                                foreach (EnemyTypeOptions option in enemyOptions.value)
+                                {
+                                    LevelPresetEnemyType type = new LevelPresetEnemyType();
+                                    type.rarity = set<int>(parents, nameof(Preset.enemies), option.id, nameof(EnemyTypeOptions.rarity));
+                                    if (type.rarity.isSet() && type.rarity.value > 0)
+                                    {
+                                        type.powerLevel = set<int>(parents, nameof(Preset.enemies), option.id, nameof(EnemyTypeOptions.powerLevel));
+                                        type.spawnChanceCurve = set<AnimationCurve>(parents, nameof(Preset.enemies), option.id, nameof(EnemyTypeOptions.spawnChanceCurve));
+                                        type.spawnFalloffCurve = set<AnimationCurve>(parents, nameof(Preset.enemies), option.id, nameof(EnemyTypeOptions.spawnFalloffCurve));
+                                        if (type.spawnFalloffCurve.isSet())
+                                        {
+                                            type.spawnFalloffCurve.value = new AnimationCurve(type.spawnFalloffCurve.value.keys.Select(key => new Keyframe(key.time / 10, key.value)).ToArray());
+                                        }
+                                        type.useSpawnFalloff = set<bool>(parents, nameof(Preset.enemies), option.id, nameof(EnemyTypeOptions.useSpawnFalloff));
+                                        type.killable = set<bool>(parents, nameof(Preset.enemies), option.id, nameof(EnemyTypeOptions.killable));
+                                        type.enemyHp = set<int>(parents, nameof(Preset.enemies), option.id, nameof(EnemyTypeOptions.enemyHp));
+                                        type.stunnable = set<bool>(parents, nameof(Preset.enemies), option.id, nameof(EnemyTypeOptions.stunnable));
+                                        type.stunGameDifficultyMultiplier = set<float>(parents, nameof(Preset.enemies), option.id, nameof(EnemyTypeOptions.stunGameDifficultyMultiplier));
+                                        type.stunTimeMultiplier = set<float>(parents, nameof(Preset.enemies), option.id, nameof(EnemyTypeOptions.stunTimeMultiplier));
+                                        type.doorSpeedMultiplier = set<float>(parents, nameof(Preset.enemies), option.id, nameof(EnemyTypeOptions.doorSpeedMultiplier));
+
+                                        enemies.Add(option.id, type);
+                                    }
+                                }
+                                if (enemies.Count > 0)
+                                {
+                                    levelPreset.enemies.setValue(enemies);
+                                }
+                            }
+                        }
+
+                        {
+                            Optional<List<EnemyTypeOptions>> daytimeEnemyOptions = set<List<EnemyTypeOptions>>(parents, nameof(Preset.daytimeEnemies));
+                            if (daytimeEnemyOptions.isSet())
+                            {
+                                Dictionary<string, LevelPresetEnemyType> enemies = new Dictionary<string, LevelPresetEnemyType>();
+                                foreach (EnemyTypeOptions option in daytimeEnemyOptions.value)
+                                {
+                                    LevelPresetEnemyType type = new LevelPresetEnemyType();
+                                    type.rarity = set<int>(parents, nameof(Preset.daytimeEnemies), option.id, nameof(EnemyTypeOptions.rarity));
+                                    if (type.rarity.isSet() && type.rarity.value > 0)
+                                    {
+                                        type.powerLevel = set<int>(parents, nameof(Preset.daytimeEnemies), option.id, nameof(EnemyTypeOptions.powerLevel));
+                                        type.spawnChanceCurve = set<AnimationCurve>(parents, nameof(Preset.daytimeEnemies), option.id, nameof(EnemyTypeOptions.spawnChanceCurve));
+                                        type.spawnFalloffCurve = set<AnimationCurve>(parents, nameof(Preset.daytimeEnemies), option.id, nameof(EnemyTypeOptions.spawnFalloffCurve));
+                                        if (type.spawnFalloffCurve.isSet())
+                                        {
+                                            type.spawnFalloffCurve.value = new AnimationCurve(type.spawnFalloffCurve.value.keys.Select(key => new Keyframe(key.time / 10, key.value)).ToArray());
+                                        }
+                                        type.useSpawnFalloff = set<bool>(parents, nameof(Preset.daytimeEnemies), option.id, nameof(EnemyTypeOptions.useSpawnFalloff));
+                                        type.killable = set<bool>(parents, nameof(Preset.daytimeEnemies), option.id, nameof(EnemyTypeOptions.killable));
+                                        type.enemyHp = set<int>(parents, nameof(Preset.daytimeEnemies), option.id, nameof(EnemyTypeOptions.enemyHp));
+                                        type.stunnable = set<bool>(parents, nameof(Preset.daytimeEnemies), option.id, nameof(EnemyTypeOptions.stunnable));
+                                        type.stunGameDifficultyMultiplier = set<float>(parents, nameof(Preset.daytimeEnemies), option.id, nameof(EnemyTypeOptions.stunGameDifficultyMultiplier));
+                                        type.stunTimeMultiplier = set<float>(parents, nameof(Preset.daytimeEnemies), option.id, nameof(EnemyTypeOptions.stunTimeMultiplier));
+                                        type.doorSpeedMultiplier = set<float>(parents, nameof(Preset.daytimeEnemies), option.id, nameof(EnemyTypeOptions.doorSpeedMultiplier));
+
+                                        enemies.Add(option.id, type);
+                                    }
+                                }
+                                if (enemies.Count > 0)
+                                {
+                                    levelPreset.daytimeEnemies.setValue(enemies);
+                                }
+                            }
+                        }
+
+                        {
+                            Optional<List<EnemyTypeOptions>> outsideEnemyOptions = set<List<EnemyTypeOptions>>(parents, nameof(Preset.outsideEnemies));
+                            if (outsideEnemyOptions.isSet())
+                            {
+                                Dictionary<string, LevelPresetEnemyType> enemies = new Dictionary<string, LevelPresetEnemyType>();
+                                foreach (EnemyTypeOptions option in outsideEnemyOptions.value)
+                                {
+                                    LevelPresetEnemyType type = new LevelPresetEnemyType();
+                                    type.rarity = set<int>(parents, nameof(Preset.outsideEnemies), option.id, nameof(EnemyTypeOptions.rarity));
+                                    if (type.rarity.isSet() && type.rarity.value > 0)
+                                    {
+                                        type.powerLevel = set<int>(parents, nameof(Preset.outsideEnemies), option.id, nameof(EnemyTypeOptions.powerLevel));
+                                        type.spawnChanceCurve = set<AnimationCurve>(parents, nameof(Preset.outsideEnemies), option.id, nameof(EnemyTypeOptions.spawnChanceCurve));
+                                        type.spawnFalloffCurve = set<AnimationCurve>(parents, nameof(Preset.outsideEnemies), option.id, nameof(EnemyTypeOptions.spawnFalloffCurve));
+                                        if (type.spawnFalloffCurve.isSet())
+                                        {
+                                            type.spawnFalloffCurve.value = new AnimationCurve(type.spawnFalloffCurve.value.keys.Select(key => new Keyframe(key.time / 10, key.value)).ToArray());
+                                        }
+                                        type.useSpawnFalloff = set<bool>(parents, nameof(Preset.outsideEnemies), option.id, nameof(EnemyTypeOptions.useSpawnFalloff));
+                                        type.killable = set<bool>(parents, nameof(Preset.outsideEnemies), option.id, nameof(EnemyTypeOptions.killable));
+                                        type.enemyHp = set<int>(parents, nameof(Preset.outsideEnemies), option.id, nameof(EnemyTypeOptions.enemyHp));
+                                        type.stunnable = set<bool>(parents, nameof(Preset.outsideEnemies), option.id, nameof(EnemyTypeOptions.stunnable));
+                                        type.stunGameDifficultyMultiplier = set<float>(parents, nameof(Preset.outsideEnemies), option.id, nameof(EnemyTypeOptions.stunGameDifficultyMultiplier));
+                                        type.stunTimeMultiplier = set<float>(parents, nameof(Preset.outsideEnemies), option.id, nameof(EnemyTypeOptions.stunTimeMultiplier));
+                                        type.doorSpeedMultiplier = set<float>(parents, nameof(Preset.outsideEnemies), option.id, nameof(EnemyTypeOptions.doorSpeedMultiplier));
+
+                                        enemies.Add(option.id, type);
+                                    }
+                                }
+                                if (enemies.Count > 0)
+                                {
+                                    levelPreset.outsideEnemies.setValue(enemies);
+                                }
+                            }
+                        }
+
+                        {
+                            Optional<List<ItemOptions>> scrapOptions = set<List<ItemOptions>>(parents, nameof(Preset.scrap));
+                            if (scrapOptions.isSet())
+                            {
+                                Dictionary<string, LevelPresetItem> items = new Dictionary<string, LevelPresetItem>();
+                                foreach (ItemOptions option in scrapOptions.value)
+                                {
+                                    LevelPresetItem type = new LevelPresetItem();
+                                    type.rarity = set<int>(parents, nameof(Preset.scrap), option.id, nameof(ItemOptions.rarity));
+                                    if (type.rarity.isSet() && type.rarity.value > 0)
+                                    {
+                                        type.minValue = set<int>(parents, nameof(Preset.scrap), option.id, nameof(ItemOptions.minValue));
+                                        type.maxValue = set<int>(parents, nameof(Preset.scrap), option.id, nameof(ItemOptions.maxValue));
+                                        // Update the weight
+                                        type.weight = set<float>(parents, nameof(Preset.scrap), option.id, nameof(ItemOptions.weight));
+                                        if (type.weight.isSet())
+                                        {
+                                            type.weight.value = (type.weight.value / 100) + 1;
+                                        }
+                                        type.conductive = set<bool>(parents, nameof(Preset.scrap), option.id, nameof(ItemOptions.conductive));
+
+                                        items.Add(option.id, type);
+                                    }
+                                }
+                                if (items.Count > 0)
+                                {
+                                    levelPreset.scrap.setValue(items);
+                                }
+                            }
+                        }
+
+                        {
+                            Optional<List<DungeonFlowOptions>> dungeonFlowOptions = set<List<DungeonFlowOptions>>(parents, nameof(Preset.dungeonFlows));
+                            if (dungeonFlowOptions.isSet())
+                            {
+                                Dictionary<string, LevelPresetDungeonFlow> flows = new Dictionary<string, LevelPresetDungeonFlow>();
+                                foreach (DungeonFlowOptions option in dungeonFlowOptions.value)
+                                {
+                                    LevelPresetDungeonFlow type = new LevelPresetDungeonFlow();
+                                    type.rarity = set<int>(parents, nameof(Preset.dungeonFlows), option.id, nameof(DungeonFlowOptions.rarity));
+                                    if (type.rarity.isSet() && type.rarity.value > 0)
+                                    {
+                                        type.factorySizeMultiplier = set<float>(parents, nameof(Preset.dungeonFlows), option.id, nameof(DungeonFlowOptions.factorySizeMultiplier));
+
+                                        flows.Add(option.id, type);
+                                    }
+                                }
+
+                                if (flows.Count > 0)
+                                {
+                                    levelPreset.dungeonFlows.setValue(flows);
+                                }
+                            }
+                        }
+
+                        {
+                            Optional<List<TrapOptions>> trapOptions = set<List<TrapOptions>>(parents, nameof(Preset.traps));
+                            if (trapOptions.isSet())
+                            {
+                                Dictionary<GameObject, LevelPresetTrap> traps = new Dictionary<GameObject, LevelPresetTrap>();
+                                foreach (TrapOptions option in trapOptions.value)
+                                {
+                                    string trapId = option.id;
+                                    DirectionalSpawnableMapObject obj = spawnableMapObjects.Find(o => o.obj.name == trapId);
+                                    if (obj != null)
+                                    {
+                                        LevelPresetTrap type = new LevelPresetTrap();
+                                        type.spawnFacingAwayFromWall = obj.faceAwayFromWall;
+                                        type.spawnCurve = set<AnimationCurve>(parents, nameof(Preset.traps), trapId, nameof(TrapOptions.spawnCurve));
+
+                                        traps.Add(obj.obj, type);
+                                    }
+                                    else
+                                    {
+                                        Plugin.LETHAL_LOGGER.LogWarning($"Could not find trap with id {trapId}");
+                                    }
+                                }
+                                if (traps.Count > 0)
+                                {
+                                    levelPreset.traps.setValue(traps);
+                                }
+                            }
+                        }
+
+                        {
+                            Optional<List<PriceOptions>> priceOptions = set<List<PriceOptions>>(parents, nameof(Preset.price));
+                            if (priceOptions.isSet())
+                            {
+                                Dictionary<Guid, LevelPresetPrice> prices = new Dictionary<Guid, LevelPresetPrice>();
+                                foreach (PriceOptions option in priceOptions.value)
+                                {
+                                    Optional<Guid> optGuid = SelectableLevelCache.getGuid(option.id);
+                                    if (optGuid.isSet())
+                                    {
+                                        LevelPresetPrice type = new LevelPresetPrice();
+                                        type.price = set<int>(parents, nameof(Preset.price), option.id, nameof(PriceOptions.price));
+
+                                        prices.Add(optGuid.value, type);
+                                    }
+                                    else
+                                    {
+                                        Plugin.LETHAL_LOGGER.LogWarning($"Could not find matching SelectableLevel with id {option.id}");
+                                    }
+                                }
+                                if (prices.Count > 0)
+                                {
+                                    levelPreset.price.setValue(prices);
+                                }
+
+                            }
+                        }
+
+                        // Could move this to the top for faster return
+                        if (!levelPresets.TryAdd(foundGuid.value, levelPreset))
+                        {
+                            Plugin.LETHAL_LOGGER.LogError($"Already added a preset for the level {entry.Key}!");
+                        }
+                    } else
+                    {
+                        Plugin.LETHAL_LOGGER.LogError($"Unable to find preset {entry.Value} for level {entry.Key}");
+                    }
+                }
+                else
+                {
+                    Plugin.LETHAL_LOGGER.LogError($"Unable to find a level with the name {entry.Key}, skipping");
+                }
+            }
+
+            return levelPresets;
+        }
+
+        public List<Preset> getChain(Preset original)
+        {
+            List<Preset> parents = new List<Preset>() { original };
+            HashSet<string> checkset = new HashSet<string>() { original.id };
+
+            Preset current = original;
+            while (presets.ContainsKey(current.parent) && !checkset.Contains(current.parent))
+            {
+                current = presets[current.parent];
+                if (current != original)
+                {
+                    parents.Add(current);
+                    checkset.Add(current.id);
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            return parents;
+        }
+
+        // Lazy coding
+        internal Optional<T> set<T>(List<Preset> parents, params string[] values)
+        {
+            foreach (Preset preset in parents)
+            {
+                Object obj = preset;
+                for (int i = 0; i < values.Length; i++)
+                {
+                    string name = values[i];
+                    Type objType = obj.GetType();
+                    if (objType.IsGenericType && objType.GetGenericTypeDefinition() == typeof(Optional<>))
+                    {
+                        // Not the optional we are looking for, but it could be a list or something
+                        IOptional iOpt = (IOptional)obj;
+                        if (iOpt.isSet())
+                        {
+                            obj = iOpt.getValue();
+                            i--;
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                    else if (objType.IsGenericType && objType.GetGenericTypeDefinition() == typeof(List<>))
+                    {
+                        // Search for an object with the id
+                        int size = ((IList)obj).Count;
+                        bool found = false;
+                        foreach (Object element in (IList)obj)
+                        {
+                            if (element is Identifiable)
+                            {
+                                if ((element as Identifiable).id == name)
+                                {
+                                    obj = element;
+                                    found = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        // Not found, so return empty. If it is not found, then it means that a parent has explicity removed it and we don't want to continue
+                        if (!found)
+                        {
+                            return Optional<T>.Empty();
+                        }
+                    }
+                    else
+                    {
+                        // Attempt to get the next field with the value
+                        FieldInfo info = objType.GetFields().Where(f => f.Name == name).First();
+                        if (info != null)
+                        {
+                            obj = info.GetValue(obj);
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                }
+                if (obj.GetType() == typeof(Optional<T>))
+                {
+                    Optional<T> potential = obj as Optional<T>;
+                    if (potential.set)
+                    {
+                        return potential;
+                    }
+                }
+            }
+            return Optional<T>.Empty();
+        }
+    }
+
+    public class LevelPresetDungeonFlow
+    {
+        public Optional<int> rarity = new Optional<int>();
+        public Optional<float> factorySizeMultiplier = new Optional<float>();
+    }
+
+    public class LevelPresetPrice
+    {
+        public Optional<int> price = new Optional<int>();
+    }
+
+    public class LevelPresetTrap
+    {
+        public Optional<AnimationCurve> spawnCurve = new Optional<AnimationCurve>();
+        public bool spawnFacingAwayFromWall = false;
+    }
+
+    public class LevelPresetItem
+    {
+        public Optional<int> rarity = new Optional<int>();
+        public Optional<int> minValue = new Optional<int>();
+        public Optional<int> maxValue = new Optional<int>();
+        public Optional<bool> conductive = new Optional<bool>();
+        public Optional<float> weight = new Optional<float>();
+    }
+
+    public class LevelPresetEnemyType
+    {
+        public Optional<int> rarity = new Optional<int>();
+
+        public Optional<int> maxEnemyCount = new Optional<int>();
+        public Optional<int> powerLevel = new Optional<int>();
+        public Optional<AnimationCurve> spawnChanceCurve = new Optional<AnimationCurve>();
+        public Optional<AnimationCurve> spawnFalloffCurve = new Optional<AnimationCurve>();
+        public Optional<bool> useSpawnFalloff = new Optional<bool>();
+
+        public Optional<bool> killable = new Optional<bool>();
+        public Optional<int> enemyHp = new Optional<int>();
+
+        public Optional<bool> stunnable = new Optional<bool>();
+        public Optional<float> stunGameDifficultyMultiplier = new Optional<float>();
+        public Optional<float> stunTimeMultiplier = new Optional<float>();
+        public Optional<float> doorSpeedMultiplier = new Optional<float>();
+    }
+
+    public class LevelPreset
+    {
+        public Optional<Dictionary<string, LevelPresetEnemyType>> enemies = new Optional<Dictionary<string, LevelPresetEnemyType>>();
+        public Optional<int> maxPowerCount = new Optional<int>();
+        public Optional<AnimationCurve> spawnCurve = new Optional<AnimationCurve>();
+        public Optional<float> spawnProbabilityRange = new Optional<float>();
+        
+        public Optional<Dictionary<string, LevelPresetEnemyType>> daytimeEnemies = new Optional<Dictionary<string, LevelPresetEnemyType>>();
+        public Optional<int> maxDaytimePowerCount = new Optional<int>();
+        public Optional<AnimationCurve> daytimeSpawnCurve = new Optional<AnimationCurve>();
+        public Optional<float> daytimeSpawnProbabilityRange = new Optional<float>();
+        
+        public Optional<Dictionary<string, LevelPresetEnemyType>> outsideEnemies = new Optional<Dictionary<string, LevelPresetEnemyType>>();
+        public Optional<int> maxOutsidePowerCount = new Optional<int>();
+        public Optional<AnimationCurve> outsideSpawnCurve = new Optional<AnimationCurve>();
+
+        public Optional<Dictionary<string, LevelPresetItem>> scrap = new Optional<Dictionary<string, LevelPresetItem>>();
+        public Optional<float> scrapAmountMultiplier = new Optional<float>();
+        public Optional<float> scrapValueMultiplier = new Optional<float>();
+        public Optional<int> minScrap = new Optional<int>();
+        public Optional<int> maxScrap = new Optional<int>();
+        
+        public Optional<Dictionary<string, LevelPresetDungeonFlow>> dungeonFlows = new Optional<Dictionary<string, LevelPresetDungeonFlow>>();
+        public Optional<float> mapSizeMultiplier = new Optional<float>();
+        
+        public Optional<Dictionary<Guid, LevelPresetPrice>> price = new Optional<Dictionary<Guid, LevelPresetPrice>>();
+        
+        public Optional<Dictionary<GameObject, LevelPresetTrap>> traps = new Optional<Dictionary<GameObject, LevelPresetTrap>>();
     }
 }

@@ -12,6 +12,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using static UnityEngine.UIElements.UIR.Implementation.UIRStylePainter;
+using System;
 
 namespace LethalQuantities
 {
@@ -23,6 +24,7 @@ namespace LethalQuantities
         internal static readonly string LEVEL_SAVE_DIR = Path.Combine(Paths.ConfigPath, PluginInfo.PLUGIN_NAME, "Moons");
 
         internal static readonly string PRESET_FILE = Path.Combine(Paths.ConfigPath, EXPORT_DIRECTORY, "Presets.json");
+        internal static readonly string RESULT_FILE = Path.Combine(Paths.ConfigPath, EXPORT_DIRECTORY, "Results.json");
 
         public static Plugin INSTANCE { get; private set; }
 
@@ -35,6 +37,7 @@ namespace LethalQuantities
 
         internal ExportData defaultInformation;
         internal ImportData importedInformation;
+        internal Dictionary<Guid, LevelPreset> presets = new Dictionary<Guid, LevelPreset>();
 
         private void Awake()
         {
@@ -171,7 +174,7 @@ namespace LethalQuantities
             }
         }
 
-        public void loadData(string path = null)
+        public void loadData(List<DirectionalSpawnableMapObject> spawnableMapObjects, string path = null)
         {
             if (path == null)
             {
@@ -180,8 +183,15 @@ namespace LethalQuantities
             if (File.Exists(path))
             {
                 LETHAL_LOGGER.LogInfo($"Importing data from {path}");
-                importedInformation = JsonConvert.DeserializeObject<ImportData>(File.ReadAllText(path), new AnimationCurveConverter());
-                LETHAL_LOGGER.LogInfo("Done importing preset data");
+                ImportData importedInformation = JsonConvert.DeserializeObject<ImportData>(File.ReadAllText(path), new AnimationCurveConverter());
+
+                LETHAL_LOGGER.LogInfo("Generating level presets");
+                presets = importedInformation.generate(spawnableMapObjects);
+
+                LETHAL_LOGGER.LogInfo($"Saving level presets to {RESULT_FILE}");
+                File.WriteAllText(RESULT_FILE, JsonConvert.SerializeObject(presets, new AnimationCurveConverter()));
+
+                LETHAL_LOGGER.LogInfo("Done loading data");
             }
         }
 

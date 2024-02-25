@@ -1000,11 +1000,12 @@
                     identifierText.append(`Name: ${preset.name}`, document.createElement("br"), `ID: ${preset.id}`);
                     const identifier = tooltip(identifierTooltip, identifierText);
 
+                    const spacer = document.createElement("span");
+                    spacer.style.minWidth = "100px";
+                    spacer.style.display = "inline-block";
                     const identifierSpan = document.createElement("span");
-                    identifierSpan.style.width = "200px";
-                    identifierSpan.style.textAlign = "right";
                     identifierSpan.style.display = "inline-block";
-                    identifierSpan.append(identifier, document.createElement("br"));
+                    identifierSpan.append(spacer, identifier, document.createElement("br"));
 
                     const presetTitle = document.createElement("b");
                     presetTitle.textContent = "Preset";
@@ -1642,20 +1643,28 @@
             function readFile(file) {
                 let reader = new FileReader();
                 reader.onload = file => {
-                    defaultData = JSON.parse(reader.result);
+                    try {
+                        defaultData = JSON.parse(reader.result);
 
-                    loadData(defaultData);
+                        loadData(defaultData);
+                    } catch (e) {
+                        alert("The file provided is not a JSON file");
+                    }
                 };
                 reader.readAsText(file);
             }
 
             function loadData(data) {
-                console.log("Loading input data:");
-                console.log(data);
+                if (data["defaults"]) {
+                    console.log("Loading input data:");
+                    console.log(data);
 
-                const configuration = new Configuration(data);
+                    const configuration = new Configuration(data);
 
-                createInterfaceFor(configuration);
+                    createInterfaceFor(configuration);
+                } else {
+                    alert("Invalid data");
+                }
             }
 
             function createInterfaceFor(configuration) {
