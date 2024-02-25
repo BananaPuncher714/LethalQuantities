@@ -1,9 +1,0 @@
-{
-  "name": "LethalQuantities",
-  "version_number": "1.1.17",
-  "website_url": "https://github.com/BananaPuncher714/LethalQuantities",
-  "description": "Customize enemies, items, prices, dungeon flows and traps for all moons. Works with custom content and non-intrusive. Great for modpack balancing!",
-  "dependencies": [
-    "BepInEx-BepInExPack-5.4.2100"
-  ]
-}
