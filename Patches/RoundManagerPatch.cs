@@ -5,6 +5,7 @@ using LethalQuantities.Objects;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -19,168 +20,177 @@ namespace LethalQuantities.Patches
         {
             if (!Plugin.INSTANCE.configInitialized)
             {
-                NetworkManager manager = UnityEngine.Object.FindObjectOfType<NetworkManager>();
-                GlobalInformation globalInfo = new GlobalInformation(Plugin.GLOBAL_SAVE_DIR, Plugin.LEVEL_SAVE_DIR);
-                // Get all enemy, item and dungeon flows
-                // Filter out any potentially "fake" enemy types that might have been added by other mods
-                Plugin.LETHAL_LOGGER.LogInfo("Fetching all enemy types");
-                HashSet<string> addedEnemyTypes = new HashSet<string>();
-                globalInfo.allEnemyTypes.AddRange(Resources.FindObjectsOfTypeAll<EnemyType>().Where(type =>
+                try
                 {
-                    if (type.enemyPrefab == null)
+                    NetworkManager manager = UnityEngine.Object.FindObjectOfType<NetworkManager>();
+                    GlobalInformation globalInfo = new GlobalInformation(Plugin.GLOBAL_SAVE_DIR, Plugin.LEVEL_SAVE_DIR);
+                    // Get all enemy, item and dungeon flows
+                    // Filter out any potentially "fake" enemy types that might have been added by other mods
+                    Plugin.LETHAL_LOGGER.LogInfo("Fetching all enemy types");
+                    HashSet<string> addedEnemyTypes = new HashSet<string>();
+                    globalInfo.allEnemyTypes.AddRange(Resources.FindObjectsOfTypeAll<EnemyType>().Where(type =>
                     {
-                        Plugin.LETHAL_LOGGER.LogWarning($"Enemy type {type.name} is missing prefab! Perhaps another mod has removed it? Some default values in the config may not be correct.");
-                    }
-                    else if (!manager.NetworkConfig.Prefabs.Contains(type.enemyPrefab))
-                    {
-                        Plugin.LETHAL_LOGGER.LogWarning($"Enemy type {type.name} is not a real object! Ignoring type");
-                    }
-                    else if (addedEnemyTypes.Contains(type.name))
-                    {
-                        Plugin.LETHAL_LOGGER.LogWarning($"Enemy type {type.name} was found twice! Perhaps another mod has added it? Some default values in the config may not be correct.");
-                    }
-                    else
-                    {
-                        addedEnemyTypes.Add(type.name);
-                        return true;
-                    }
-                    return false;
-                }));
-                Plugin.LETHAL_LOGGER.LogInfo("Fetching all items");
-                HashSet<string> addedItems = new HashSet<string>();
-                globalInfo.allItems.AddRange(Resources.FindObjectsOfTypeAll<Item>().Where(type =>
-                {
-                    if (type.spawnPrefab == null)
-                    {
-                        Plugin.LETHAL_LOGGER.LogWarning($"Item {type.name} is missing prefab! Perhaps another mod has removed it? Some default values in the config may not be correct.");
-                    }
-                    else if (!manager.NetworkConfig.Prefabs.Contains(type.spawnPrefab))
-                    {
-                        Plugin.LETHAL_LOGGER.LogWarning($"Item {type.name} is not a real item! Ignoring item");
-                    }
-                    else if (addedItems.Contains(type.name))
-                    {
-                        Plugin.LETHAL_LOGGER.LogWarning($"Item {type.name} was found twice! Perhaps another mod has added it? Some default values in the config may not be correct.");
-                    }
-                    else
-                    {
-                        addedItems.Add(type.name);
-                        return true;
-                    }
-                    return false;
-                }));
-
-                Plugin.LETHAL_LOGGER.LogInfo("Fetching all moon prices");
-                CompatibleNoun[] nouns = Resources.FindObjectsOfTypeAll<TerminalKeyword>().First(w => w.word != null && w.word.ToLower() == "route").compatibleNouns;
-                foreach (SelectableLevel level in Resources.FindObjectsOfTypeAll<SelectableLevel>())
-                {
-                    GenericLevelInformation genericInfo = new GenericLevelInformation();
-                    bool found = false;
-                    foreach (CompatibleNoun noun in nouns)
-                    {
-                        TerminalNode result = noun.result;
-                        if (result.terminalOptions == null)
+                        if (type.enemyPrefab == null)
                         {
-                            Plugin.LETHAL_LOGGER.LogError($"Route subcommand {result.name} does not have any valid terminal options!");
-                            continue;
+                            Plugin.LETHAL_LOGGER.LogWarning($"Enemy type {type.name} is missing prefab! Perhaps another mod has removed it? Some default values in the config may not be correct.");
                         }
-
-                        CompatibleNoun confirmNoun = result.terminalOptions.First(n => n.noun.word.ToLower() == "confirm");
-                        if (confirmNoun == null)
+                        else if (!manager.NetworkConfig.Prefabs.Contains(type.enemyPrefab))
                         {
-                            Plugin.LETHAL_LOGGER.LogError($"Unable to find a confirm option for route command {result.name}");
-                            continue;
+                            Plugin.LETHAL_LOGGER.LogWarning($"Enemy type {type.name} is not a real object! Ignoring type");
                         }
-                        TerminalNode confirm = confirmNoun.result;
-
-                        if (confirm == null)
+                        else if (addedEnemyTypes.Contains(type.name))
                         {
-                            Plugin.LETHAL_LOGGER.LogError($"Found a confirm option for route command {result.name}, but it has no result node!");
-                            continue;
+                            Plugin.LETHAL_LOGGER.LogWarning($"Enemy type {type.name} was found twice! Perhaps another mod has added it? Some default values in the config may not be correct.");
                         }
-
-                        int levelId = confirm.buyRerouteToMoon;
-
-                        if (level.levelID == confirm.buyRerouteToMoon)
+                        else
                         {
-                            Plugin.LETHAL_LOGGER.LogInfo($"Found the price {confirm.itemCost} for {level.name}");
-                            genericInfo.price = confirm.itemCost;
-                            found = true;
-                            break;
+                            addedEnemyTypes.Add(type.name);
+                            return true;
                         }
-                    }
-                    if (!found)
+                        return false;
+                    }));
+                    Plugin.LETHAL_LOGGER.LogInfo("Fetching all items");
+                    HashSet<string> addedItems = new HashSet<string>();
+                    globalInfo.allItems.AddRange(Resources.FindObjectsOfTypeAll<Item>().Where(type =>
                     {
-                        Plugin.LETHAL_LOGGER.LogWarning($"Unable to find price of {level.name}({level.PlanetName})");
-                    }
-
-                    globalInfo.allSelectableLevels.Add(level, genericInfo);
-                }
-
-                Plugin.LETHAL_LOGGER.LogInfo("Fetching all traps");
-                Dictionary<GameObject, DirectionalSpawnableMapObject> uniqueMapObjects = new Dictionary<GameObject, DirectionalSpawnableMapObject>();
-                // Keep track of added objects, try to make sure we don't add the same one twice
-                HashSet<string> addedTraps = new HashSet<string>();
-                foreach (SelectableLevel level in globalInfo.allSelectableLevels.Keys)
-                {
-                    foreach (SpawnableMapObject spawnableObject in level.spawnableMapObjects)
-                    {
-                        GameObject prefab = spawnableObject.prefabToSpawn;
-                        if (!addedTraps.Contains(prefab.name))
+                        if (type.spawnPrefab == null)
                         {
-                            // Only add the prefab if it is a networked object
-                            if (manager.NetworkConfig.Prefabs.Contains(prefab))
+                            Plugin.LETHAL_LOGGER.LogWarning($"Item {type.name} is missing prefab! Perhaps another mod has removed it? Some default values in the config may not be correct.");
+                        }
+                        else if (!manager.NetworkConfig.Prefabs.Contains(type.spawnPrefab))
+                        {
+                            Plugin.LETHAL_LOGGER.LogWarning($"Item {type.name} is not a real item! Ignoring item");
+                        }
+                        else if (addedItems.Contains(type.name))
+                        {
+                            Plugin.LETHAL_LOGGER.LogWarning($"Item {type.name} was found twice! Perhaps another mod has added it? Some default values in the config may not be correct.");
+                        }
+                        else
+                        {
+                            addedItems.Add(type.name);
+                            return true;
+                        }
+                        return false;
+                    }));
+
+                    Plugin.LETHAL_LOGGER.LogInfo("Fetching all moon prices");
+                    CompatibleNoun[] nouns = Resources.FindObjectsOfTypeAll<TerminalKeyword>().First(w => w.word != null && w.word.ToLower() == "route").compatibleNouns;
+                    foreach (SelectableLevel level in Resources.FindObjectsOfTypeAll<SelectableLevel>())
+                    {
+                        GenericLevelInformation genericInfo = new GenericLevelInformation();
+                        bool found = false;
+                        foreach (CompatibleNoun noun in nouns)
+                        {
+                            TerminalNode result = noun.result;
+                            if (result.terminalOptions == null)
                             {
-                                addedTraps.Add(prefab.name);
-                                uniqueMapObjects.TryAdd(prefab, new DirectionalSpawnableMapObject(prefab, spawnableObject.spawnFacingAwayFromWall));
+                                Plugin.LETHAL_LOGGER.LogError($"Route subcommand {result.name} does not have any valid terminal options!");
+                                continue;
+                            }
+
+                            CompatibleNoun confirmNoun = result.terminalOptions.First(n => n.noun.word.ToLower() == "confirm");
+                            if (confirmNoun == null)
+                            {
+                                Plugin.LETHAL_LOGGER.LogError($"Unable to find a confirm option for route command {result.name}");
+                                continue;
+                            }
+                            TerminalNode confirm = confirmNoun.result;
+
+                            if (confirm == null)
+                            {
+                                Plugin.LETHAL_LOGGER.LogError($"Found a confirm option for route command {result.name}, but it has no result node!");
+                                continue;
+                            }
+
+                            int levelId = confirm.buyRerouteToMoon;
+
+                            if (level.levelID == confirm.buyRerouteToMoon)
+                            {
+                                Plugin.LETHAL_LOGGER.LogInfo($"Found the price {confirm.itemCost} for {level.name}");
+                                genericInfo.price = confirm.itemCost;
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found)
+                        {
+                            Plugin.LETHAL_LOGGER.LogWarning($"Unable to find price of {level.name}({level.PlanetName})");
+                        }
+
+                        globalInfo.allSelectableLevels.Add(SelectableLevelCache.getGuid(level), genericInfo);
+                    }
+
+                    Plugin.LETHAL_LOGGER.LogInfo("Fetching all traps");
+                    Dictionary<GameObject, DirectionalSpawnableMapObject> uniqueMapObjects = new Dictionary<GameObject, DirectionalSpawnableMapObject>();
+                    // Keep track of added objects, try to make sure we don't add the same one twice
+                    HashSet<string> addedTraps = new HashSet<string>();
+                    foreach (Guid levelGuid in globalInfo.allSelectableLevels.Keys)
+                    {
+                        SelectableLevel level = SelectableLevelCache.getLevel(levelGuid);
+                        foreach (SpawnableMapObject spawnableObject in level.spawnableMapObjects)
+                        {
+                            GameObject prefab = spawnableObject.prefabToSpawn;
+                            if (!addedTraps.Contains(prefab.name))
+                            {
+                                // Only add the prefab if it is a networked object
+                                if (manager.NetworkConfig.Prefabs.Contains(prefab))
+                                {
+                                    addedTraps.Add(prefab.name);
+                                    uniqueMapObjects.TryAdd(prefab, new DirectionalSpawnableMapObject(prefab, spawnableObject.spawnFacingAwayFromWall));
+                                }
                             }
                         }
                     }
-                }
-                globalInfo.allSpawnableMapObjects.AddRange(uniqueMapObjects.Values);
+                    globalInfo.allSpawnableMapObjects.AddRange(uniqueMapObjects.Values);
 
-                Plugin.LETHAL_LOGGER.LogInfo("Fetching all dungeon flows");
-                globalInfo.allDungeonFlows.AddRange(Resources.FindObjectsOfTypeAll<DungeonFlow>());
-                globalInfo.manager = __instance;
-                globalInfo.sortData();
+                    Plugin.LETHAL_LOGGER.LogInfo("Fetching all dungeon flows");
+                    globalInfo.allDungeonFlows.AddRange(Resources.FindObjectsOfTypeAll<DungeonFlow>());
+                    globalInfo.manager = __instance;
+                    globalInfo.sortData();
 
-                GlobalConfiguration configuration;
-                if (!Plugin.INSTANCE.configInitialized)
-                {
-                    // The purpose for this segment below is to save the vanilla information, before any mods change any values
-                    Plugin.LETHAL_LOGGER.LogInfo("Loading global configuration");
-                    configuration = new GlobalConfiguration(globalInfo);
-
-                    Plugin.INSTANCE.configuration = configuration;
-                    Plugin.INSTANCE.configInitialized = true;
-
-                    Plugin.LETHAL_LOGGER.LogInfo("Done configuring LethalQuantities");
-                }
-                else
-                {
-                    configuration = Plugin.INSTANCE.configuration;
-                }
-
-                // Set some global options here
-                if (configuration.scrapConfiguration.enabled.Value)
-                {
-                    Plugin.LETHAL_LOGGER.LogInfo("Setting custom item weight values");
-                    foreach (Item item in globalInfo.allItems)
+                    GlobalConfiguration configuration;
+                    if (!Plugin.INSTANCE.configInitialized)
                     {
-                        ItemConfiguration itemConfig = configuration.scrapConfiguration.items[item];
-                        if (itemConfig is IWeightConfigurable)
+                        // The purpose for this segment below is to save the vanilla information, before any mods change any values
+                        Plugin.LETHAL_LOGGER.LogInfo("Loading global configuration");
+                        configuration = new GlobalConfiguration(globalInfo);
+
+                        Plugin.INSTANCE.configuration = configuration;
+                        Plugin.INSTANCE.configInitialized = true;
+
+                        Plugin.LETHAL_LOGGER.LogInfo("Done configuring LethalQuantities");
+                    }
+                    else
+                    {
+                        configuration = Plugin.INSTANCE.configuration;
+                    }
+
+                    // Set some global options here
+                    if (configuration.scrapConfiguration.enabled.Value)
+                    {
+                        Plugin.LETHAL_LOGGER.LogInfo("Setting custom item weight values");
+                        foreach (Item item in globalInfo.allItems)
                         {
-                            (itemConfig as IWeightConfigurable).weight.Set(ref item.weight);
+                            ItemConfiguration itemConfig = configuration.scrapConfiguration.items[item];
+                            if (itemConfig is IWeightConfigurable)
+                            {
+                                (itemConfig as IWeightConfigurable).weight.Set(ref item.weight);
+                            }
                         }
                     }
+
+                    // Create an exportable object
+                    Plugin.INSTANCE.defaultInformation = new ExportData(__instance, globalInfo);
+                    Plugin.INSTANCE.exportData();
+
+                    // Load the data from file
+                    Plugin.INSTANCE.loadData(globalInfo);
                 }
-
-                // Create an exportable object
-                Plugin.INSTANCE.defaultInformation = new ExportData(__instance, globalInfo);
-                Plugin.INSTANCE.exportData();
-
-                // Load the data from file
-                Plugin.INSTANCE.loadData(globalInfo.allSpawnableMapObjects);
+                catch (Exception e)
+                {
+                    Plugin.LETHAL_LOGGER.LogError("Encountered an error while trying to load the configuration");
+                    Plugin.LETHAL_LOGGER.LogError($"Please report this error to the mod developers: {e}");
+                }
             }
         }
 
@@ -202,21 +212,23 @@ namespace LethalQuantities.Patches
         // Values set by this mod are meant to be overwritten, especially by mods that add events, or varying changes.
         private static void onLoadNewLevelPrefix(RoundManager __instance, ref SelectableLevel newLevel)
         {
-            RoundState state = Plugin.getRoundState(newLevel);
-            if (state != null)
+            try
             {
-                if (__instance.IsServer)
+                RoundState state = Plugin.getRoundState(newLevel);
+                if (state != null)
                 {
-                    Plugin.LETHAL_LOGGER.LogInfo($"RoundState found for level {state.level.name}, modifying level before loading");
-                    int minimumSpawnProbabilityRange = (int)Math.Ceiling(Math.Abs(TimeOfDay.Instance.daysUntilDeadline - 3) / 3.2);
+                    if (__instance.IsServer)
                     {
-                        if (state.getValidEnemyConfiguration(out EnemyConfiguration<EnemyTypeConfiguration> config))
+                        LevelPreset preset = state.preset;
+
+
+                        Plugin.LETHAL_LOGGER.LogInfo($"RoundState found for level {state.level.name}, modifying level before loading");
+                        int minimumSpawnProbabilityRange = (int)Math.Ceiling(Math.Abs(TimeOfDay.Instance.daysUntilDeadline - 3) / 3.2);
                         {
                             Plugin.LETHAL_LOGGER.LogInfo("Changing inside enemy values");
-                            config.maxPowerCount.Set(ref newLevel.maxEnemyPowerCount);
-                            config.spawnAmountCurve.Set(ref newLevel.enemySpawnChanceThroughoutDay);
-                            config.spawnAmountRange.Set(ref newLevel.spawnProbabilityRange);
-                            // Make sure the game does not break if the spawn probability range is too small
+                            preset.maxPowerCount.update(ref newLevel.maxEnemyPowerCount);
+                            preset.spawnCurve.update(ref newLevel.enemySpawnChanceThroughoutDay);
+                            preset.spawnProbabilityRange.update(ref newLevel.spawnProbabilityRange);
                             if (newLevel.spawnProbabilityRange < minimumSpawnProbabilityRange)
                             {
                                 Plugin.LETHAL_LOGGER.LogWarning($"Interior enemy spawn amount range is too small({newLevel.spawnProbabilityRange}), setting to {minimumSpawnProbabilityRange}");
@@ -224,28 +236,11 @@ namespace LethalQuantities.Patches
                             }
                             newLevel.Enemies.Clear();
                             newLevel.Enemies.AddRange(state.enemies);
-                        }
-                    }
 
-                    {
-                        if (state.getValidOutsideEnemyConfiguration(out OutsideEnemyConfiguration<EnemyTypeConfiguration> config))
-                        {
-                            Plugin.LETHAL_LOGGER.LogInfo("Changing outside enemy values");
-                            config.maxPowerCount.Set(ref newLevel.maxOutsideEnemyPowerCount);
-                            config.spawnAmountCurve.Set(ref newLevel.outsideEnemySpawnChanceThroughDay);
-                            newLevel.OutsideEnemies.Clear();
-                            newLevel.OutsideEnemies.AddRange(state.outsideEnemies);
-                        }
-                    }
-
-                    {
-                        if (state.getValidDaytimeEnemyConfiguration(out EnemyConfiguration<DaytimeEnemyTypeConfiguration> config))
-                        {
                             Plugin.LETHAL_LOGGER.LogInfo("Changing daytime enemy values");
-                            config.maxPowerCount.Set(ref newLevel.maxDaytimeEnemyPowerCount);
-                            config.spawnAmountCurve.Set(ref newLevel.daytimeEnemySpawnChanceThroughDay);
-                            config.spawnAmountRange.Set(ref newLevel.daytimeEnemiesProbabilityRange);
-                            // Make sure the game does not break if the spawn probability range is too small
+                            preset.maxDaytimePowerCount.update(ref newLevel.maxDaytimeEnemyPowerCount);
+                            preset.daytimeSpawnCurve.update(ref newLevel.daytimeEnemySpawnChanceThroughDay);
+                            preset.daytimeSpawnProbabilityRange.update(ref newLevel.daytimeEnemiesProbabilityRange);
                             if (newLevel.daytimeEnemiesProbabilityRange < minimumSpawnProbabilityRange)
                             {
                                 Plugin.LETHAL_LOGGER.LogWarning($"Interior enemy spawn amount range is too small({newLevel.daytimeEnemiesProbabilityRange}), setting to {minimumSpawnProbabilityRange}");
@@ -253,18 +248,23 @@ namespace LethalQuantities.Patches
                             }
                             newLevel.DaytimeEnemies.Clear();
                             newLevel.DaytimeEnemies.AddRange(state.daytimeEnemies);
-                        }
-                    }
 
-                    {
-                        if (state.getValidScrapConfiguration(out ScrapConfiguration configuration))
-                        {
+                            Plugin.LETHAL_LOGGER.LogInfo("Changing outside enemy values");
+                            preset.maxOutsidePowerCount.update(ref newLevel.maxOutsideEnemyPowerCount);
+                            preset.outsideSpawnCurve.update(ref newLevel.outsideEnemySpawnChanceThroughDay);
+                            newLevel.OutsideEnemies.Clear();
+                            newLevel.OutsideEnemies.AddRange(state.outsideEnemies);
+
                             Plugin.LETHAL_LOGGER.LogInfo("Changing scrap values");
-                            configuration.minScrap.Set(ref newLevel.minScrap);
-                            configuration.maxScrap.Set(ref newLevel.maxScrap);
-                            configuration.scrapAmountMultiplier.Set(ref __instance.scrapAmountMultiplier);
-                            configuration.scrapValueMultiplier.Set(ref __instance.scrapValueMultiplier);
+                            preset.minScrap.update(ref newLevel.minScrap);
+                            preset.maxScrap.update(ref newLevel.maxScrap);
+                            preset.scrapAmountMultiplier.update(ref __instance.scrapAmountMultiplier);
+                            preset.scrapValueMultiplier.update(ref __instance.scrapValueMultiplier);
 
+                            preset.mapSizeMultiplier.update(ref newLevel.factorySizeMultiplier);
+                        }
+
+                        {
                             Dictionary<Item, int> defaultRarities = new Dictionary<Item, int>();
                             foreach (SpawnableItemWithRarity item in newLevel.spawnableScrap)
                             {
@@ -276,65 +276,73 @@ namespace LethalQuantities.Patches
                             }
 
                             newLevel.spawnableScrap.Clear();
-                            foreach (ItemConfiguration item in configuration.items.Values)
+                            if (preset.scrap.isSet())
                             {
-                                SpawnableItemWithRarity newItem = new SpawnableItemWithRarity();
-                                newItem.spawnableItem = item.item;
-                                // Get the default item rarity value, if it already exists somewhere, otherwise use the default value, or else use the value set in the config
-                                newItem.rarity = defaultRarities.GetValueOrDefault(item.item, 0);
-                                item.rarity.Set(ref newItem.rarity);
-                                if (newItem.rarity > 0)
+                                foreach (var entry in preset.scrap.value)
                                 {
-                                    item.conductive.Set(ref newItem.spawnableItem.isConductiveMetal);
-                                    if (item is IScrappableConfiguration)
+                                    Item item = entry.Key;
+                                    LevelPresetItem itemPreset = entry.Value;
+
+                                    SpawnableItemWithRarity newItem = new SpawnableItemWithRarity();
+                                    newItem.spawnableItem = item;
+                                    // Get the default item rarity value, if it already exists somewhere, otherwise use the default value, or else use the value set in the config
+                                    newItem.rarity = defaultRarities.GetValueOrDefault(item, 0);
+                                    itemPreset.rarity.update(ref newItem.rarity);
+                                    if (newItem.rarity > 0)
                                     {
-                                        IScrappableConfiguration scrapItem = item as IScrappableConfiguration;
+                                        itemPreset.conductive.update(ref item.isConductiveMetal);
+                                        itemPreset.weight.update(ref item.weight);
 
-                                        int minValue = newItem.spawnableItem.minValue;
-                                        int maxValue = newItem.spawnableItem.maxValue;
+                                        int minValue = item.minValue;
+                                        int maxValue = item.maxValue;
 
-                                        scrapItem.minValue.Set(ref minValue);
-                                        scrapItem.maxValue.Set(ref maxValue);
+                                        itemPreset.minValue.update(ref minValue);
+                                        itemPreset.maxValue.update(ref maxValue);
 
-                                        newItem.spawnableItem.minValue = Math.Min(minValue, maxValue);
+                                        item.minValue = Math.Min(minValue, maxValue);
                                         // Add 1 since the random method is upper bound exclusive
-                                        newItem.spawnableItem.maxValue = Math.Max(minValue, maxValue) + 1;
+                                        item.maxValue = Math.Max(minValue, maxValue);
+                                        newLevel.spawnableScrap.Add(newItem);
                                     }
-                                    newLevel.spawnableScrap.Add(newItem);
                                 }
                             }
                         }
-                    }
 
-                    {
-                        if (state.getValidTrapConfiguration(out TrapConfiguration configuration))
                         {
-                            Plugin.LETHAL_LOGGER.LogInfo("Changing interior trap spawn amounts");
-                            Dictionary<GameObject, AnimationCurve> defaultSpawnableMapObjects = new Dictionary<GameObject, AnimationCurve>();
-                            foreach (SpawnableMapObject obj in newLevel.spawnableMapObjects)
+                            if (preset.traps.isSet())
                             {
-                                defaultSpawnableMapObjects.TryAdd(obj.prefabToSpawn, obj.numberToSpawn);
+                                Plugin.LETHAL_LOGGER.LogInfo("Changing interior trap spawn amounts");
+                                Dictionary<GameObject, AnimationCurve> defaultSpawnableMapObjects = new Dictionary<GameObject, AnimationCurve>();
+                                foreach (SpawnableMapObject obj in newLevel.spawnableMapObjects)
+                                {
+                                    defaultSpawnableMapObjects.TryAdd(obj.prefabToSpawn, obj.numberToSpawn);
+                                }
+                                List<SpawnableMapObject> newMapObjects = new List<SpawnableMapObject>();
+                                foreach (var entry in preset.traps.value)
+                                {
+                                    DirectionalSpawnableMapObject obj = entry.Key;
+                                    LevelPresetTrap presetTrap = entry.Value;
+
+                                    AnimationCurve curve = defaultSpawnableMapObjects.GetValueOrDefault(obj.obj, new AnimationCurve(new Keyframe(0, 0)));
+                                    presetTrap.spawnCurve.update(ref curve);
+
+                                    SpawnableMapObject spawnableObj = new SpawnableMapObject();
+                                    spawnableObj.prefabToSpawn = obj.obj;
+                                    spawnableObj.numberToSpawn = curve;
+                                    spawnableObj.spawnFacingAwayFromWall = obj.faceAwayFromWall;
+
+                                    newMapObjects.Add(spawnableObj);
+                                }
+                                newLevel.spawnableMapObjects = newMapObjects.ToArray();
                             }
-                            List<SpawnableMapObject> newMapObjects = new List<SpawnableMapObject>();
-                            foreach (var item in configuration.traps)
-                            {
-                                GameObject obj = item.Key;
-                                SpawnableMapObjectConfiguration config = item.Value;
-
-                                AnimationCurve curve = defaultSpawnableMapObjects.GetValueOrDefault(obj, new AnimationCurve());
-                                config.numberToSpawn.Set(ref curve);
-
-                                SpawnableMapObject spawnableObj = new SpawnableMapObject();
-                                spawnableObj.prefabToSpawn = obj;
-                                spawnableObj.numberToSpawn = curve;
-                                spawnableObj.spawnFacingAwayFromWall = config.spawnableObject.faceAwayFromWall;
-
-                                newMapObjects.Add(spawnableObj);
-                            }
-                            newLevel.spawnableMapObjects = newMapObjects.ToArray();
                         }
                     }
                 }
+            }
+            catch (Exception e)
+            {
+                Plugin.LETHAL_LOGGER.LogError("Encountered an error while trying to modify the level");
+                Plugin.LETHAL_LOGGER.LogError($"Please report this error to the mod developers: {e}");
             }
         }
 
@@ -404,34 +412,29 @@ namespace LethalQuantities.Patches
             RoundState state = Plugin.getRoundState(level);
             if (state != null)
             {
-                if (state.getValidDungeonGenerationConfiguration(out DungeonGenerationConfiguration configuration))
+                LevelPreset preset = state.preset;
+                if (preset.dungeonFlows.isSet())
                 {
                     Plugin.LETHAL_LOGGER.LogInfo("Changing dungeon flow values");
-                    configuration.mapSizeMultiplier.Set(ref __instance.mapSizeMultiplier);
-
                     Dictionary<string, int> flows = new Dictionary<string, int>();
                     foreach (IntWithRarity entry in level.dungeonFlowTypes)
                     {
                         flows.TryAdd(__instance.dungeonFlowTypes[entry.id].name, entry.rarity);
                     }
-                    
-                    foreach (DungeonFlow flow in allDungeonFlows)
-                    {
-                        string name = flow.name;
-                        if (configuration.dungeonFlowConfigurations.TryGetValue(name, out DungeonFlowConfiguration config))
-                        {
-                            int originalRarity = flows.GetValueOrDefault(name, 0);
-                            config.rarity.Set(ref originalRarity);
-                            flows[name] = originalRarity;
 
-                            Plugin.LETHAL_LOGGER.LogInfo($"Set dungeon flow rarity for {name} to {originalRarity}");
-                        }
-                        else
-                        {
-                            Plugin.LETHAL_LOGGER.LogWarning($"Unknown dungeon flow {name} with rarity {flows.GetValueOrDefault(name, 0)}");
-                        }
+                    Dictionary<string, int> updateFlows = new Dictionary<string, int>();
+                    foreach (var entry in preset.dungeonFlows.value)
+                    {
+                        string name = entry.Key;
+                        LevelPresetDungeonFlow presetFlow = entry.Value;
+
+                        int rarity = flows.GetValueOrDefault(name, 0);
+                        presetFlow.rarity.update(ref rarity);
+                        updateFlows.TryAdd(name, rarity);
+
+                        Plugin.LETHAL_LOGGER.LogInfo($"Set dungeon flow rarity for {name} to {rarity}");
                     }
-                    level.dungeonFlowTypes = __instance.ConvertToDungeonFlowArray(flows);
+                    level.dungeonFlowTypes = __instance.ConvertToDungeonFlowArray(updateFlows);
                 }
             }
         }

@@ -178,7 +178,8 @@ namespace LethalQuantities.Json
 
             foreach (var item in info.allSelectableLevels)
             {
-                levels.Add(item.Key.getOriginalLevelName(), new ExportTypeSelectableLevel(item.Key, item.Value.price));
+                SelectableLevel level = SelectableLevelCache.getLevel(item.Key);
+                levels.Add(level.getOriginalLevelName(), new ExportTypeSelectableLevel(level, item.Value.price));
             }
 
             foreach (var flow in info.allDungeonFlows)

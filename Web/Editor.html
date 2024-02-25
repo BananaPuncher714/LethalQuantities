@@ -1103,8 +1103,9 @@
                     this.dungeonFlows = this.#generateDungeonFlows();
                     this.traps = this.#generateTrapTypes();
                     this.prices = this.#generatePrices();
-                    this.levels = data.levels ? data.levels : {};
-                    this.presets = data.presets ? data.presets : {};
+                    this.levels = data.levels || {};
+                    this.presets = data.presets || {};
+                    this.results = data.results || {};
 
                     this.generatePresets();
                     this.updatePresets();
@@ -1490,6 +1491,53 @@
                     const subcontainer = document.createElement("div");
                     subcontainer.classList.add("invis-container");
 
+                    const image = document.createElement("img");
+                    image.src = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iOTgiIGhlaWdodD0iOTYiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik00OC44NTQgMEMyMS44MzkgMCAwIDIyIDAgNDkuMjE3YzAgMjEuNzU2IDEzLjk5MyA0MC4xNzIgMzMuNDA1IDQ2LjY5IDIuNDI3LjQ5IDMuMzE2LTEuMDU5IDMuMzE2LTIuMzYyIDAtMS4xNDEtLjA4LTUuMDUyLS4wOC05LjEyNy0xMy41OSAyLjkzNC0xNi40Mi01Ljg2Ny0xNi40Mi01Ljg2Ny0yLjE4NC01LjcwNC01LjQyLTcuMTctNS40Mi03LjE3LTQuNDQ4LTMuMDE1LjMyNC0zLjAxNS4zMjQtMy4wMTUgNC45MzQuMzI2IDcuNTIzIDUuMDUyIDcuNTIzIDUuMDUyIDQuMzY3IDcuNDk2IDExLjQwNCA1LjM3OCAxNC4yMzUgNC4wNzQuNDA0LTMuMTc4IDEuNjk5LTUuMzc4IDMuMDc0LTYuNi0xMC44MzktMS4xNDEtMjIuMjQzLTUuMzc4LTIyLjI0My0yNC4yODMgMC01LjM3OCAxLjk0LTkuNzc4IDUuMDE0LTEzLjItLjQ4NS0xLjIyMi0yLjE4NC02LjI3NS40ODYtMTMuMDM4IDAgMCA0LjEyNS0xLjMwNCAxMy40MjYgNS4wNTJhNDYuOTcgNDYuOTcgMCAwIDEgMTIuMjE0LTEuNjNjNC4xMjUgMCA4LjMzLjU3MSAxMi4yMTMgMS42MyA5LjMwMi02LjM1NiAxMy40MjctNS4wNTIgMTMuNDI3LTUuMDUyIDIuNjcgNi43NjMuOTcgMTEuODE2LjQ4NSAxMy4wMzggMy4xNTUgMy40MjIgNS4wMTUgNy44MjIgNS4wMTUgMTMuMiAwIDE4LjkwNS0xMS40MDQgMjMuMDYtMjIuMzI0IDI0LjI4MyAxLjc4IDEuNTQ4IDMuMzE2IDQuNDgxIDMuMzE2IDkuMTI2IDAgNi42LS4wOCAxMS44OTctLjA4IDEzLjUyNiAwIDEuMzA0Ljg5IDIuODUzIDMuMzE2IDIuMzY0IDE5LjQxMi02LjUyIDMzLjQwNS0yNC45MzUgMzMuNDA1LTQ2LjY5MUM5Ny43MDcgMjIgNzUuNzg4IDAgNDguODU0IDB6IiBmaWxsPSIjMjQyOTJmIi8+PC9zdmc+";
+                    image.style.maxWidth = "50px";
+                    image.style.maxHeight = "50px";
+                    image.style.verticalAlign = "bottom";
+                    const link = document.createElement("a");
+                    link.href = "https://github.com/BananaPuncher714/LethalQuantities/issues";
+                    link.textContent = "here";
+                    const helpBox = prefabs.container.cloneNode(true);
+                    helpBox.style.maxWidth = "1000px";
+                    helpBox.append(
+                        `Welcome to the LethalQuantities web editor! This tool is designed to help you easily fine-tune your gameplay. Most settings and text(including titles!) in this editor have tooltips, so if you are lost, feel free to hover over any of them to see what they do! If you are a previous
+                        LethalQuantities user, your configs should have been exported into its own preset. However, it is most likely(definitely) not fully functional, and you should(absolutely) review it here, such as adding missing enemies, scrap, etc to make sure it is as good as before.`,
+                        document.createElement("br"),
+                        document.createElement("br"),
+                        "Your list of presets is on the left. Each preset has settings found in the original LethalQuantities config files. Click on one to get started, or click on the 'Presets' title to view the levels and presets. You can also easily re-organize your preset list by dragging and dropping them. Presets can also be dragged and dropped into certain settings and locations, such as the levels list in the preset menu.",
+                        document.createElement("br"),
+                        document.createElement("br"),
+                        "You can return to this help screen anytime by refreshing the page. It may tell you that you have unsaved changes, but it is ok to leave, since everything gets saved in the browser, just in case.",
+                        document.createElement("br"),
+                        document.createElement("br"),
+                        "Once you have finished editing your presets, you can test it in-game by saving your config to the same file that you loaded it from. Normally, it is in your R2modman profile config folder, under 'LethalQuantities/Advanced/Preset.json'.",
+                        document.createElement("br"),
+                        document.createElement("br"),
+                        `Now, for an explanation on how presets work, and some basic tips. Each preset is a standalone representation of what is configurable with LethalQuantities when you land on a moon.
+                        This includes stuff like changing what enemies can spawn, what items, traps, dungeon flows, etc. When you first start editing a preset, most settings have a checkbox next to them. If the checkbox is not enabled, then that setting has no effect, and
+                        nothing is changed. For the lists of enemies, items and so on, if they are enabled, only what is in the list is allowed to appear. You do not have to set the rarity if you would like to use the base game's values, but if you do not add it to the
+                        list, it will not spawn. Each preset also has a parent, which is another preset that they can inherit from. You do not need to enable a setting to inherit it from the parent. However, if you enable a list, no matter what the parent contains, if it is not
+                        in the first preset's list, it will not appear.`,
+                        document.createElement("br"),
+                        document.createElement("br"),
+                        `By default, when you load up a preset file, it will try to create a preset for each level, if it does not already exist. This means that if you have messed up on a preset, or would like to use the default values, you can delete the preset and
+                        refresh the page. This will regenerate all missing data. It's not recommended to directly edit the default levels, which you can easily identify by hovering over the name of the preset in the editor(Non-default editors have an id that starts with 'preset-').
+                        Instead, you can copy the preset you want to base your current one off of, rename it, and modify it to your liking.`,
+                        document.createElement("br"),
+                        document.createElement("br"),
+                        `If you are using this directly from the github io website, then this page should always be kept up to date, so there may be changes here and there. If you would like to use a consistent version, then a copy of this page should have been bundled with the LethalQuantities
+                        mod, and can be found in the LethalQuantities config folder as well.`,
+                        document.createElement("br"),
+                        document.createElement("br"),
+                        image,
+                        "Please report any issues or feature requests ",
+                        link,
+                        ".",
+                    );
+                    subcontainer.appendChild(helpBox);
+
                     const presetTitle = document.createElement("b");
                     presetTitle.textContent = "Presets";
                     const presetButton = document.createElement("button");
@@ -1676,7 +1724,6 @@
                     if (JSON.stringify(configuration) !== JSON.stringify(configurationBackup)) {
                         console.log("Tried to exit with unsaved information");
                         e.preventDefault();
-
                     }
 
                     localStorage.setItem("saved", JSON.stringify(exportConfiguration(configuration)));
@@ -1689,14 +1736,14 @@
                 downloadButton.textContent = "Download";
                 downloadButton.addEventListener("click", () => {
                     console.log("Saving configuration via the download button");
-                    downloadConfiguration(configuration, "presets.json");
+                    downloadConfiguration(configuration, "Presets.json");
                 });
 
                 document.addEventListener("keydown", e => {
                     if (e.ctrlKey && e.key === 's') {
                         console.log("Saving configuration via ctrl+s")
                         e.preventDefault();
-                        downloadConfiguration(configuration, "presets.json");
+                        downloadConfiguration(configuration, "Presets.json");
                     }
                 });
 
@@ -1734,10 +1781,12 @@
                 // defaults: <default data>
                 // presets: <presets>
                 // levels: <levels>
+                // results: <results>
                 const exports = {
                     defaults: configuration.defaults,
                     presets: copy,
-                    levels: configuration.levels
+                    levels: configuration.levels,
+                    results: configuration.results
                 };
 
                 return exports;
@@ -1911,7 +1960,10 @@
                     });
 
                     const textSpan = document.createElement("span");
-                    textSpan.append("Drag & drop a file to edit", document.createElement("br"), "Or click to upload");
+                    textSpan.style.maxWidth = "400px";
+                    textSpan.style.textAlign = "center";
+                    textSpan.style.fontSize = "x-large";
+                    textSpan.append("Drag & drop the 'Presets.json' file to edit your LethalQuantities presets, or click anywhere to upload the file. You can find the preset file in your config folder for your profile. It is located at 'LethalQuantities/Advanced/Preset.json'.");
                     zone.appendChild(textSpan);
 
                     document.body.appendChild(zone);
@@ -1956,7 +2008,8 @@
             span.preset {
                 display: inline-block;
                 padding: 2px;
-                min-width: 150px;
+                width: 100%;
+                box-sizing: border-box;
             }
             span.preset:hover {
                 background-color: #FE6C07;

@@ -57,11 +57,17 @@ namespace LethalQuantities.Objects
             }
         };
         public static readonly Comparison<ScriptableObject> SCRIPTABLE_OBJECT_SORTER = (a, b) => STRING_SORTER(a.name, b.name);
+        public static readonly Comparison<Guid> GUID_LEVEL_SORTER = (a, b) =>
+        {
+            string aName = SelectableLevelCache.getLevelName(a);
+            string bName = SelectableLevelCache.getLevelName(b);
+            return STRING_SORTER(aName, bName);
+        };
 
         public List<EnemyType> allEnemyTypes { get; } = new List<EnemyType>();
         public List<Item> allItems { get; } = new List<Item>();
         public List<DungeonFlow> allDungeonFlows { get; } = new List<DungeonFlow>();
-        public Dictionary<SelectableLevel, GenericLevelInformation> allSelectableLevels { get; } = new Dictionary<SelectableLevel, GenericLevelInformation>();
+        public Dictionary<Guid, GenericLevelInformation> allSelectableLevels { get; } = new Dictionary<Guid, GenericLevelInformation>();
         public List<DirectionalSpawnableMapObject> allSpawnableMapObjects { get; } = new List<DirectionalSpawnableMapObject>();
         public RoundManager manager;
 

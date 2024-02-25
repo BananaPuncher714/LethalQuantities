@@ -1,5 +1,6 @@
 ﻿using DunGen;
 using HarmonyLib;
+using LethalQuantities.Json;
 using LethalQuantities.Objects;
 using UnityEngine;
 
@@ -15,12 +16,12 @@ namespace LethalQuantities.Patches
             RoundState state = Plugin.getRoundState(RoundManager.Instance.currentLevel);
             if (state != null)
             {
-                if (state.getValidDungeonGenerationConfiguration(out DungeonGenerationConfiguration configuration))
+                string name = __instance.Generator.DungeonFlow.name;
+                if (state.preset.dungeonFlows.isSet())
                 {
-                    string name = __instance.Generator.DungeonFlow.name;
-                    if (configuration.dungeonFlowConfigurations.TryGetValue(name, out DungeonFlowConfiguration config))
+                    if (state.preset.dungeonFlows.value.TryGetValue(name, out LevelPresetDungeonFlow preset))
                     {
-                        config.factorySizeMultiplier.Set(ref RoundManager.Instance.currentLevel.factorySizeMultiplier);
+                        preset.factorySizeMultiplier.update(ref RoundManager.Instance.mapSizeMultiplier);
 
                         // Must be the same across all players to avoid desync
                         __instance.Generator.LengthMultiplier = RoundManager.Instance.mapSizeMultiplier * RoundManager.Instance.currentLevel.factorySizeMultiplier;

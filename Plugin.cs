@@ -11,7 +11,6 @@ using LethalQuantities.Json;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
-using static UnityEngine.UIElements.UIR.Implementation.UIRStylePainter;
 using System;
 
 namespace LethalQuantities
@@ -24,7 +23,6 @@ namespace LethalQuantities
         internal static readonly string LEVEL_SAVE_DIR = Path.Combine(Paths.ConfigPath, PluginInfo.PLUGIN_NAME, "Moons");
 
         internal static readonly string PRESET_FILE = Path.Combine(Paths.ConfigPath, EXPORT_DIRECTORY, "Presets.json");
-        internal static readonly string RESULT_FILE = Path.Combine(Paths.ConfigPath, EXPORT_DIRECTORY, "Results.json");
 
         public static Plugin INSTANCE { get; private set; }
 
@@ -36,8 +34,8 @@ namespace LethalQuantities
         internal bool configInitialized = false;
 
         internal ExportData defaultInformation;
-        internal ImportData importedInformation;
         internal Dictionary<Guid, LevelPreset> presets = new Dictionary<Guid, LevelPreset>();
+        internal GlobalInformation globalInfo;
 
         private void Awake()
         {
@@ -73,6 +71,16 @@ namespace LethalQuantities
 
             SceneManager.sceneLoaded += OnSceneLoaded;
             LETHAL_LOGGER.LogInfo("Added sceneLoaded delegate");
+
+            // Copy the editor html over to the config folder if it does not already exist
+            // It's hardcoded for now because I don't know how to get the mod folder directly
+            string editorFile = Path.Combine(Paths.PluginPath, "BananaPuncher714-LethalQuantities", "Editor.html");
+            string dest = Path.Combine(Paths.ConfigPath, EXPORT_DIRECTORY, "Editor.html");
+            if (File.Exists(editorFile) && !File.Exists(dest))
+            {
+                LETHAL_LOGGER.LogInfo($"Copying editor webpage from {editorFile} to {dest}");
+                File.Copy(editorFile, dest);
+            }
         }
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
@@ -81,37 +89,42 @@ namespace LethalQuantities
             if (RoundManager.Instance != null)
             {
                 SelectableLevel level = RoundManager.Instance.currentLevel;
-                if (level != null && configuration.levelConfigs.ContainsKey(RoundManager.Instance.currentLevel.getGuid()))
+                if (level != null)
                 {
-                    foreach (RoundState oldState in FindObjectsOfType<RoundState>())
+                    if (presets.TryGetValue(RoundManager.Instance.currentLevel.getGuid(), out LevelPreset preset))
                     {
-                        LETHAL_LOGGER.LogWarning($"Found stale RoundState for level {oldState.level.name}");
-                        Destroy(oldState.gameObject);
+                        foreach (RoundState oldState in FindObjectsOfType<RoundState>())
+                        {
+                            LETHAL_LOGGER.LogWarning($"Found stale RoundState for level {oldState.level.name}");
+                            Destroy(oldState.gameObject);
+                        }
+
+                        LETHAL_LOGGER.LogInfo($"Found a valid configuration for {level.PlanetName}({level.name})");
+                        // Add a manager to keep track of all objects
+                        GameObject levelModifier = new GameObject("LevelModifier");
+                        SceneManager.MoveGameObjectToScene(levelModifier, scene);
+
+                        RoundState state = levelModifier.AddComponent<RoundState>();
+                        state.plugin = this;
+
+                        state.setData(scene, preset);
+                        LETHAL_LOGGER.LogInfo($"Initializing round information");
+                        state.initialize(level);
                     }
-
-                    LETHAL_LOGGER.LogInfo($"Found a valid configuration for {level.PlanetName}({level.name})");
-                    // Add a manager to keep track of all objects
-                    GameObject levelModifier = new GameObject("LevelModifier");
-                    SceneManager.MoveGameObjectToScene(levelModifier, scene);
-
-                    RoundState state = levelModifier.AddComponent<RoundState>();
-                    state.plugin = this;
-
-                    state.setData(scene, configuration);
-                    LETHAL_LOGGER.LogInfo($"Initializing round information");
-                    state.initialize(level);
+                    else
+                    {
+                        LETHAL_LOGGER.LogWarning($"No preset found for level {level.name}");
+                    }
                 }
             }
         }
 
         internal void exportData()
         {
-            // TODO Export the data to a file
-            
             if (defaultInformation != null)
             {
                 JsonSerializer serializer = new JsonSerializer();
-                serializer.Converters.Add(new AnimationCurveConverter());
+                serializer.Converters.Add(new AnimationCurveJsonConverter());
                 LETHAL_LOGGER.LogInfo($"Exporting default data");
                 Directory.CreateDirectory(EXPORT_DIRECTORY);
                 string exportPath = PRESET_FILE;
@@ -119,7 +132,6 @@ namespace LethalQuantities
                 if (File.Exists(exportPath))
                 {
                     jObj = JObject.Parse(File.ReadAllText(exportPath));
-                    File.Delete(exportPath);
                 }
                 else
                 {
@@ -165,17 +177,15 @@ namespace LethalQuantities
                 // Set the default information
                 jObj["defaults"] = JObject.FromObject(defaultInformation, serializer);
 
-                using (StreamWriter streamWriter = new StreamWriter(exportPath))
-                using (JsonWriter writer = new JsonTextWriter(streamWriter))
-                {
-                    LETHAL_LOGGER.LogInfo($"Writing data to {exportPath}");
-                    serializer.Serialize(writer, jObj);
-                }
+                LETHAL_LOGGER.LogInfo($"Writing data to {exportPath}");
+                File.WriteAllText(exportPath, JsonConvert.SerializeObject(jObj));
             }
         }
 
-        public void loadData(List<DirectionalSpawnableMapObject> spawnableMapObjects, string path = null)
+        public void loadData(GlobalInformation info, string path = null)
         {
+            globalInfo = info;
+
             if (path == null)
             {
                 path = PRESET_FILE;
@@ -183,13 +193,28 @@ namespace LethalQuantities
             if (File.Exists(path))
             {
                 LETHAL_LOGGER.LogInfo($"Importing data from {path}");
-                ImportData importedInformation = JsonConvert.DeserializeObject<ImportData>(File.ReadAllText(path), new AnimationCurveConverter());
+                JsonSerializerSettings settings = new JsonSerializerSettings();
+                settings.NullValueHandling = NullValueHandling.Ignore;
+                settings.Converters.Add(new AnimationCurveJsonConverter());
+                ImportData importedInformation = JsonConvert.DeserializeObject<ImportData>(File.ReadAllText(path), settings);
 
                 LETHAL_LOGGER.LogInfo("Generating level presets");
-                presets = importedInformation.generate(spawnableMapObjects);
+                presets = importedInformation.generate(info);
 
-                LETHAL_LOGGER.LogInfo($"Saving level presets to {RESULT_FILE}");
-                File.WriteAllText(RESULT_FILE, JsonConvert.SerializeObject(presets, new AnimationCurveConverter()));
+                JObject jObj = new JObject();
+                if (File.Exists(PRESET_FILE))
+                {
+                    jObj = JObject.Parse(File.ReadAllText(PRESET_FILE));
+                }
+                JsonSerializer serializer = new JsonSerializer();
+                serializer.Converters.Add(new AnimationCurveJsonConverter());
+                serializer.Converters.Add(new DirectionalSpawnableMapObjectJsonConverter());
+                serializer.Converters.Add(new EnemyTypeJsonConverter());
+                serializer.Converters.Add(new ItemJsonConverter());
+
+                jObj["result"] = JObject.FromObject(presets, serializer);
+                LETHAL_LOGGER.LogInfo($"Saving level presets to {PRESET_FILE}");
+                File.WriteAllText(PRESET_FILE, JsonConvert.SerializeObject(jObj));
 
                 LETHAL_LOGGER.LogInfo("Done loading data");
             }

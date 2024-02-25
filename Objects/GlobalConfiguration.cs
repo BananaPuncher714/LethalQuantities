@@ -199,12 +199,13 @@ namespace LethalQuantities.Objects
         private void instantiateMoonConfig(GlobalInformation globalInfo, ConfigFile fileConfigFile)
         {
             // Config file for enabling/disabling individual moon config files
-            foreach (SelectableLevel level in globalInfo.allSelectableLevels.Keys)
+            foreach (Guid guid in globalInfo.allSelectableLevels.Keys)
             {
+                SelectableLevel level = SelectableLevelCache.getLevel(guid);
                 string levelSaveDir = Path.Combine(globalInfo.moonSaveDir, level.name.getFileFriendlyName());
                 LevelInformation levelInfo = new LevelInformation(this, globalInfo, level, levelSaveDir, fileConfigFile);
 
-                levelConfigs.Add(level.getGuid(), new LevelConfiguration(levelInfo));
+                levelConfigs.Add(guid, new LevelConfiguration(levelInfo));
             }
         }
 
@@ -462,18 +463,19 @@ namespace LethalQuantities.Objects
                 priceFile.SaveOnConfigSet = false;
             }
 
-            List<SelectableLevel> levelList = globalInfo.allSelectableLevels.Keys.ToList();
-            levelList.Sort(GlobalInformation.SCRIPTABLE_OBJECT_SORTER);
-            foreach (SelectableLevel level in levelList)
+            List<Guid> levelList = globalInfo.allSelectableLevels.Keys.ToList();
+            levelList.Sort(GlobalInformation.GUID_LEVEL_SORTER);
+            foreach (Guid guid in levelList)
             {
-                if (globalInfo.allSelectableLevels.TryGetValue(level, out GenericLevelInformation info))
+                if (globalInfo.allSelectableLevels.TryGetValue(guid, out GenericLevelInformation info))
                 {
-                    MoonPriceConfiguration config = new MoonPriceConfiguration(level.getGuid());
+                    SelectableLevel level = SelectableLevelCache.getLevel(guid);
+                    MoonPriceConfiguration config = new MoonPriceConfiguration(guid);
                     string tablename = $"Level.{level.name.getTomlFriendlyName()}";
 
                     config.price = BindEmptyOrDefaultable(priceFile, tablename, "TravelCost", info.price, $"How many credits it costs to travel to {level.name}({level.PlanetName}).\nAlternate values: DEFAULT");
 
-                    priceConfiguration.moons.Add(level.getGuid(), config);
+                    priceConfiguration.moons.Add(guid, config);
                 }
             }
 

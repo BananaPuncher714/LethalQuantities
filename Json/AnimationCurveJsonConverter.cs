@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace LethalQuantities.Json
 {
-    public class AnimationCurveConverter : JsonConverter<AnimationCurve>
+    public class AnimationCurveJsonConverter : JsonConverter<AnimationCurve>
     {
         public override AnimationCurve ReadJson(JsonReader reader, Type objectType, AnimationCurve existingValue, bool hasExistingValue, JsonSerializer serializer)
         {

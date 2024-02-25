@@ -52,7 +52,7 @@ namespace LethalQuantities.Json
             set = entry.isLocallySet();
         }
 
-        public bool Set(ref T variable)
+        public bool update(ref T variable)
         {
             if (set)
             {
@@ -279,7 +279,7 @@ namespace LethalQuantities.Json
                 daytimeSpawnCurve = new Optional<AnimationCurve>(configuration.daytimeEnemies.spawnAmountCurve);
                 daytimeSpawnProbabilityRange = new Optional<float>(configuration.daytimeEnemies.spawnAmountRange);
                 List<EnemyTypeOptions> options = new List<EnemyTypeOptions>();
-                foreach (EnemyTypeConfiguration item in configuration.daytimeEnemies.enemyTypes.Values)
+                foreach (DaytimeEnemyTypeConfiguration item in configuration.daytimeEnemies.enemyTypes.Values)
                 {
                     if (item.isSet() && item.rarity.Value(0) > 0)
                     {
@@ -535,9 +535,27 @@ namespace LethalQuantities.Json
         public Dictionary<string, string> levels = new Dictionary<string, string>();
 
         // Create a single preset per levels
-        public Dictionary<Guid, LevelPreset> generate(List<DirectionalSpawnableMapObject> spawnableMapObjects)
+        public Dictionary<Guid, LevelPreset> generate(GlobalInformation info)
         {
             Dictionary<Guid, LevelPreset> levelPresets = new Dictionary<Guid, LevelPreset>();
+
+            Dictionary<string, EnemyType> enemyTypeMap = new Dictionary<string, EnemyType>();
+            foreach (EnemyType item in info.allEnemyTypes)
+            {
+                enemyTypeMap.TryAdd(item.name, item);
+            }
+
+            Dictionary<string, Item> itemMap = new Dictionary<string, Item>();
+            foreach (Item item in info.allItems)
+            {
+                itemMap.TryAdd(item.name, item);
+            }
+
+            Dictionary<string, DirectionalSpawnableMapObject> trapMap = new Dictionary<string, DirectionalSpawnableMapObject>();
+            foreach (DirectionalSpawnableMapObject item in info.allSpawnableMapObjects)
+            {
+                trapMap.TryAdd(item.obj.name, item);
+            }
             foreach (var entry in levels)
             {
                 Optional<Guid> foundGuid = SelectableLevelCache.getGuid(entry.Key);
@@ -570,13 +588,13 @@ namespace LethalQuantities.Json
                             Optional<List<EnemyTypeOptions>> enemyOptions = set<List<EnemyTypeOptions>>(parents, nameof(Preset.enemies));
                             if (enemyOptions.isSet())
                             {
-                                Dictionary<string, LevelPresetEnemyType> enemies = new Dictionary<string, LevelPresetEnemyType>();
+                                Dictionary<EnemyType, LevelPresetEnemyType> enemies = new Dictionary<EnemyType, LevelPresetEnemyType>();
                                 foreach (EnemyTypeOptions option in enemyOptions.value)
                                 {
-                                    LevelPresetEnemyType type = new LevelPresetEnemyType();
-                                    type.rarity = set<int>(parents, nameof(Preset.enemies), option.id, nameof(EnemyTypeOptions.rarity));
-                                    if (type.rarity.isSet() && type.rarity.value > 0)
+                                    if (enemyTypeMap.TryGetValue(option.id, out EnemyType enemyType))
                                     {
+                                        LevelPresetEnemyType type = new LevelPresetEnemyType();
+                                        type.rarity = set<int>(parents, nameof(Preset.enemies), option.id, nameof(EnemyTypeOptions.rarity));
                                         type.powerLevel = set<int>(parents, nameof(Preset.enemies), option.id, nameof(EnemyTypeOptions.powerLevel));
                                         type.spawnChanceCurve = set<AnimationCurve>(parents, nameof(Preset.enemies), option.id, nameof(EnemyTypeOptions.spawnChanceCurve));
                                         type.spawnFalloffCurve = set<AnimationCurve>(parents, nameof(Preset.enemies), option.id, nameof(EnemyTypeOptions.spawnFalloffCurve));
@@ -592,7 +610,11 @@ namespace LethalQuantities.Json
                                         type.stunTimeMultiplier = set<float>(parents, nameof(Preset.enemies), option.id, nameof(EnemyTypeOptions.stunTimeMultiplier));
                                         type.doorSpeedMultiplier = set<float>(parents, nameof(Preset.enemies), option.id, nameof(EnemyTypeOptions.doorSpeedMultiplier));
 
-                                        enemies.Add(option.id, type);
+                                        enemies.Add(enemyType, type);
+                                    }
+                                    else
+                                    {
+                                        Plugin.LETHAL_LOGGER.LogError($"Unable to find enemy type with id {option.id}");
                                     }
                                 }
                                 if (enemies.Count > 0)
@@ -606,13 +628,13 @@ namespace LethalQuantities.Json
                             Optional<List<EnemyTypeOptions>> daytimeEnemyOptions = set<List<EnemyTypeOptions>>(parents, nameof(Preset.daytimeEnemies));
                             if (daytimeEnemyOptions.isSet())
                             {
-                                Dictionary<string, LevelPresetEnemyType> enemies = new Dictionary<string, LevelPresetEnemyType>();
+                                Dictionary<EnemyType, LevelPresetEnemyType> enemies = new Dictionary<EnemyType, LevelPresetEnemyType>();
                                 foreach (EnemyTypeOptions option in daytimeEnemyOptions.value)
                                 {
-                                    LevelPresetEnemyType type = new LevelPresetEnemyType();
-                                    type.rarity = set<int>(parents, nameof(Preset.daytimeEnemies), option.id, nameof(EnemyTypeOptions.rarity));
-                                    if (type.rarity.isSet() && type.rarity.value > 0)
+                                    if (enemyTypeMap.TryGetValue(option.id, out EnemyType enemyType))
                                     {
+                                        LevelPresetEnemyType type = new LevelPresetEnemyType();
+                                        type.rarity = set<int>(parents, nameof(Preset.daytimeEnemies), option.id, nameof(EnemyTypeOptions.rarity));
                                         type.powerLevel = set<int>(parents, nameof(Preset.daytimeEnemies), option.id, nameof(EnemyTypeOptions.powerLevel));
                                         type.spawnChanceCurve = set<AnimationCurve>(parents, nameof(Preset.daytimeEnemies), option.id, nameof(EnemyTypeOptions.spawnChanceCurve));
                                         type.spawnFalloffCurve = set<AnimationCurve>(parents, nameof(Preset.daytimeEnemies), option.id, nameof(EnemyTypeOptions.spawnFalloffCurve));
@@ -628,7 +650,11 @@ namespace LethalQuantities.Json
                                         type.stunTimeMultiplier = set<float>(parents, nameof(Preset.daytimeEnemies), option.id, nameof(EnemyTypeOptions.stunTimeMultiplier));
                                         type.doorSpeedMultiplier = set<float>(parents, nameof(Preset.daytimeEnemies), option.id, nameof(EnemyTypeOptions.doorSpeedMultiplier));
 
-                                        enemies.Add(option.id, type);
+                                        enemies.Add(enemyType, type);
+                                    }
+                                    else
+                                    {
+                                        Plugin.LETHAL_LOGGER.LogError($"Unable to find enemy type with id {option.id}");
                                     }
                                 }
                                 if (enemies.Count > 0)
@@ -642,13 +668,13 @@ namespace LethalQuantities.Json
                             Optional<List<EnemyTypeOptions>> outsideEnemyOptions = set<List<EnemyTypeOptions>>(parents, nameof(Preset.outsideEnemies));
                             if (outsideEnemyOptions.isSet())
                             {
-                                Dictionary<string, LevelPresetEnemyType> enemies = new Dictionary<string, LevelPresetEnemyType>();
+                                Dictionary<EnemyType, LevelPresetEnemyType> enemies = new Dictionary<EnemyType, LevelPresetEnemyType>();
                                 foreach (EnemyTypeOptions option in outsideEnemyOptions.value)
                                 {
-                                    LevelPresetEnemyType type = new LevelPresetEnemyType();
-                                    type.rarity = set<int>(parents, nameof(Preset.outsideEnemies), option.id, nameof(EnemyTypeOptions.rarity));
-                                    if (type.rarity.isSet() && type.rarity.value > 0)
+                                    if (enemyTypeMap.TryGetValue(option.id, out EnemyType enemyType))
                                     {
+                                        LevelPresetEnemyType type = new LevelPresetEnemyType();
+                                        type.rarity = set<int>(parents, nameof(Preset.outsideEnemies), option.id, nameof(EnemyTypeOptions.rarity));
                                         type.powerLevel = set<int>(parents, nameof(Preset.outsideEnemies), option.id, nameof(EnemyTypeOptions.powerLevel));
                                         type.spawnChanceCurve = set<AnimationCurve>(parents, nameof(Preset.outsideEnemies), option.id, nameof(EnemyTypeOptions.spawnChanceCurve));
                                         type.spawnFalloffCurve = set<AnimationCurve>(parents, nameof(Preset.outsideEnemies), option.id, nameof(EnemyTypeOptions.spawnFalloffCurve));
@@ -664,7 +690,11 @@ namespace LethalQuantities.Json
                                         type.stunTimeMultiplier = set<float>(parents, nameof(Preset.outsideEnemies), option.id, nameof(EnemyTypeOptions.stunTimeMultiplier));
                                         type.doorSpeedMultiplier = set<float>(parents, nameof(Preset.outsideEnemies), option.id, nameof(EnemyTypeOptions.doorSpeedMultiplier));
 
-                                        enemies.Add(option.id, type);
+                                        enemies.Add(enemyType, type);
+                                    }
+                                    else
+                                    {
+                                        Plugin.LETHAL_LOGGER.LogError($"Unable to find enemy type with id {option.id}");
                                     }
                                 }
                                 if (enemies.Count > 0)
@@ -678,13 +708,13 @@ namespace LethalQuantities.Json
                             Optional<List<ItemOptions>> scrapOptions = set<List<ItemOptions>>(parents, nameof(Preset.scrap));
                             if (scrapOptions.isSet())
                             {
-                                Dictionary<string, LevelPresetItem> items = new Dictionary<string, LevelPresetItem>();
+                                Dictionary<Item, LevelPresetItem> items = new Dictionary<Item, LevelPresetItem>();
                                 foreach (ItemOptions option in scrapOptions.value)
                                 {
-                                    LevelPresetItem type = new LevelPresetItem();
-                                    type.rarity = set<int>(parents, nameof(Preset.scrap), option.id, nameof(ItemOptions.rarity));
-                                    if (type.rarity.isSet() && type.rarity.value > 0)
+                                    if (itemMap.TryGetValue(option.id, out Item item))
                                     {
+                                        LevelPresetItem type = new LevelPresetItem();
+                                        type.rarity = set<int>(parents, nameof(Preset.scrap), option.id, nameof(ItemOptions.rarity));
                                         type.minValue = set<int>(parents, nameof(Preset.scrap), option.id, nameof(ItemOptions.minValue));
                                         type.maxValue = set<int>(parents, nameof(Preset.scrap), option.id, nameof(ItemOptions.maxValue));
                                         // Update the weight
@@ -695,7 +725,11 @@ namespace LethalQuantities.Json
                                         }
                                         type.conductive = set<bool>(parents, nameof(Preset.scrap), option.id, nameof(ItemOptions.conductive));
 
-                                        items.Add(option.id, type);
+                                        items.Add(item, type);
+                                    }
+                                    else
+                                    {
+                                        Plugin.LETHAL_LOGGER.LogError($"Unable to find item with id {option.id}");
                                     }
                                 }
                                 if (items.Count > 0)
@@ -714,12 +748,9 @@ namespace LethalQuantities.Json
                                 {
                                     LevelPresetDungeonFlow type = new LevelPresetDungeonFlow();
                                     type.rarity = set<int>(parents, nameof(Preset.dungeonFlows), option.id, nameof(DungeonFlowOptions.rarity));
-                                    if (type.rarity.isSet() && type.rarity.value > 0)
-                                    {
-                                        type.factorySizeMultiplier = set<float>(parents, nameof(Preset.dungeonFlows), option.id, nameof(DungeonFlowOptions.factorySizeMultiplier));
+                                    type.factorySizeMultiplier = set<float>(parents, nameof(Preset.dungeonFlows), option.id, nameof(DungeonFlowOptions.factorySizeMultiplier));
 
-                                        flows.Add(option.id, type);
-                                    }
+                                    flows.Add(option.id, type);
                                 }
 
                                 if (flows.Count > 0)
@@ -733,22 +764,19 @@ namespace LethalQuantities.Json
                             Optional<List<TrapOptions>> trapOptions = set<List<TrapOptions>>(parents, nameof(Preset.traps));
                             if (trapOptions.isSet())
                             {
-                                Dictionary<GameObject, LevelPresetTrap> traps = new Dictionary<GameObject, LevelPresetTrap>();
+                                Dictionary<DirectionalSpawnableMapObject, LevelPresetTrap> traps = new Dictionary<DirectionalSpawnableMapObject, LevelPresetTrap>();
                                 foreach (TrapOptions option in trapOptions.value)
                                 {
-                                    string trapId = option.id;
-                                    DirectionalSpawnableMapObject obj = spawnableMapObjects.Find(o => o.obj.name == trapId);
-                                    if (obj != null)
+                                    if (trapMap.TryGetValue(option.id, out DirectionalSpawnableMapObject obj))
                                     {
                                         LevelPresetTrap type = new LevelPresetTrap();
-                                        type.spawnFacingAwayFromWall = obj.faceAwayFromWall;
-                                        type.spawnCurve = set<AnimationCurve>(parents, nameof(Preset.traps), trapId, nameof(TrapOptions.spawnCurve));
+                                        type.spawnCurve = set<AnimationCurve>(parents, nameof(Preset.traps), option.id, nameof(TrapOptions.spawnCurve));
 
-                                        traps.Add(obj.obj, type);
+                                        traps.Add(obj, type);
                                     }
                                     else
                                     {
-                                        Plugin.LETHAL_LOGGER.LogWarning($"Could not find trap with id {trapId}");
+                                        Plugin.LETHAL_LOGGER.LogWarning($"Could not find trap with id {option.id}");
                                     }
                                 }
                                 if (traps.Count > 0)
@@ -917,7 +945,6 @@ namespace LethalQuantities.Json
     public class LevelPresetTrap
     {
         public Optional<AnimationCurve> spawnCurve = new Optional<AnimationCurve>();
-        public bool spawnFacingAwayFromWall = false;
     }
 
     public class LevelPresetItem
@@ -950,21 +977,21 @@ namespace LethalQuantities.Json
 
     public class LevelPreset
     {
-        public Optional<Dictionary<string, LevelPresetEnemyType>> enemies = new Optional<Dictionary<string, LevelPresetEnemyType>>();
+        public Optional<Dictionary<EnemyType, LevelPresetEnemyType>> enemies = new Optional<Dictionary<EnemyType, LevelPresetEnemyType>>();
         public Optional<int> maxPowerCount = new Optional<int>();
         public Optional<AnimationCurve> spawnCurve = new Optional<AnimationCurve>();
         public Optional<float> spawnProbabilityRange = new Optional<float>();
         
-        public Optional<Dictionary<string, LevelPresetEnemyType>> daytimeEnemies = new Optional<Dictionary<string, LevelPresetEnemyType>>();
+        public Optional<Dictionary<EnemyType, LevelPresetEnemyType>> daytimeEnemies = new Optional<Dictionary<EnemyType, LevelPresetEnemyType>>();
         public Optional<int> maxDaytimePowerCount = new Optional<int>();
         public Optional<AnimationCurve> daytimeSpawnCurve = new Optional<AnimationCurve>();
         public Optional<float> daytimeSpawnProbabilityRange = new Optional<float>();
         
-        public Optional<Dictionary<string, LevelPresetEnemyType>> outsideEnemies = new Optional<Dictionary<string, LevelPresetEnemyType>>();
+        public Optional<Dictionary<EnemyType, LevelPresetEnemyType>> outsideEnemies = new Optional<Dictionary<EnemyType, LevelPresetEnemyType>>();
         public Optional<int> maxOutsidePowerCount = new Optional<int>();
         public Optional<AnimationCurve> outsideSpawnCurve = new Optional<AnimationCurve>();
 
-        public Optional<Dictionary<string, LevelPresetItem>> scrap = new Optional<Dictionary<string, LevelPresetItem>>();
+        public Optional<Dictionary<Item, LevelPresetItem>> scrap = new Optional<Dictionary<Item, LevelPresetItem>>();
         public Optional<float> scrapAmountMultiplier = new Optional<float>();
         public Optional<float> scrapValueMultiplier = new Optional<float>();
         public Optional<int> minScrap = new Optional<int>();
@@ -975,6 +1002,6 @@ namespace LethalQuantities.Json
         
         public Optional<Dictionary<Guid, LevelPresetPrice>> price = new Optional<Dictionary<Guid, LevelPresetPrice>>();
         
-        public Optional<Dictionary<GameObject, LevelPresetTrap>> traps = new Optional<Dictionary<GameObject, LevelPresetTrap>>();
+        public Optional<Dictionary<DirectionalSpawnableMapObject, LevelPresetTrap>> traps = new Optional<Dictionary<DirectionalSpawnableMapObject, LevelPresetTrap>>();
     }
 }

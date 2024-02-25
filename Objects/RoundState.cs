@@ -3,6 +3,7 @@ using System.Linq;
 using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using LethalQuantities.Json;
 
 namespace LethalQuantities.Objects
 {
@@ -47,8 +48,7 @@ namespace LethalQuantities.Objects
         public Plugin plugin { get; internal set; }
         public Scene scene { get; internal set; }
         public SelectableLevel level { get; internal set; }
-        public GlobalConfiguration globalConfiguration { get; set; }
-        public LevelConfiguration levelConfiguration { get; set; }
+        public LevelPreset preset { get; internal set; }
 
         public List<SpawnableEnemyWithRarity> enemies { get; } = new List<SpawnableEnemyWithRarity>();
         public List<SpawnableEnemyWithRarity> daytimeEnemies { get; } = new List<SpawnableEnemyWithRarity>();
@@ -60,7 +60,6 @@ namespace LethalQuantities.Objects
         private List<SpawnableEnemyWithRarity> oldOutsideEnemies = new List<SpawnableEnemyWithRarity>();
         public List<SpawnableItemWithRarity> defaultItems = new List<SpawnableItemWithRarity>();
 
-
         public float defaultScrapAmountMultiplier = 1f;
         public float defaultScrapValueMultiplier = .4f;
         public float defaultMapSizeMultiplier = 1f;
@@ -68,64 +67,15 @@ namespace LethalQuantities.Objects
         public List<SpawnableMapObject> defaultSpawnableMapObjects = new List<SpawnableMapObject>();
         public Dictionary<Item, ItemInformation> defaultItemInformation = new Dictionary<Item, ItemInformation>();
 
-        public void setData(Scene scene, GlobalConfiguration config)
+        public void setData(Scene scene, LevelPreset preset)
         {
             this.scene = scene;
-            globalConfiguration = config;
-        }
-
-        public bool getValidEnemyConfiguration(out EnemyConfiguration<EnemyTypeConfiguration> configuration)
-        {
-            configuration = (levelConfiguration.enemies as IValidatableConfiguration).isValid()
-                    ? levelConfiguration.enemies : ((globalConfiguration.enemyConfiguration as IValidatableConfiguration).isValid()
-                            ? globalConfiguration.enemyConfiguration : null);
-            return configuration != null;
-        }
-
-        public bool getValidDaytimeEnemyConfiguration(out EnemyConfiguration<DaytimeEnemyTypeConfiguration> configuration)
-        {
-            configuration = (levelConfiguration.daytimeEnemies as IValidatableConfiguration).isValid()
-                    ? levelConfiguration.daytimeEnemies : ((globalConfiguration.daytimeEnemyConfiguration as IValidatableConfiguration).isValid()
-                            ? globalConfiguration.daytimeEnemyConfiguration : null);
-            return configuration != null;
-        }
-
-        public bool getValidOutsideEnemyConfiguration(out OutsideEnemyConfiguration<EnemyTypeConfiguration> configuration)
-        {
-            configuration = (levelConfiguration.outsideEnemies as IValidatableConfiguration).isValid()
-                    ? levelConfiguration.outsideEnemies : ((globalConfiguration.outsideEnemyConfiguration as IValidatableConfiguration).isValid()
-                            ? globalConfiguration.outsideEnemyConfiguration : null);
-            return configuration != null;
-        }
-
-        public bool getValidScrapConfiguration(out ScrapConfiguration configuration)
-        {
-            configuration = (levelConfiguration.scrap as IValidatableConfiguration).isValid()
-                    ? levelConfiguration.scrap : ((globalConfiguration.scrapConfiguration as IValidatableConfiguration).isValid()
-                            ? globalConfiguration.scrapConfiguration : null);
-            return configuration != null;
-        }
-
-        public bool getValidDungeonGenerationConfiguration(out DungeonGenerationConfiguration configuration)
-        {
-            configuration = (levelConfiguration.dungeon as IValidatableConfiguration).isValid()
-                    ? levelConfiguration.dungeon : ((globalConfiguration.dungeonConfiguration as IValidatableConfiguration).isValid()
-                            ? globalConfiguration.dungeonConfiguration : null);
-            return configuration != null;
-        }
-
-       public bool getValidTrapConfiguration(out TrapConfiguration configuration)
-        {
-            configuration = (levelConfiguration.trap as IValidatableConfiguration).isValid()
-                    ? levelConfiguration.trap : ((globalConfiguration.trapConfiguration as IValidatableConfiguration).isValid()
-                            ? globalConfiguration.trapConfiguration : null);
-            return configuration != null;
+            this.preset = preset;
         }
 
         public void initialize(SelectableLevel level)
         {
             this.level = level;
-            levelConfiguration = globalConfiguration.levelConfigs[level.getGuid()];
 
             Plugin.LETHAL_LOGGER.LogInfo("Preparing for level modification");
 
@@ -139,32 +89,25 @@ namespace LethalQuantities.Objects
             defaultFlowTypes = level.dungeonFlowTypes.ToList();
             defaultSpawnableMapObjects = level.spawnableMapObjects.ToList();
 
+
+            if (preset.enemies.isSet())
             {
-                if (getValidEnemyConfiguration(out EnemyConfiguration<EnemyTypeConfiguration> config)) {
-                    Plugin.LETHAL_LOGGER.LogInfo("Generating spawnable enemy rarities");
-                    populate(level.Enemies, enemies, config.enemyTypes.Values, EnemySpawnCategory.INSIDE);
-                }
+                populate(level.Enemies, enemies, preset.enemies.value, EnemySpawnCategory.INSIDE);
             }
 
+            if (preset.daytimeEnemies.isSet())
             {
-                if (getValidDaytimeEnemyConfiguration(out EnemyConfiguration<DaytimeEnemyTypeConfiguration> config)) {
-                    Plugin.LETHAL_LOGGER.LogInfo("Generating spawnable daytime enemy rarities");
-                    populate(level.DaytimeEnemies, daytimeEnemies, config.enemyTypes.Values, EnemySpawnCategory.DAYTIME);
-                }
+                populate(level.DaytimeEnemies, daytimeEnemies, preset.daytimeEnemies.value, EnemySpawnCategory.DAYTIME);
             }
 
+            if (preset.outsideEnemies.isSet())
             {
-                if (getValidOutsideEnemyConfiguration(out OutsideEnemyConfiguration<EnemyTypeConfiguration> config)) {
-                    Plugin.LETHAL_LOGGER.LogInfo("Generating spawnable outside enemy rarities");
-                    populate(level.OutsideEnemies, outsideEnemies, config.enemyTypes.Values, EnemySpawnCategory.OUTSIDE);
-                }
+                populate(level.OutsideEnemies, outsideEnemies, preset.outsideEnemies.value, EnemySpawnCategory.OUTSIDE);
             }
 
+            if (preset.scrap.isSet())
             {
-                if (getValidScrapConfiguration(out ScrapConfiguration config)) {
-                    Plugin.LETHAL_LOGGER.LogInfo("Generating spawnable item rarities");
-                    copyDefaultItems(defaultItemInformation, config.items.Values);
-                }
+                copyDefaultItems(defaultItemInformation, preset.scrap.value);
             }
         }
 
@@ -201,7 +144,7 @@ namespace LethalQuantities.Objects
             level.spawnableMapObjects = defaultSpawnableMapObjects.ToArray();
         }
 
-        private void populate<T>(List<SpawnableEnemyWithRarity> originals, List<SpawnableEnemyWithRarity> enemiesList, IEnumerable<T> configs, EnemySpawnCategory category) where T : DaytimeEnemyTypeConfiguration
+        private void populate(List<SpawnableEnemyWithRarity> originals, List<SpawnableEnemyWithRarity> enemiesList, Dictionary<EnemyType, LevelPresetEnemyType> types, EnemySpawnCategory category)
         {
             Dictionary<EnemyType, int> defaultRarities = new Dictionary<EnemyType, int>();
             foreach (SpawnableEnemyWithRarity enemy in originals)
@@ -209,37 +152,36 @@ namespace LethalQuantities.Objects
                 defaultRarities.TryAdd(enemy.enemyType, enemy.rarity);
             }
 
-            foreach (var item in configs)
+            foreach (var entry in types)
             {
-                EnemyType originalType = item.type;
+                EnemyType originalType = entry.Key;
+                LevelPresetEnemyType presetInfo = entry.Value;
                 int rarity = defaultRarities.GetValueOrDefault(originalType, 0);
-                item.rarity.Set(ref rarity);
-                int maxEnemyCount = item.type.MaxCount;
-                item.maxEnemyCount.Set(ref maxEnemyCount);
+                presetInfo.rarity.update(ref rarity);
+                int maxEnemyCount = originalType.MaxCount;
+                presetInfo.maxEnemyCount.update(ref maxEnemyCount);
                 if (rarity > 0 && maxEnemyCount > 0)
                 {
                     EnemyType type = Instantiate(originalType);
-                    item.maxEnemyCount.Set(ref type.MaxCount);
-                    item.powerLevel.Set(ref type.PowerLevel);
-                    item.spawnCurve.Set(ref type.probabilityCurve);
-                    item.stunTimeMultiplier.Set(ref type.stunTimeMultiplier);
-                    item.doorSpeedMultiplier.Set(ref type.doorSpeedMultiplier);
-                    item.stunGameDifficultyMultiplier.Set(ref type.stunGameDifficultyMultiplier);
-                    item.stunnable.Set(ref type.canBeStunned);
-                    item.killable.Set(ref type.canDie);
-                    if (item is EnemyTypeConfiguration)
-                    {
-                        EnemyTypeConfiguration normalType = item as EnemyTypeConfiguration;
-                        normalType.spawnFalloffCurve.Set(ref type.numberSpawnedFalloff);
-                        normalType.useSpawnFalloff.Set(ref type.useNumberSpawnedFalloff);
-                    }
+                    type.MaxCount = maxEnemyCount;
+                    presetInfo.maxEnemyCount.update(ref type.MaxCount);
+                    presetInfo.powerLevel.update(ref type.PowerLevel);
+                    presetInfo.spawnChanceCurve.update(ref type.probabilityCurve);
+                    presetInfo.stunTimeMultiplier.update(ref type.stunTimeMultiplier);
+                    presetInfo.doorSpeedMultiplier.update(ref type.doorSpeedMultiplier);
+                    presetInfo.stunGameDifficultyMultiplier.update(ref type.stunGameDifficultyMultiplier);
+                    presetInfo.stunnable.update(ref type.canBeStunned);
+                    presetInfo.killable.update(ref type.canDie);
+                    presetInfo.spawnFalloffCurve.update(ref type.numberSpawnedFalloff);
+                    presetInfo.useSpawnFalloff.update(ref type.useNumberSpawnedFalloff);
+
                     type.isOutsideEnemy = category.isOutside();
                     type.isDaytimeEnemy = category.isDaytime();
 
                     EnemyAI ai = instantiateEnemyTypeObject(type);
                     if (ai != null)
                     {
-                        item.enemyHp.Set(ref ai.enemyHP);
+                        presetInfo.enemyHp.update(ref ai.enemyHP);
                     }
                     SpawnableEnemyWithRarity spawnable = new SpawnableEnemyWithRarity();
                     spawnable.enemyType = type;
@@ -275,14 +217,11 @@ namespace LethalQuantities.Objects
             return ai;
         }
 
-        private void copyDefaultItems(Dictionary<Item, ItemInformation> items, IEnumerable<ItemConfiguration> scrapRarities)
+        private void copyDefaultItems(Dictionary<Item, ItemInformation> items, Dictionary<Item, LevelPresetItem> scrapRarities)
         {
-            foreach (ItemConfiguration itemconfig in scrapRarities)
+            foreach (Item item in scrapRarities.Keys)
             {
-                if (!itemconfig.isDefault())
-                {
-                    items.TryAdd(itemconfig.item, new ItemInformation(itemconfig.item.minValue, itemconfig.item.maxValue, itemconfig.item.isConductiveMetal));
-                }
+                items.TryAdd(item, new ItemInformation(item.minValue, item.maxValue, item.isConductiveMetal));
             }
         }
     }

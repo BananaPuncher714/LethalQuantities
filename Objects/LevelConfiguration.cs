@@ -602,10 +602,11 @@ namespace LethalQuantities.Objects
                 price.file = priceConfig;
                 priceConfig.SaveOnConfigSet = false;
 
-                List<SelectableLevel> levelList = levelInfo.globalInfo.allSelectableLevels.Keys.ToList();
-                levelList.Sort(GlobalInformation.SCRIPTABLE_OBJECT_SORTER);
-                foreach (SelectableLevel moon in levelList)
+                List<Guid> levelList = levelInfo.globalInfo.allSelectableLevels.Keys.ToList();
+                levelList.Sort(GlobalInformation.GUID_LEVEL_SORTER);
+                foreach (Guid guid in levelList)
                 {
+                    SelectableLevel moon = SelectableLevelCache.getLevel(guid);
                     MoonPriceConfiguration config = new MoonPriceConfiguration(level.getGuid());
                     MoonPriceConfiguration masterPriceConfig = masterConfig.priceConfiguration.moons[moon.getGuid()];
                     string tablename = $"Level.{moon.name.getTomlFriendlyName()}";
