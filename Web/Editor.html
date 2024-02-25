@@ -37,7 +37,7 @@
                     prefabs.itemTypeConductive = tooltip("Conductive", "Whether or not this can be struck by lightning.");
                 }
                 {
-                    prefabs.presetParent = tooltip("Parent", "Which preset to inherit from. Any disabled values in this preset will fallback to the parent preset, or the base game if none are set. By default none is selected. You can drag and drop a preset from the sidebar here to set the parent.");
+                    prefabs.presetParent = tooltip("Parent", `Which preset to inherit from. Any disabled values in this preset will fallback to the parent preset, or the base game if none are set. By default none is selected. However, if no default global preset is found, then any default level presets that do not have a parent set will be defaulted to the global preset. You can drag and drop a preset from the sidebar here to set the parent.`);
 
                     prefabs.presetTitleScrap = tooltip(fromHtml(`<span><b>Scrap</b></span>`), "Settings for scrap items that spawn in the dungeon");
                     prefabs.presetScrapAmountMultiplier = tooltip("Scrap amount multiplier", "A multiplier that gets applied to the amount of scrap that will spawn. A multiplier of 1 means that the normal amount of scrap will spawn, while 0.5 means half, and 2 means twice as much, etc.");
@@ -1166,6 +1166,28 @@
                         preset.traps.value = this.#generateTrapsFor(levelInfo.spawnable_map_objects);
 
                         this.presets[preset.id] = preset;
+                    }
+                    
+                    // Check if a default global already exists
+                    // If not, then try to create one, but only if a default preset does not have a parent
+                    if (!this.presets["default-global"]) {
+                        let global;
+                        for (const levelId of Object.keys(this.levels)) {
+                            if (this.presets[levelId]) {
+                                const preset = this.presets[levelId];
+                                if (!preset.parent) {
+                                    if (!global) {
+                                        console.log("Generating a default global")
+                                        global = new Preset();
+                                        global.name = "Global";
+                                        global.id = "default-global";
+                                        this.presets[global.id] = global;
+                                    }
+                                    console.log("Set parent for preset " + levelId);
+                                    preset.parent = global.id;
+                                }
+                            }
+                        }
                     }
                 }
 

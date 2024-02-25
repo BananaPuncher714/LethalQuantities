@@ -123,8 +123,6 @@ namespace LethalQuantities
         {
             if (defaultInformation != null)
             {
-                JsonSerializer serializer = new JsonSerializer();
-                serializer.Converters.Add(new AnimationCurveJsonConverter());
                 LETHAL_LOGGER.LogInfo($"Exporting default data");
                 Directory.CreateDirectory(EXPORT_DIRECTORY);
                 string exportPath = PRESET_FILE;
@@ -132,6 +130,13 @@ namespace LethalQuantities
                 if (File.Exists(exportPath))
                 {
                     jObj = JObject.Parse(File.ReadAllText(exportPath));
+
+                    if (configuration != null && configuration.isAnySet())
+                    {
+                        // If the users chooses to use the legacy values, then overwrite any exported presets with the new updated exported presets
+                        LETHAL_LOGGER.LogInfo($"Using legacy configuration: {configuration.useLegacy.Value}");
+                        exportLegacy(jObj, configuration.useLegacy.Value);
+                    }
                 }
                 else
                 {
@@ -140,46 +145,78 @@ namespace LethalQuantities
                     // Export the global configuration if it exists
                     jObj = new JObject();
 
-                    Dictionary<string, Preset> presets = new Dictionary<string, Preset>();
-
-                    Preset globalPreset = null;
-                    if (configuration.isSet())
-                    {
-                        // Create default presets based on each configuration
-                        globalPreset = new Preset(configuration);
-                        globalPreset.name = "Global";
-                        globalPreset.id = "exported-Global";
-                        LETHAL_LOGGER.LogInfo($"Created global preset {globalPreset.id}");
-
-                        presets.Add(globalPreset.id, globalPreset);
-                    }
-
-                    Dictionary<string, string> levelMap = new Dictionary<string, string>();
-                    foreach (var entry in configuration.levelConfigs)
-                    {
-                        if (entry.Value.isSet())
-                        {
-                            Preset levelPreset = new Preset(entry.Value);
-                            levelPreset.name = $"Exported {entry.Key.getLevel().PlanetName}";
-                            levelPreset.id = $"exported-{entry.Key.getLevelName()}";
-                            levelPreset.parent = globalPreset == null ? "" : globalPreset.id;
-
-                            presets.TryAdd(levelPreset.id, levelPreset);
-                            levelMap.TryAdd(entry.Key.getLevelName(), levelPreset.id);
-
-                            LETHAL_LOGGER.LogInfo($"Created level preset {levelPreset.id} for {entry.Key.getLevelName()}");
-                        }
-                    }
-
-                    jObj["presets"] = JObject.FromObject(presets, serializer);
-                    jObj["levels"] = JObject.FromObject(levelMap, serializer);
+                    exportLegacy(jObj);
                 }
+
                 // Set the default information
+                JsonSerializer serializer = new JsonSerializer();
+                serializer.Converters.Add(new AnimationCurveJsonConverter());
                 jObj["defaults"] = JObject.FromObject(defaultInformation, serializer);
 
                 LETHAL_LOGGER.LogInfo($"Writing data to {exportPath}");
                 File.WriteAllText(exportPath, JsonConvert.SerializeObject(jObj));
             }
+        }
+
+        internal void exportLegacy(JObject jObj, bool replace = false)
+        {
+            Dictionary<string, Preset> presets = new Dictionary<string, Preset>();
+            Preset globalPreset = null;
+            if (configuration.isSet())
+            {
+                // Create default presets based on each configuration
+                globalPreset = new Preset(configuration);
+                globalPreset.name = "Exported Global";
+                globalPreset.id = "exported-Global";
+                LETHAL_LOGGER.LogInfo($"Created global preset {globalPreset.id}");
+
+                presets.Add(globalPreset.id, globalPreset);
+            }
+
+            Dictionary<string, string> levelMap = new Dictionary<string, string>();
+            foreach (var entry in configuration.levelConfigs)
+            {
+                if (entry.Value.isSet())
+                {
+                    Preset levelPreset = new Preset(entry.Value);
+                    levelPreset.name = $"Exported {entry.Key.getLevel().PlanetName}";
+                    levelPreset.id = $"exported-{entry.Key.getLevelName()}";
+                    levelPreset.parent = globalPreset == null ? "" : globalPreset.id;
+
+                    presets.TryAdd(levelPreset.id, levelPreset);
+                    levelMap.TryAdd(entry.Key.getLevelName(), levelPreset.id);
+
+                    LETHAL_LOGGER.LogInfo($"Created level preset {levelPreset.id} for {entry.Key.getLevelName()}");
+                }
+            }
+
+            JsonSerializer serializer = new JsonSerializer();
+            serializer.Converters.Add(new AnimationCurveJsonConverter());
+            if (!jObj.ContainsKey("presets"))
+            {
+                jObj["presets"] = JObject.FromObject(presets, serializer);
+            }
+            else
+            {
+                JToken previous = jObj["presets"];
+                if (previous is JObject)
+                {
+                    JObject previousNode = previous as JObject;
+                    foreach (var entry in presets)
+                    {
+                        if (!previousNode.ContainsKey(entry.Key) || replace)
+                        {
+                            previousNode[entry.Key] = JObject.FromObject(entry.Value, serializer);
+                        }
+                    }
+                }
+                else
+                {
+                    LETHAL_LOGGER.LogError("Found an invalid presets node, replacing");
+                    jObj["presets"] = JObject.FromObject(presets, serializer);
+                }
+            }
+            jObj["levels"] = JObject.FromObject(levelMap, serializer);
         }
 
         public void loadData(GlobalInformation info, string path = null)

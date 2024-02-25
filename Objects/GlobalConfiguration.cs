@@ -114,8 +114,8 @@ namespace LethalQuantities.Objects
         {
         }
 
-        public CustomEntry<int> minValue { get; set; }
-        public CustomEntry<int> maxValue { get; set; }
+        public CustomEntry<int> minValue { get; set; } = new EmptyEntry<int>();
+        public CustomEntry<int> maxValue { get; set; } = new EmptyEntry<int>();
 
         public override bool isDefault()
         {
@@ -135,7 +135,7 @@ namespace LethalQuantities.Objects
             this.item = item;
         }
 
-        public CustomEntry<float> weight { get; set; }
+        public CustomEntry<float> weight { get; set; } = new EmptyEntry<float>();
 
         public override bool isDefault()
         {
@@ -159,6 +159,7 @@ namespace LethalQuantities.Objects
         public static readonly string PRICES_CFG_NAME = "Prices.cfg";
         public static readonly string FILES_CFG_NAME = "Configuration.cfg";
 
+        public ConfigEntry<bool> useLegacy;
         public EnemyConfiguration<EnemyTypeConfiguration> enemyConfiguration { get; private set; } = new EnemyConfiguration<EnemyTypeConfiguration>();
         public EnemyConfiguration<DaytimeEnemyTypeConfiguration> daytimeEnemyConfiguration { get; private set; } = new EnemyConfiguration<DaytimeEnemyTypeConfiguration>();
         public OutsideEnemyConfiguration<EnemyTypeConfiguration> outsideEnemyConfiguration { get; private set; } = new OutsideEnemyConfiguration<EnemyTypeConfiguration>();
@@ -175,6 +176,12 @@ namespace LethalQuantities.Objects
         {
             return enemyConfiguration.isSet() || daytimeEnemyConfiguration.isSet() || outsideEnemyConfiguration.isSet() || scrapConfiguration.isSet() || dungeonConfiguration.isSet() || trapConfiguration.isSet() || priceConfiguration.isSet();
         }
+
+        public virtual bool isAnySet()
+        {
+            return levelConfigs.isSet() || isSet();
+        }
+
         public GlobalConfiguration(GlobalInformation globalInfo)
         {
             instantiateConfigs(globalInfo);
@@ -184,6 +191,8 @@ namespace LethalQuantities.Objects
         {
             ConfigFile fileConfigFile = new ConfigFile(Path.Combine(globalInfo.configSaveDir, FILES_CFG_NAME), true);
             fileConfigFile.SaveOnConfigSet = false;
+
+            useLegacy = fileConfigFile.Bind("Advanced", "UseLegacy", false, "Whether or not to use the old configuration handling system. This is for if you do not want to use the web UI.");
 
             instantiateEnemyConfigs(globalInfo, fileConfigFile);
             instantiateScrapConfigs(globalInfo, fileConfigFile);

@@ -28,6 +28,7 @@ Configuration is now managed through the [web UI](https://bananapuncher714.githu
 file in the config folder with the web UI. Once complete, download and save it to the same file(`LethalQuantities/Advanced/Preset.json`), and restart the game.
 
 
+However, in the case that you need to or can only use the config files, you can enable the `UseLegacy` option in the global config to allow the legacy configuration files to take priority over whatever is set through the web UI.
 You must host or join a game at least once to generate the configuration files. Any missing or deleted files will be generated with the default options. By default, the only file that is generated is `Configuration.cfg`. You must enable global config files and individual moon config files in order to modify anything.
 - `Configuration.cfg` - Enable/disable other configuration files here
 

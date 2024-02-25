@@ -1,4 +1,8 @@
 ## Changelog
+### 1.2.2
+- Added a legacy option under Advanced in the global configuration to allow only using the legacy configuration files
+- Added a default global preset in the web UI
+- Fixed legacy export not being a correct representation of the configs
 ### 1.2.1
 - Updated README
 ### 1.2.0 - ONLY UPDATE IF YOU ARE READY TO DO SOME RECONFIGURING

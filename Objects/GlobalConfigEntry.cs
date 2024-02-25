@@ -22,6 +22,10 @@ namespace LethalQuantities.Objects
     {
         // Get the value of this entry. The parameter passed is the current value.
         public abstract T Value(T value);
+        public virtual T localValue(T value)
+        {
+            return Value(value);
+        }
         public abstract bool isDefault();
         public virtual bool isUnset()
         {
@@ -113,6 +117,19 @@ namespace LethalQuantities.Objects
             if (isGlobal())
             {
                 entry.Value = "";
+            }
+        }
+
+        public override T localValue(T value)
+        {
+            string val = entry.Value;
+            if (!isLocallySet())
+            {
+                return defaultValue;
+            }
+            else
+            {
+                return (T) converter.ConvertToObject(val, typeof(T));
             }
         }
 

@@ -38,8 +38,8 @@ namespace LethalQuantities.Objects
     public class OutsideEnemyConfiguration<T> : IValidatableConfiguration where T: DaytimeEnemyTypeConfiguration
     {
         public ConfigEntry<bool> enabled { get; set; }
-        public CustomEntry<int> maxPowerCount { get; set; }
-        public CustomEntry<AnimationCurve> spawnAmountCurve { get; set; }
+        public CustomEntry<int> maxPowerCount { get; set; } = new EmptyEntry<int>();
+        public CustomEntry<AnimationCurve> spawnAmountCurve { get; set; } = new EmptyEntry<AnimationCurve>();
         public Dictionary<EnemyType, T> enemyTypes { get; } = new Dictionary<EnemyType, T>();
 
         public virtual bool isDefault()
@@ -55,7 +55,7 @@ namespace LethalQuantities.Objects
 
     public class EnemyConfiguration<T> : OutsideEnemyConfiguration<T> where T: DaytimeEnemyTypeConfiguration 
     {
-        public CustomEntry<float> spawnAmountRange { get; set; }
+        public CustomEntry<float> spawnAmountRange { get; set; } = new EmptyEntry<float>();
 
         public override bool isDefault()
         {
@@ -75,16 +75,16 @@ namespace LethalQuantities.Objects
         {
             this.type = type;
         }
-        public CustomEntry<int> rarity { get; set; }
-        public CustomEntry<int> maxEnemyCount { get; set; }
-        public CustomEntry<int> powerLevel { get; set; }
-        public CustomEntry<AnimationCurve> spawnCurve { get; set; }
-        public CustomEntry<float> stunTimeMultiplier { get; set; }
-        public CustomEntry<float> doorSpeedMultiplier { get; set; }
-        public CustomEntry<float> stunGameDifficultyMultiplier { get; set; }
-        public CustomEntry<bool> stunnable { get; set; }
-        public CustomEntry<bool> killable { get; set; }
-        public CustomEntry<int> enemyHp { get; set; }
+        public CustomEntry<int> rarity { get; set; } = new EmptyEntry<int>();
+        public CustomEntry<int> maxEnemyCount { get; set; } = new EmptyEntry<int>();
+        public CustomEntry<int> powerLevel { get; set; } = new EmptyEntry<int>();
+        public CustomEntry<AnimationCurve> spawnCurve { get; set; } = new EmptyEntry<AnimationCurve>();
+        public CustomEntry<float> stunTimeMultiplier { get; set; } = new EmptyEntry<float>();
+        public CustomEntry<float> doorSpeedMultiplier { get; set; } = new EmptyEntry<float>();
+        public CustomEntry<float> stunGameDifficultyMultiplier { get; set; } = new EmptyEntry<float>();
+        public CustomEntry<bool> stunnable { get; set; } = new EmptyEntry<bool>();
+        public CustomEntry<bool> killable { get; set; } = new EmptyEntry<bool>();
+        public CustomEntry<int> enemyHp { get; set; } = new EmptyEntry<int>();
 
         public virtual bool isDefault()
         {
@@ -121,8 +121,8 @@ namespace LethalQuantities.Objects
         {
         }
 
-        public CustomEntry<AnimationCurve> spawnFalloffCurve { get; set; }
-        public CustomEntry<bool> useSpawnFalloff { get; set; }
+        public CustomEntry<AnimationCurve> spawnFalloffCurve { get; set; } = new EmptyEntry<AnimationCurve>();
+        public CustomEntry<bool> useSpawnFalloff { get; set; } = new EmptyEntry<bool>();
 
         public override bool isDefault()
         {
@@ -138,10 +138,10 @@ namespace LethalQuantities.Objects
     public class ScrapConfiguration : IValidatableConfiguration
     {
         public ConfigEntry<bool> enabled { get; set; }
-        public CustomEntry<int> minScrap { get; set; }
-        public CustomEntry<int> maxScrap { get; set; }
-        public CustomEntry<float> scrapValueMultiplier { get; set; }
-        public CustomEntry<float> scrapAmountMultiplier { get; set; }
+        public CustomEntry<int> minScrap { get; set; } = new EmptyEntry<int>();
+        public CustomEntry<int> maxScrap { get; set; } = new EmptyEntry<int>();
+        public CustomEntry<float> scrapValueMultiplier { get; set; } = new EmptyEntry<float>();
+        public CustomEntry<float> scrapAmountMultiplier { get; set; } = new EmptyEntry<float>();
         public Dictionary<Item, ItemConfiguration> items { get; } = new Dictionary<Item, ItemConfiguration>();
 
         public virtual bool isDefault()
@@ -163,8 +163,8 @@ namespace LethalQuantities.Objects
             this.item = item;
         }
 
-        public CustomEntry<int> rarity { get; set; }
-        public CustomEntry<bool> conductive { get; set; }
+        public CustomEntry<int> rarity { get; set; } = new EmptyEntry<int>();
+        public CustomEntry<bool> conductive { get; set; } = new EmptyEntry<bool>();
 
         public virtual bool isDefault()
         {
@@ -190,8 +190,8 @@ namespace LethalQuantities.Objects
         {
         }
 
-        public CustomEntry<int> maxValue { get; set; }
-        public CustomEntry<int> minValue { get; set; }
+        public CustomEntry<int> maxValue { get; set; } = new EmptyEntry<int>();
+        public CustomEntry<int> minValue { get; set; } = new EmptyEntry<int>();
 
         public override bool isDefault()
         {
@@ -207,7 +207,7 @@ namespace LethalQuantities.Objects
     public class DungeonGenerationConfiguration : IValidatableConfiguration
     {
         public ConfigEntry<bool> enabled { get; set; }
-        public CustomEntry<float> mapSizeMultiplier { get; set; }
+        public CustomEntry<float> mapSizeMultiplier { get; set; } = new EmptyEntry<float>();
         public Dictionary<string, DungeonFlowConfiguration> dungeonFlowConfigurations { get; private set; } = new Dictionary<string, DungeonFlowConfiguration>();
 
         public virtual bool isDefault()
@@ -223,8 +223,8 @@ namespace LethalQuantities.Objects
 
     public class DungeonFlowConfiguration : ISettable
     {
-        public CustomEntry<int> rarity { get; set; }
-        public CustomEntry<float> factorySizeMultiplier { get; set; }
+        public CustomEntry<int> rarity { get; set; } = new EmptyEntry<int>();
+        public CustomEntry<float> factorySizeMultiplier { get; set; } = new EmptyEntry<float>();
 
         public virtual bool isDefault()
         {
@@ -256,7 +256,7 @@ namespace LethalQuantities.Objects
     public class SpawnableMapObjectConfiguration : ISettable
     {
         public DirectionalSpawnableMapObject spawnableObject { get; }
-        public CustomEntry<AnimationCurve> numberToSpawn { get; set; }
+        public CustomEntry<AnimationCurve> numberToSpawn { get; set; } = new EmptyEntry<AnimationCurve>();
 
         public SpawnableMapObjectConfiguration(DirectionalSpawnableMapObject obj)
         {
@@ -293,7 +293,7 @@ namespace LethalQuantities.Objects
     public class MoonPriceConfiguration : ISettable
     {
         public Guid guid { get; protected set; }
-        public CustomEntry<int> price { get; set; }
+        public CustomEntry<int> price { get; set; } = new EmptyEntry<int>();
 
         public MoonPriceConfiguration(Guid name)
         {
@@ -391,6 +391,34 @@ namespace LethalQuantities.Objects
                     enemyConfig.SaveOnConfigSet = true;
                     enemyConfig.Save();
                 }
+                else
+                {
+                    enemies.maxPowerCount = new EmptyEntry<int>(level.maxEnemyPowerCount);
+                    enemies.spawnAmountCurve = new EmptyEntry<AnimationCurve>(level.enemySpawnChanceThroughoutDay);
+                    enemies.spawnAmountRange = new EmptyEntry<float>(level.spawnProbabilityRange);
+
+                    Dictionary<string, int> enemySpawnRarities = convertToDictionary(level.Enemies);
+                    foreach (EnemyType enemyType in levelInfo.globalInfo.allEnemyTypes)
+                    {
+                        EnemyTypeConfiguration typeConfiguration = new EnemyTypeConfiguration(enemyType);
+
+                        // Store rarity in a separate table for convenience
+                        typeConfiguration.rarity = new EmptyEntry<int>(enemySpawnRarities.GetValueOrDefault(enemyType.name, 0));
+                        typeConfiguration.maxEnemyCount = new EmptyEntry<int>(enemyType.MaxCount);
+                        typeConfiguration.powerLevel = new EmptyEntry<int>(enemyType.PowerLevel);
+                        typeConfiguration.spawnCurve = new EmptyEntry<AnimationCurve>(enemyType.probabilityCurve);
+                        typeConfiguration.stunTimeMultiplier = new EmptyEntry<float>(enemyType.stunTimeMultiplier);
+                        typeConfiguration.doorSpeedMultiplier = new EmptyEntry<float>(enemyType.doorSpeedMultiplier);
+                        typeConfiguration.stunGameDifficultyMultiplier = new EmptyEntry<float>(enemyType.stunGameDifficultyMultiplier);
+                        typeConfiguration.stunnable = new EmptyEntry<bool>(enemyType.canBeStunned);
+                        typeConfiguration.killable = new EmptyEntry<bool>(enemyType.canDie);
+                        typeConfiguration.enemyHp = new EmptyEntry<int>(enemyType.enemyPrefab != null ? enemyType.enemyPrefab.GetComponent<EnemyAI>().enemyHP : 3);
+                        typeConfiguration.spawnFalloffCurve = new EmptyEntry<AnimationCurve>(enemyType.numberSpawnedFalloff);
+                        typeConfiguration.useSpawnFalloff = new EmptyEntry<bool>(enemyType.useNumberSpawnedFalloff);
+
+                        enemies.enemyTypes.Add(enemyType, typeConfiguration);
+                    }
+                }
             }
 
             // Process daytime enemies
@@ -434,6 +462,34 @@ namespace LethalQuantities.Objects
                     enemyConfig.SaveOnConfigSet = true;
                     enemyConfig.Save();
                 }
+                else
+                {
+                    daytimeEnemies.maxPowerCount = new EmptyEntry<int>(level.maxEnemyPowerCount);
+                    daytimeEnemies.spawnAmountCurve = new EmptyEntry<AnimationCurve>(level.enemySpawnChanceThroughoutDay);
+                    daytimeEnemies.spawnAmountRange = new EmptyEntry<float>(level.spawnProbabilityRange);
+
+                    Dictionary<string, int> enemySpawnRarities = convertToDictionary(level.DaytimeEnemies);
+                    foreach (EnemyType enemyType in levelInfo.globalInfo.allEnemyTypes)
+                    {
+                        EnemyTypeConfiguration typeConfiguration = new EnemyTypeConfiguration(enemyType);
+
+                        // Store rarity in a separate table for convenience
+                        typeConfiguration.rarity = new EmptyEntry<int>(enemySpawnRarities.GetValueOrDefault(enemyType.name, 0));
+                        typeConfiguration.maxEnemyCount = new EmptyEntry<int>(enemyType.MaxCount);
+                        typeConfiguration.powerLevel = new EmptyEntry<int>(enemyType.PowerLevel);
+                        typeConfiguration.spawnCurve = new EmptyEntry<AnimationCurve>(enemyType.probabilityCurve);
+                        typeConfiguration.stunTimeMultiplier = new EmptyEntry<float>(enemyType.stunTimeMultiplier);
+                        typeConfiguration.doorSpeedMultiplier = new EmptyEntry<float>(enemyType.doorSpeedMultiplier);
+                        typeConfiguration.stunGameDifficultyMultiplier = new EmptyEntry<float>(enemyType.stunGameDifficultyMultiplier);
+                        typeConfiguration.stunnable = new EmptyEntry<bool>(enemyType.canBeStunned);
+                        typeConfiguration.killable = new EmptyEntry<bool>(enemyType.canDie);
+                        typeConfiguration.enemyHp = new EmptyEntry<int>(enemyType.enemyPrefab != null ? enemyType.enemyPrefab.GetComponent<EnemyAI>().enemyHP : 3);
+                        typeConfiguration.spawnFalloffCurve = new EmptyEntry<AnimationCurve>(enemyType.numberSpawnedFalloff);
+                        typeConfiguration.useSpawnFalloff = new EmptyEntry<bool>(enemyType.useNumberSpawnedFalloff);
+
+                        daytimeEnemies.enemyTypes.Add(enemyType, typeConfiguration);
+                    }
+                }
             }
 
             // Process outside enemies
@@ -476,6 +532,33 @@ namespace LethalQuantities.Objects
                     }
                     enemyConfig.SaveOnConfigSet = true;
                     enemyConfig.Save();
+                }
+                else
+                {
+                    outsideEnemies.maxPowerCount = new EmptyEntry<int>(level.maxEnemyPowerCount);
+                    outsideEnemies.spawnAmountCurve = new EmptyEntry<AnimationCurve>(level.enemySpawnChanceThroughoutDay);
+
+                    Dictionary<string, int> enemySpawnRarities = convertToDictionary(level.OutsideEnemies);
+                    foreach (EnemyType enemyType in levelInfo.globalInfo.allEnemyTypes)
+                    {
+                        EnemyTypeConfiguration typeConfiguration = new EnemyTypeConfiguration(enemyType);
+
+                        // Store rarity in a separate table for convenience
+                        typeConfiguration.rarity = new EmptyEntry<int>(enemySpawnRarities.GetValueOrDefault(enemyType.name, 0));
+                        typeConfiguration.maxEnemyCount = new EmptyEntry<int>(enemyType.MaxCount);
+                        typeConfiguration.powerLevel = new EmptyEntry<int>(enemyType.PowerLevel);
+                        typeConfiguration.spawnCurve = new EmptyEntry<AnimationCurve>(enemyType.probabilityCurve);
+                        typeConfiguration.stunTimeMultiplier = new EmptyEntry<float>(enemyType.stunTimeMultiplier);
+                        typeConfiguration.doorSpeedMultiplier = new EmptyEntry<float>(enemyType.doorSpeedMultiplier);
+                        typeConfiguration.stunGameDifficultyMultiplier = new EmptyEntry<float>(enemyType.stunGameDifficultyMultiplier);
+                        typeConfiguration.stunnable = new EmptyEntry<bool>(enemyType.canBeStunned);
+                        typeConfiguration.killable = new EmptyEntry<bool>(enemyType.canDie);
+                        typeConfiguration.enemyHp = new EmptyEntry<int>(enemyType.enemyPrefab != null ? enemyType.enemyPrefab.GetComponent<EnemyAI>().enemyHP : 3);
+                        typeConfiguration.spawnFalloffCurve = new EmptyEntry<AnimationCurve>(enemyType.numberSpawnedFalloff);
+                        typeConfiguration.useSpawnFalloff = new EmptyEntry<bool>(enemyType.useNumberSpawnedFalloff);
+
+                        outsideEnemies.enemyTypes.Add(enemyType, typeConfiguration);
+                    }
                 }
             }
         }
@@ -523,6 +606,35 @@ namespace LethalQuantities.Objects
                     scrapConfig.SaveOnConfigSet = true;
                     scrapConfig.Save();
                 }
+                else
+                {
+                    scrap.minScrap = new EmptyEntry<int>(level.minScrap);
+                    scrap.maxScrap = new EmptyEntry<int>(level.minScrap);
+                    scrap.scrapAmountMultiplier = new EmptyEntry<float>(levelInfo.globalInfo.manager.scrapAmountMultiplier);
+                    scrap.scrapValueMultiplier = new EmptyEntry<float>(levelInfo.globalInfo.manager.scrapValueMultiplier);
+                    Dictionary<string, int> itemSpawnRarities = convertToDictionary(level.spawnableScrap);
+                    foreach (Item itemType in levelInfo.globalInfo.allItems)
+                    {
+                        ItemConfiguration configuration;
+                        if (itemType.isScrap)
+                        {
+                            ScrapItemConfiguration itemConfiguration = new ScrapItemConfiguration(itemType);
+                            configuration = itemConfiguration;
+
+                            itemConfiguration.minValue = new EmptyEntry<int>(Math.Min(itemType.minValue, itemType.maxValue));
+                            itemConfiguration.maxValue = new EmptyEntry<int>(Math.Max(itemType.minValue, itemType.maxValue));
+                        }
+                        else
+                        {
+                            configuration = new ItemConfiguration(itemType);
+                        }
+
+                        configuration.rarity = new EmptyEntry<int>(itemSpawnRarities.GetValueOrDefault(itemType.name, 0));
+                        configuration.conductive = new EmptyEntry<bool>(itemType.isConductiveMetal);
+
+                        scrap.items.Add(itemType, configuration);
+                    }
+                }
             }
         }
 
@@ -558,6 +670,25 @@ namespace LethalQuantities.Objects
                 dungeonConfig.SaveOnConfigSet = true;
                 dungeonConfig.Save();
             }
+            else
+            {
+                dungeon.mapSizeMultiplier = new EmptyEntry<float>(level.factorySizeMultiplier);
+                Dictionary<DungeonFlow, int> flowRarities = new Dictionary<DungeonFlow, int>();
+                foreach (IntWithRarity flow in level.dungeonFlowTypes)
+                {
+                    flowRarities.TryAdd(levelInfo.globalInfo.manager.dungeonFlowTypes[flow.id], flow.rarity);
+                }
+
+                foreach (DungeonFlow flow in levelInfo.globalInfo.allDungeonFlows)
+                {
+                    DungeonFlowConfiguration dungeonFlowConfig = new DungeonFlowConfiguration();
+
+                    dungeonFlowConfig.rarity = new EmptyEntry<int>(flowRarities.GetValueOrDefault(flow, 0));
+                    dungeonFlowConfig.factorySizeMultiplier = new EmptyEntry<float>(levelInfo.globalInfo.manager.mapSizeMultiplier);
+
+                    dungeon.dungeonFlowConfigurations.Add(flow.name, dungeonFlowConfig);
+                }
+            }
         }
 
         private void instantiateTrapConfigs(LevelInformation levelInfo)
@@ -588,6 +719,22 @@ namespace LethalQuantities.Objects
                 }
                 trapConfig.SaveOnConfigSet = true;
                 trapConfig.Save();
+            }
+            else
+            {
+                Dictionary<GameObject, AnimationCurve> defaultSpawnAmounts = new Dictionary<GameObject, AnimationCurve>();
+                foreach (SpawnableMapObject obj in level.spawnableMapObjects)
+                {
+                    defaultSpawnAmounts.TryAdd(obj.prefabToSpawn, obj.numberToSpawn);
+                }
+                foreach (DirectionalSpawnableMapObject mapObject in levelInfo.globalInfo.allSpawnableMapObjects)
+                {
+                    SpawnableMapObjectConfiguration configuration = new SpawnableMapObjectConfiguration(mapObject);
+
+                    configuration.numberToSpawn = new EmptyEntry<AnimationCurve>(defaultSpawnAmounts.GetValueOrDefault(mapObject.obj, new AnimationCurve(new Keyframe(0, 0))));
+
+                    trap.traps.Add(mapObject.obj, configuration);
+                }
             }
         }
         private void instantiatePriceConfigs(LevelInformation levelInfo)
