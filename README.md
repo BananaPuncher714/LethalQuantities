@@ -1,5 +1,5 @@
 # Lethal Quantities
-A flexible customization mod that works with other mods. **All configs are disabled by default.** Please request features or report issues [here](https://github.com/BananaPuncher714/LethalQuantities/issues). **Configs are generated after you host or join a game**
+A flexible customization mod that works with other mods. Now comes with a [WEB UI](https://bananapuncher714.github.io/LethalQuantities/)! **All configs are disabled by default.** Please request features or report issues [here](https://github.com/BananaPuncher714/LethalQuantities/issues). **Configs are generated after you host or join a game**
 ## Features
 - Provides optional(disabled by default) settings to enhance your Lethal Company experience
 - Some more control over how many enemies spawn, and on what moons
@@ -13,12 +13,21 @@ A flexible customization mod that works with other mods. **All configs are disab
 - Works with per-moon prices to travel to other moons
   - Make travel cheaper between certain moons to emulate star maps!
 - Should work with custom events and other mods that change enemy spawn settings
+- Comes with a [web UI](https://bananapuncher714.github.io/LethalQuantities/) to make it easier to edit
 ## Known Incompatibilities
 - Moon price changing mods
   - If you modify moon prices with LethalQuantities, other mods may not be able to change the price correctly, or at all.
   - For developers:
 	- The moon prices are set in a prefix for `StartOfRound.ChangePlanet` with a priority of 200. You can add your own prefix(with a higher priority value) or postfix to ensure that your prices are set properly.
+## Pictures
+![Welcome screen](https://github.com/BananaPuncher714/LethalQuantities/blob/master/Resources/Screenshot_1.jpg)
+![Preset menu](https://github.com/BananaPuncher714/LethalQuantities/blob/master/Resources/Screenshot_2.jpg)
+![Editor](https://github.com/BananaPuncher714/LethalQuantities/blob/master/Resources/Screenshot_3.jpg)
 ## Configuration
+Configuration is now managed through the [web UI](https://bananapuncher714.github.io/LethalQuantities/). The old config files are deprecated and should not be used. To use the new web UI, first host or join a game, then edit the `LethalQuantities/Advanced/Preset.json`
+file in the config folder with the web UI. Once complete, download and save it to the same file(`LethalQuantities/Advanced/Preset.json`), and restart the game.
+
+
 You must host or join a game at least once to generate the configuration files. Any missing or deleted files will be generated with the default options. By default, the only file that is generated is `Configuration.cfg`. You must enable global config files and individual moon config files in order to modify anything.
 - `Configuration.cfg` - Enable/disable other configuration files here
 
@@ -172,7 +181,6 @@ The enemy spawn logic in **Lethal Company** is a bit complex, and there are many
 - The chance of an enemy spawning is `weight of enemy type / total weight`, where the total weight is the sum of the weights of all enemy types
 - The weight of an enemy type is `rarity * spawn chance at the current time` . If `UseSpawnFalloff` is enabled(like baboon hawks), then it is `rarity * spawn chance at the current time * spawn falloff multiplier at the current time`. Spawn falloff multiplier has a curve with a key that is the total amount of that mob / 10.
 ## Roadmap
-- Simple MCStacker-like webpage for editing settings easily
 - Additional settings
 - Weather customization
 - Lights out?

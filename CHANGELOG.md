@@ -1,4 +1,7 @@
 ## Changelog
+### 1.2.0 - ONLY UPDATE IF YOU ARE READY TO DO SOME RECONFIGURING
+- Added new [WEB UI](https://bananapuncher714.github.io/LethalQuantities/)
+- Removed old code using the outdated configuration system
 ### 1.1.17
 - Fixed error with March and other moons that may have more than 1 fire exit
 ### 1.1.16
