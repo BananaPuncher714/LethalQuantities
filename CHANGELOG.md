@@ -1,4 +1,6 @@
 ## Changelog
+### 1.2.1
+- Updated README
 ### 1.2.0 - ONLY UPDATE IF YOU ARE READY TO DO SOME RECONFIGURING
 - Added new [WEB UI](https://bananapuncher714.github.io/LethalQuantities/)
 - Removed old code using the outdated configuration system
