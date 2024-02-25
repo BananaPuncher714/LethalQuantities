@@ -20,9 +20,9 @@ A flexible customization mod that works with other mods. Now comes with a [WEB U
   - For developers:
 	- The moon prices are set in a prefix for `StartOfRound.ChangePlanet` with a priority of 200. You can add your own prefix(with a higher priority value) or postfix to ensure that your prices are set properly.
 ## Pictures
-![Welcome screen](https://github.com/BananaPuncher714/LethalQuantities/blob/master/Resources/Screenshot_1.jpg)
-![Preset menu](https://github.com/BananaPuncher714/LethalQuantities/blob/master/Resources/Screenshot_2.jpg)
-![Editor](https://github.com/BananaPuncher714/LethalQuantities/blob/master/Resources/Screenshot_3.jpg)
+![Welcome screen](https://raw.githubusercontent.com/BananaPuncher714/LethalQuantities/master/Resources/Screenshot_1.jpg)
+![Preset menu](https://raw.githubusercontent.com/BananaPuncher714/LethalQuantities/master/Resources/Screenshot_2.jpg)
+![Editor](https://raw.githubusercontent.com/BananaPuncher714/LethalQuantities/master/Resources/Screenshot_3.jpg)
 ## Configuration
 Configuration is now managed through the [web UI](https://bananapuncher714.github.io/LethalQuantities/). The old config files are deprecated and should not be used. To use the new web UI, first host or join a game, then edit the `LethalQuantities/Advanced/Preset.json`
 file in the config folder with the web UI. Once complete, download and save it to the same file(`LethalQuantities/Advanced/Preset.json`), and restart the game.
