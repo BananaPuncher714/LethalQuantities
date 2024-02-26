@@ -1,4 +1,7 @@
 ## Changelog
+### 1.2.4
+- Fixed floats not being parsed properly when converting from json
+- Fixed scrap always being cleared but not set
 ### 1.2.3
 - Fixed incompatibility with translation mods that change the route and confirm words
 ### 1.2.2
