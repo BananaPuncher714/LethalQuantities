@@ -234,8 +234,11 @@ namespace LethalQuantities.Patches
                                 Plugin.LETHAL_LOGGER.LogWarning($"Interior enemy spawn amount range is too small({newLevel.spawnProbabilityRange}), setting to {minimumSpawnProbabilityRange}");
                                 newLevel.spawnProbabilityRange = minimumSpawnProbabilityRange;
                             }
-                            newLevel.Enemies.Clear();
-                            newLevel.Enemies.AddRange(state.enemies);
+                            if (preset.enemies.set)
+                            {
+                                newLevel.Enemies.Clear();
+                                newLevel.Enemies.AddRange(state.enemies);
+                            }
 
                             Plugin.LETHAL_LOGGER.LogInfo("Changing daytime enemy values");
                             preset.maxDaytimePowerCount.update(ref newLevel.maxDaytimeEnemyPowerCount);
@@ -246,14 +249,20 @@ namespace LethalQuantities.Patches
                                 Plugin.LETHAL_LOGGER.LogWarning($"Interior enemy spawn amount range is too small({newLevel.daytimeEnemiesProbabilityRange}), setting to {minimumSpawnProbabilityRange}");
                                 newLevel.daytimeEnemiesProbabilityRange = minimumSpawnProbabilityRange;
                             }
-                            newLevel.DaytimeEnemies.Clear();
-                            newLevel.DaytimeEnemies.AddRange(state.daytimeEnemies);
+                            if (preset.daytimeEnemies.set)
+                            {
+                                newLevel.DaytimeEnemies.Clear();
+                                newLevel.DaytimeEnemies.AddRange(state.daytimeEnemies);
+                            }
 
                             Plugin.LETHAL_LOGGER.LogInfo("Changing outside enemy values");
                             preset.maxOutsidePowerCount.update(ref newLevel.maxOutsideEnemyPowerCount);
                             preset.outsideSpawnCurve.update(ref newLevel.outsideEnemySpawnChanceThroughDay);
-                            newLevel.OutsideEnemies.Clear();
-                            newLevel.OutsideEnemies.AddRange(state.outsideEnemies);
+                            if (preset.outsideEnemies.set)
+                            {
+                                newLevel.OutsideEnemies.Clear();
+                                newLevel.OutsideEnemies.AddRange(state.outsideEnemies);
+                            }
 
                             Plugin.LETHAL_LOGGER.LogInfo("Changing scrap values");
                             preset.minScrap.update(ref newLevel.minScrap);
@@ -264,6 +273,7 @@ namespace LethalQuantities.Patches
                             preset.mapSizeMultiplier.update(ref newLevel.factorySizeMultiplier);
                         }
 
+                        if (preset.scrap.isSet())
                         {
                             Dictionary<Item, int> defaultRarities = new Dictionary<Item, int>();
                             foreach (SpawnableItemWithRarity item in newLevel.spawnableScrap)
@@ -275,66 +285,70 @@ namespace LethalQuantities.Patches
                                 }
                             }
 
-                            newLevel.spawnableScrap.Clear();
-                            if (preset.scrap.isSet())
+                            List<SpawnableItemWithRarity> spawnableItems = new List<SpawnableItemWithRarity>();
+                            foreach (var entry in preset.scrap.value)
                             {
-                                foreach (var entry in preset.scrap.value)
+                                Item item = entry.Key;
+                                LevelPresetItem itemPreset = entry.Value;
+
+                                SpawnableItemWithRarity newItem = new SpawnableItemWithRarity();
+                                newItem.spawnableItem = item;
+                                // Get the default item rarity value, if it already exists somewhere, otherwise use the default value, or else use the value set in the config
+                                newItem.rarity = defaultRarities.GetValueOrDefault(item, 0);
+                                itemPreset.rarity.update(ref newItem.rarity);
+                                if (newItem.rarity > 0)
                                 {
-                                    Item item = entry.Key;
-                                    LevelPresetItem itemPreset = entry.Value;
+                                    itemPreset.conductive.update(ref item.isConductiveMetal);
+                                    itemPreset.weight.update(ref item.weight);
 
-                                    SpawnableItemWithRarity newItem = new SpawnableItemWithRarity();
-                                    newItem.spawnableItem = item;
-                                    // Get the default item rarity value, if it already exists somewhere, otherwise use the default value, or else use the value set in the config
-                                    newItem.rarity = defaultRarities.GetValueOrDefault(item, 0);
-                                    itemPreset.rarity.update(ref newItem.rarity);
-                                    if (newItem.rarity > 0)
-                                    {
-                                        itemPreset.conductive.update(ref item.isConductiveMetal);
-                                        itemPreset.weight.update(ref item.weight);
+                                    int minValue = item.minValue;
+                                    int maxValue = item.maxValue;
 
-                                        int minValue = item.minValue;
-                                        int maxValue = item.maxValue;
+                                    itemPreset.minValue.update(ref minValue);
+                                    itemPreset.maxValue.update(ref maxValue);
 
-                                        itemPreset.minValue.update(ref minValue);
-                                        itemPreset.maxValue.update(ref maxValue);
-
-                                        item.minValue = Math.Min(minValue, maxValue);
-                                        // Add 1 since the random method is upper bound exclusive
-                                        item.maxValue = Math.Max(minValue, maxValue);
-                                        newLevel.spawnableScrap.Add(newItem);
-                                    }
+                                    item.minValue = Math.Min(minValue, maxValue);
+                                    // Add 1 since the random method is upper bound exclusive
+                                    item.maxValue = Math.Max(minValue, maxValue);
+                                    spawnableItems.Add(newItem);
                                 }
+                            }
+                            if (spawnableItems.Count > 0)
+                            {
+                                newLevel.spawnableScrap.Clear();
+                                newLevel.spawnableScrap.AddRange(spawnableItems);
+                            }
+                            else
+                            {
+                                Plugin.LETHAL_LOGGER.LogWarning($"Preset for level {newLevel.name} has no scrap assigned! No changes have been applied.");
                             }
                         }
 
+                        if (preset.traps.isSet())
                         {
-                            if (preset.traps.isSet())
+                            Plugin.LETHAL_LOGGER.LogInfo("Changing interior trap spawn amounts");
+                            Dictionary<GameObject, AnimationCurve> defaultSpawnableMapObjects = new Dictionary<GameObject, AnimationCurve>();
+                            foreach (SpawnableMapObject obj in newLevel.spawnableMapObjects)
                             {
-                                Plugin.LETHAL_LOGGER.LogInfo("Changing interior trap spawn amounts");
-                                Dictionary<GameObject, AnimationCurve> defaultSpawnableMapObjects = new Dictionary<GameObject, AnimationCurve>();
-                                foreach (SpawnableMapObject obj in newLevel.spawnableMapObjects)
-                                {
-                                    defaultSpawnableMapObjects.TryAdd(obj.prefabToSpawn, obj.numberToSpawn);
-                                }
-                                List<SpawnableMapObject> newMapObjects = new List<SpawnableMapObject>();
-                                foreach (var entry in preset.traps.value)
-                                {
-                                    DirectionalSpawnableMapObject obj = entry.Key;
-                                    LevelPresetTrap presetTrap = entry.Value;
-
-                                    AnimationCurve curve = defaultSpawnableMapObjects.GetValueOrDefault(obj.obj, new AnimationCurve(new Keyframe(0, 0)));
-                                    presetTrap.spawnCurve.update(ref curve);
-
-                                    SpawnableMapObject spawnableObj = new SpawnableMapObject();
-                                    spawnableObj.prefabToSpawn = obj.obj;
-                                    spawnableObj.numberToSpawn = curve;
-                                    spawnableObj.spawnFacingAwayFromWall = obj.faceAwayFromWall;
-
-                                    newMapObjects.Add(spawnableObj);
-                                }
-                                newLevel.spawnableMapObjects = newMapObjects.ToArray();
+                                defaultSpawnableMapObjects.TryAdd(obj.prefabToSpawn, obj.numberToSpawn);
                             }
+                            List<SpawnableMapObject> newMapObjects = new List<SpawnableMapObject>();
+                            foreach (var entry in preset.traps.value)
+                            {
+                                DirectionalSpawnableMapObject obj = entry.Key;
+                                LevelPresetTrap presetTrap = entry.Value;
+
+                                AnimationCurve curve = defaultSpawnableMapObjects.GetValueOrDefault(obj.obj, new AnimationCurve(new Keyframe(0, 0)));
+                                presetTrap.spawnCurve.update(ref curve);
+
+                                SpawnableMapObject spawnableObj = new SpawnableMapObject();
+                                spawnableObj.prefabToSpawn = obj.obj;
+                                spawnableObj.numberToSpawn = curve;
+                                spawnableObj.spawnFacingAwayFromWall = obj.faceAwayFromWall;
+
+                                newMapObjects.Add(spawnableObj);
+                            }
+                            newLevel.spawnableMapObjects = newMapObjects.ToArray();
                         }
                     }
                 }

@@ -16,13 +16,13 @@
                 container: fromHtml('<div class="container"></div>')
             };
             function createPrefabs() {
-                prefabs.animationCurveKey = tooltip("Key", "The X-axis");
-
                 {
-                    const animationCurveValueBox = fromHtml("<span style=\"width:100px;display:inline-block;\"></span>");
-                    animationCurveValueBox.appendChild(tooltip("Value", "The Y-axis"));
-                    prefabs.animationCurveValue = animationCurveValueBox;
+                    const animationCurveKey = fromHtml("<span style=\"width:100px;display:inline-block;\"></span>");
+                    animationCurveKey.appendChild(tooltip("Key", "The X-axis"));
+                    prefabs.animationCurveKey = animationCurveKey;
                 }
+                prefabs.animationCurveValue = tooltip("Value", "The Y-axis");
+
                 {
                     const link = document.createElement("a");
                     link.href = "https://lethal.miraheze.org/wiki/Mechanics";

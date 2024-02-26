@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using System;
+using System.Globalization;
 using UnityEngine;
 
 namespace LethalQuantities.Json
@@ -14,7 +15,7 @@ namespace LethalQuantities.Json
             }
             else if (reader.TokenType == JsonToken.Float)
             {
-                return new AnimationCurve(new Keyframe(0, (float) reader.ReadAsDouble()));
+                return new AnimationCurve(new Keyframe(0, float.Parse(reader.ReadAsString(), CultureInfo.InvariantCulture)));
             }
             else if (reader.TokenType == JsonToken.StartArray)
             {
@@ -22,9 +23,29 @@ namespace LethalQuantities.Json
                 AnimationCurve curve = new AnimationCurve();
                 while (reader.TokenType != JsonToken.EndArray) {
                     reader.Read();
-                    float time = float.Parse(reader.ReadAsString());
+                    string timeStr = reader.ReadAsString();
+                    float time = 0;
+                    try
+                    {
+                        time = float.Parse(timeStr, CultureInfo.InvariantCulture);
+                    }
+                    catch
+                    {
+                        Plugin.LETHAL_LOGGER.LogError($"Encountered an invalid value for an animation curve key: '{timeStr}'");
+                        Plugin.LETHAL_LOGGER.LogError($"Please find and replace the value with a valid number, using 0 for now.");
+                    }
                     reader.Read();
-                    float value = float.Parse(reader.ReadAsString());
+                    string valueStr = reader.ReadAsString();
+                    float value = 0;
+                    try
+                    {
+                        value = float.Parse(valueStr, CultureInfo.InvariantCulture);
+                    }
+                    catch
+                    {
+                        Plugin.LETHAL_LOGGER.LogError($"Encountered an invalid value for an animation curve value: '{valueStr}'");
+                        Plugin.LETHAL_LOGGER.LogError($"Please find and replace the value with a valid number, using 0 for now.");
+                    }
                     reader.Read();
 
                     curve.AddKey(time, value);

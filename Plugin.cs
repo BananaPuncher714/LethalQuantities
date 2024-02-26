@@ -79,6 +79,7 @@ namespace LethalQuantities
             if (File.Exists(editorFile) && !File.Exists(dest))
             {
                 LETHAL_LOGGER.LogInfo($"Copying editor webpage from {editorFile} to {dest}");
+                Directory.CreateDirectory(EXPORT_DIRECTORY);
                 File.Copy(editorFile, dest);
             }
         }
@@ -249,7 +250,7 @@ namespace LethalQuantities
                 serializer.Converters.Add(new EnemyTypeJsonConverter());
                 serializer.Converters.Add(new ItemJsonConverter());
 
-                jObj["result"] = JObject.FromObject(presets, serializer);
+                jObj["results"] = JObject.FromObject(presets, serializer);
                 LETHAL_LOGGER.LogInfo($"Saving level presets to {PRESET_FILE}");
                 File.WriteAllText(PRESET_FILE, JsonConvert.SerializeObject(jObj));
 

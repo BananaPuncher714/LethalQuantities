@@ -21,7 +21,8 @@ namespace LethalQuantities.Patches
 
         public static void updateMoonPrices(SelectableLevel level)
         {
-            try {
+            try
+            {
                 Terminal terminal = UnityEngine.Object.FindFirstObjectByType<Terminal>();
                 TerminalKeyword routeWord = terminal.terminalNodes.allKeywords.First(w => w.name == "Route");
 
@@ -39,143 +40,147 @@ namespace LethalQuantities.Patches
                     }
                 }
 
-                LevelPreset preset = Plugin.INSTANCE.presets[level.getGuid()];
-                bool wasDefault = defaultPrices.Count() == 0;
-                if (preset.price.isSet())
+                // Only change the prices if the configs are done loading
+                if (Plugin.INSTANCE.presets.ContainsKey(level.getGuid()))
                 {
-                    bool updatedConfigs = false;
-                    bool updatedDefaultInfo = false;
-                    Plugin.LETHAL_LOGGER.LogInfo("Modifying moon prices");
-                    foreach (CompatibleNoun noun in routeWord.compatibleNouns)
+                    LevelPreset preset = Plugin.INSTANCE.presets[level.getGuid()];
+                    bool wasDefault = defaultPrices.Count() == 0;
+                    if (preset.price.isSet())
                     {
-                        TerminalNode result = noun.result;
-                        if (result.terminalOptions == null)
+                        bool updatedConfigs = false;
+                        bool updatedDefaultInfo = false;
+                        Plugin.LETHAL_LOGGER.LogInfo("Modifying moon prices");
+                        foreach (CompatibleNoun noun in routeWord.compatibleNouns)
                         {
-                            Plugin.LETHAL_LOGGER.LogError($"Route subcommand {result.name} does not have any valid terminal options!");
-                            continue;
-                        }
-
-                        CompatibleNoun confirmNoun = result.terminalOptions.First(n => n.noun.name == "Confirm");
-                        if (confirmNoun == null)
-                        {
-                            Plugin.LETHAL_LOGGER.LogError($"Unable to find a confirm option for route command {result.name}");
-                            continue;
-                        }
-                        TerminalNode confirm = confirmNoun.result;
-
-                        if (confirm == null)
-                        {
-                            Plugin.LETHAL_LOGGER.LogError($"Found a confirm option for route command {result.name}, but it has no result node!");
-                            continue;
-                        }
-                        int levelId = confirm.buyRerouteToMoon;
-                        if (StartOfRound.Instance.getLevelById(levelId, out SelectableLevel matched))
-                        {
-                            Guid matchedGuid = matched.getGuid();
-                            if (wasDefault)
+                            TerminalNode result = noun.result;
+                            if (result.terminalOptions == null)
                             {
-                                if (!defaultPrices.TryAdd(levelId, result.itemCost))
-                                {
-                                    Plugin.LETHAL_LOGGER.LogError($"Already changed price for TerminalNode {result.name} with level id {levelId}. Perhaps another mod has added it in twice??");
-                                }
+                                Plugin.LETHAL_LOGGER.LogError($"Route subcommand {result.name} does not have any valid terminal options!");
+                                continue;
                             }
 
-                            if (priceConfigurations.Count > 0)
+                            CompatibleNoun confirmNoun = result.terminalOptions.First(n => n.noun.name == "Confirm");
+                            if (confirmNoun == null)
                             {
-                                bool didMoonPriceUpdate = false;
-                                foreach (PriceConfiguration config in priceConfigurations)
+                                Plugin.LETHAL_LOGGER.LogError($"Unable to find a confirm option for route command {result.name}");
+                                continue;
+                            }
+                            TerminalNode confirm = confirmNoun.result;
+
+                            if (confirm == null)
+                            {
+                                Plugin.LETHAL_LOGGER.LogError($"Found a confirm option for route command {result.name}, but it has no result node!");
+                                continue;
+                            }
+                            int levelId = confirm.buyRerouteToMoon;
+                            if (StartOfRound.Instance.getLevelById(levelId, out SelectableLevel matched))
+                            {
+                                Guid matchedGuid = matched.getGuid();
+                                if (wasDefault)
                                 {
-                                    if (!config.moons.TryGetValue(matchedGuid, out MoonPriceConfiguration c))
+                                    if (!defaultPrices.TryAdd(levelId, result.itemCost))
                                     {
-                                        Plugin.LETHAL_LOGGER.LogError("Unable to find a price config option for " + matched.name);
+                                        Plugin.LETHAL_LOGGER.LogError($"Already changed price for TerminalNode {result.name} with level id {levelId}. Perhaps another mod has added it in twice??");
                                     }
-                                    else
+                                }
+
+                                if (priceConfigurations.Count > 0)
+                                {
+                                    bool didMoonPriceUpdate = false;
+                                    foreach (PriceConfiguration config in priceConfigurations)
                                     {
-                                        if (config.moons[matchedGuid].price.DefaultValue() == -1)
+                                        if (!config.moons.TryGetValue(matchedGuid, out MoonPriceConfiguration c))
                                         {
-                                            updatedConfigs = didMoonPriceUpdate = true;
-                                            config.file.SaveOnConfigSet = false;
-                                            config.moons[matchedGuid].price.setDefaultValue(result.itemCost);
+                                            Plugin.LETHAL_LOGGER.LogError("Unable to find a price config option for " + matched.name);
                                         }
+                                        else
+                                        {
+                                            if (config.moons[matchedGuid].price.DefaultValue() == -1)
+                                            {
+                                                updatedConfigs = didMoonPriceUpdate = true;
+                                                config.file.SaveOnConfigSet = false;
+                                                config.moons[matchedGuid].price.setDefaultValue(result.itemCost);
+                                            }
+                                        }
+
                                     }
 
+                                    if (didMoonPriceUpdate)
+                                    {
+                                        Plugin.LETHAL_LOGGER.LogInfo($"Updated price configs with a new default price for level {matched.name}");
+                                    }
+                                }
+                                else
+                                {
+                                    Plugin.LETHAL_LOGGER.LogError("Expected at least 1 enabled PriceConfiguration object, got none. Was this PriceConfiguration object loaded properly?");
                                 }
 
-                                if (didMoonPriceUpdate)
+                                if (preset.price.value.TryGetValue(matchedGuid, out LevelPresetPrice pricePreset))
                                 {
-                                    Plugin.LETHAL_LOGGER.LogInfo($"Updated price configs with a new default price for level {matched.name}");
+                                    int price = defaultPrices.GetValueOrDefault(levelId, result.itemCost);
+                                    pricePreset.price.update(ref price);
+
+                                    result.itemCost = price;
+                                    confirm.itemCost = price;
                                 }
+
+                                updatedDefaultInfo |= Plugin.INSTANCE.defaultInformation.updatePrice(matched, result.itemCost);
                             }
                             else
                             {
-                                Plugin.LETHAL_LOGGER.LogError("Expected at least 1 enabled PriceConfiguration object, got none. Was this PriceConfiguration object loaded properly?");
+                                Plugin.LETHAL_LOGGER.LogWarning($"Unable to find moon for level {levelId} on CompatibleNoun {result.name}");
                             }
+                        }
 
-                            if (preset.price.value.TryGetValue(matchedGuid, out LevelPresetPrice pricePreset))
+                        if (updatedConfigs)
+                        {
+                            foreach (PriceConfiguration config in priceConfigurations)
                             {
-                                int price = defaultPrices.GetValueOrDefault(levelId, result.itemCost);
-                                pricePreset.price.update(ref price);
+                                config.file.Save();
+                                config.file.SaveOnConfigSet = true;
+                            }
+                        }
 
-                                result.itemCost = price;
-                                confirm.itemCost = price;
+                        if (updatedDefaultInfo)
+                        {
+                            Plugin.INSTANCE.exportData();
+                        }
+                    }
+                    else if (!wasDefault)
+                    {
+                        // Reset the moons to their vanilla values, for this level
+                        Plugin.LETHAL_LOGGER.LogInfo("Resetting moon prices back to the original values");
+                        foreach (CompatibleNoun noun in routeWord.compatibleNouns)
+                        {
+                            TerminalNode result = noun.result;
+                            if (result.terminalOptions == null)
+                            {
+                                Plugin.LETHAL_LOGGER.LogError($"Route subcommand {result.name} does not have any valid terminal options!");
+                                continue;
                             }
 
-                            updatedDefaultInfo |= Plugin.INSTANCE.defaultInformation.updatePrice(matched, result.itemCost);
+                            CompatibleNoun confirmNoun = result.terminalOptions.First(n => n.noun.name == "Confirm");
+                            if (confirmNoun == null)
+                            {
+                                Plugin.LETHAL_LOGGER.LogError($"Unable to find a confirm option for route command {result.name}");
+                                continue;
+                            }
+                            TerminalNode confirm = confirmNoun.result;
+
+                            if (confirm == null)
+                            {
+                                Plugin.LETHAL_LOGGER.LogError($"Found a confirm option for route command {result.name}, but it has no result node!");
+                                continue;
+                            }
+                            int levelId = confirm.buyRerouteToMoon;
+
+                            int price = defaultPrices.GetValueOrDefault(levelId, result.itemCost);
+
+                            result.itemCost = price;
+                            confirm.itemCost = price;
                         }
-                        else
-                        {
-                            Plugin.LETHAL_LOGGER.LogWarning($"Unable to find moon for level {levelId} on CompatibleNoun {result.name}");
-                        }
+                        defaultPrices.Clear();
                     }
-
-                    if (updatedConfigs)
-                    {
-                        foreach (PriceConfiguration config in priceConfigurations)
-                        {
-                            config.file.Save();
-                            config.file.SaveOnConfigSet = true;
-                        }
-                    }
-
-                    if (updatedDefaultInfo)
-                    {
-                        Plugin.INSTANCE.exportData();
-                    }
-                }
-                else if (!wasDefault)
-                {
-                    // Reset the moons to their vanilla values, for this level
-                    Plugin.LETHAL_LOGGER.LogInfo("Resetting moon prices back to the original values");
-                    foreach (CompatibleNoun noun in routeWord.compatibleNouns)
-                    {
-                        TerminalNode result = noun.result;
-                        if (result.terminalOptions == null)
-                        {
-                            Plugin.LETHAL_LOGGER.LogError($"Route subcommand {result.name} does not have any valid terminal options!");
-                            continue;
-                        }
-
-                        CompatibleNoun confirmNoun = result.terminalOptions.First(n => n.noun.name == "Confirm");
-                        if (confirmNoun == null)
-                        {
-                            Plugin.LETHAL_LOGGER.LogError($"Unable to find a confirm option for route command {result.name}");
-                            continue;
-                        }
-                        TerminalNode confirm = confirmNoun.result;
-
-                        if (confirm == null)
-                        {
-                            Plugin.LETHAL_LOGGER.LogError($"Found a confirm option for route command {result.name}, but it has no result node!");
-                            continue;
-                        }
-                        int levelId = confirm.buyRerouteToMoon;
-
-                        int price = defaultPrices.GetValueOrDefault(levelId, result.itemCost);
-
-                        result.itemCost = price;
-                        confirm.itemCost = price;
-                    }
-                    defaultPrices.Clear();
                 }
             }
             catch (Exception e)
