@@ -18,7 +18,7 @@ A flexible customization mod that works with other mods. Now comes with a [WEB U
 - Moon price changing mods
   - If you modify moon prices with LethalQuantities, other mods may not be able to change the price correctly, or at all.
   - For developers:
-	- The moon prices are set in a prefix for `StartOfRound.ChangePlanet` with a priority of 200. You can add your own prefix(with a higher priority value) or postfix to ensure that your prices are set properly.
+	- The moon prices are set in a prefix for `StartOfRound.ChangeLevel` with a priority of 200. You can add your own prefix(with a higher priority value) or postfix to ensure that your prices are set properly.
 ## Pictures
 ![Welcome screen](https://raw.githubusercontent.com/BananaPuncher714/LethalQuantities/master/Resources/Screenshot_1.jpg)
 ![Preset menu](https://raw.githubusercontent.com/BananaPuncher714/LethalQuantities/master/Resources/Screenshot_2.jpg)

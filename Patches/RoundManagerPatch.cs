@@ -74,7 +74,7 @@ namespace LethalQuantities.Patches
                     }));
 
                     Plugin.LETHAL_LOGGER.LogInfo("Fetching all moon prices");
-                    CompatibleNoun[] nouns = Resources.FindObjectsOfTypeAll<TerminalKeyword>().First(w => w.word != null && w.word.ToLower() == "route").compatibleNouns;
+                    CompatibleNoun[] nouns = Resources.FindObjectsOfTypeAll<TerminalKeyword>().First(w => w.name == "Route").compatibleNouns;
                     foreach (SelectableLevel level in Resources.FindObjectsOfTypeAll<SelectableLevel>())
                     {
                         GenericLevelInformation genericInfo = new GenericLevelInformation();
@@ -88,7 +88,7 @@ namespace LethalQuantities.Patches
                                 continue;
                             }
 
-                            CompatibleNoun confirmNoun = result.terminalOptions.First(n => n.noun.word.ToLower() == "confirm");
+                            CompatibleNoun confirmNoun = result.terminalOptions.First(n => n.noun.name == "Confirm");
                             if (confirmNoun == null)
                             {
                                 Plugin.LETHAL_LOGGER.LogError($"Unable to find a confirm option for route command {result.name}");

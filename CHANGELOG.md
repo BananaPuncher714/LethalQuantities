@@ -1,4 +1,6 @@
 ## Changelog
+### 1.2.3
+- Fixed incompatibility with translation mods that change the route and confirm words
 ### 1.2.2
 - Added a legacy option under Advanced in the global configuration to allow only using the legacy configuration files
 - Added a default global preset in the web UI

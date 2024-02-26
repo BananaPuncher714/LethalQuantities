@@ -23,7 +23,7 @@ namespace LethalQuantities.Patches
         {
             try {
                 Terminal terminal = UnityEngine.Object.FindFirstObjectByType<Terminal>();
-                TerminalKeyword routeWord = terminal.terminalNodes.allKeywords.First(w => w.word != null && w.word.ToLower() == "route");
+                TerminalKeyword routeWord = terminal.terminalNodes.allKeywords.First(w => w.name == "Route");
 
                 List<PriceConfiguration> priceConfigurations = new List<PriceConfiguration>();
                 GlobalConfiguration configuration = Plugin.INSTANCE.configuration;
@@ -55,7 +55,7 @@ namespace LethalQuantities.Patches
                             continue;
                         }
 
-                        CompatibleNoun confirmNoun = result.terminalOptions.First(n => n.noun.word.ToLower() == "confirm");
+                        CompatibleNoun confirmNoun = result.terminalOptions.First(n => n.noun.name == "Confirm");
                         if (confirmNoun == null)
                         {
                             Plugin.LETHAL_LOGGER.LogError($"Unable to find a confirm option for route command {result.name}");
@@ -155,7 +155,7 @@ namespace LethalQuantities.Patches
                             continue;
                         }
 
-                        CompatibleNoun confirmNoun = result.terminalOptions.First(n => n.noun.word.ToLower() == "confirm");
+                        CompatibleNoun confirmNoun = result.terminalOptions.First(n => n.noun.name == "Confirm");
                         if (confirmNoun == null)
                         {
                             Plugin.LETHAL_LOGGER.LogError($"Unable to find a confirm option for route command {result.name}");
