@@ -175,6 +175,11 @@ namespace LethalQuantities
             }
 
             Dictionary<string, string> levelMap = new Dictionary<string, string>();
+            if (jObj.ContainsKey("levels"))
+            {
+                // Get the previous level map if it exists
+                levelMap = jObj["levels"].ToObject<Dictionary<string, string>>();
+            }
             foreach (var entry in configuration.levelConfigs)
             {
                 if (entry.Value.isSet())
@@ -188,6 +193,11 @@ namespace LethalQuantities
                     levelMap.TryAdd(entry.Key.getLevelName(), levelPreset.id);
 
                     LETHAL_LOGGER.LogInfo($"Created level preset {levelPreset.id} for {entry.Key.getLevelName()}");
+                }
+                else if (globalPreset != null)
+                {
+                    LETHAL_LOGGER.LogInfo($"No configuration found for {entry.Key.getLevel().PlanetName}, defaulting to global");
+                    levelMap.TryAdd(entry.Key.getLevelName(), globalPreset.id);
                 }
             }
 

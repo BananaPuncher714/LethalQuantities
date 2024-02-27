@@ -24,10 +24,12 @@ A flexible customization mod that works with other mods. Now comes with a [WEB U
 ![Preset menu](https://raw.githubusercontent.com/BananaPuncher714/LethalQuantities/master/Resources/Screenshot_2.jpg)
 ![Editor](https://raw.githubusercontent.com/BananaPuncher714/LethalQuantities/master/Resources/Screenshot_3.jpg)
 ## Configuration
+### Web UI
 Configuration is now managed through the [web UI](https://bananapuncher714.github.io/LethalQuantities/). The old config files are deprecated and should not be used. To use the new web UI, first host or join a game, then edit the `LethalQuantities/Advanced/Preset.json`
 file in the config folder with the web UI. Once complete, download and save it to the same file(`LethalQuantities/Advanced/Preset.json`), and restart the game.
 
 
+### Legacy
 However, in the case that you need to or can only use the config files, you can enable the `UseLegacy` option in the global config to allow the legacy configuration files to take priority over whatever is set through the web UI.
 You must host or join a game at least once to generate the configuration files. Any missing or deleted files will be generated with the default options. By default, the only file that is generated is `Configuration.cfg`. You must enable global config files and individual moon config files in order to modify anything.
 - `Configuration.cfg` - Enable/disable other configuration files here
@@ -182,6 +184,6 @@ The enemy spawn logic in **Lethal Company** is a bit complex, and there are many
 - The chance of an enemy spawning is `weight of enemy type / total weight`, where the total weight is the sum of the weights of all enemy types
 - The weight of an enemy type is `rarity * spawn chance at the current time` . If `UseSpawnFalloff` is enabled(like baboon hawks), then it is `rarity * spawn chance at the current time * spawn falloff multiplier at the current time`. Spawn falloff multiplier has a curve with a key that is the total amount of that mob / 10.
 ## Roadmap
-- Additional settings
 - Weather customization
+- Additional settings
 - Lights out?
