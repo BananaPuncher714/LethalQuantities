@@ -1053,7 +1053,7 @@
                     // Don't really have to clone these spoilers, since they're used only once
                     col2.append(prefabs.presetTitleScrap.cloneNode(true), document.createElement("br"));
                     addEntry(col2, prefabs.presetScrapAmountMultiplier.cloneNode(true), new bindToggleableUnsignedFloat(preset.scrapAmountMultiplier));
-                    addEntry(col2, prefabs.presetScrapAmountMultiplier.cloneNode(true), new bindToggleableUnsignedFloat(preset.scrapValueMultiplier));
+                    addEntry(col2, prefabs.presetScrapValueMultiplier.cloneNode(true), new bindToggleableUnsignedFloat(preset.scrapValueMultiplier));
                     addEntry(col2, prefabs.presetScrapMin.cloneNode(true), new bindToggleableUnsignedInt(preset.minScrap));
                     addEntry(col2, prefabs.presetScrapMax.cloneNode(true), new bindToggleableUnsignedInt(preset.maxScrap));
                     addEntry(col2, prefabs.presetScrap.cloneNode(true), new UniqueRarityBoundList(preset.scrap, preset.availableItems, ItemType.bind).getElement());
@@ -1182,6 +1182,11 @@
                                         global.name = "Global";
                                         global.id = "default-global";
                                         this.presets[global.id] = global;
+
+                                        // If there is an exported global, then use that
+                                        if (this.presets["exported-Global"]) {
+                                            globa.parent = "exported-Global";
+                                        }
                                     }
                                     console.log("Set parent for preset " + levelId);
                                     preset.parent = global.id;
