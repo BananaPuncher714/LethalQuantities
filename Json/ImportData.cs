@@ -95,7 +95,7 @@ namespace LethalQuantities.Json
                                     }
                                     else
                                     {
-                                        Plugin.LETHAL_LOGGER.LogError($"Unable to find enemy type with id {option.id}");
+                                        MiniLogger.LogError($"Unable to find enemy type with id {option.id}");
                                     }
                                 }
                                 if (enemies.Count > 0)
@@ -135,7 +135,7 @@ namespace LethalQuantities.Json
                                     }
                                     else
                                     {
-                                        Plugin.LETHAL_LOGGER.LogError($"Unable to find enemy type with id {option.id}");
+                                        MiniLogger.LogError($"Unable to find enemy type with id {option.id}");
                                     }
                                 }
                                 if (enemies.Count > 0)
@@ -175,7 +175,7 @@ namespace LethalQuantities.Json
                                     }
                                     else
                                     {
-                                        Plugin.LETHAL_LOGGER.LogError($"Unable to find enemy type with id {option.id}");
+                                        MiniLogger.LogError($"Unable to find enemy type with id {option.id}");
                                     }
                                 }
                                 if (enemies.Count > 0)
@@ -210,7 +210,7 @@ namespace LethalQuantities.Json
                                     }
                                     else
                                     {
-                                        Plugin.LETHAL_LOGGER.LogError($"Unable to find item with id {option.id}");
+                                        MiniLogger.LogError($"Unable to find item with id {option.id}");
                                     }
                                 }
                                 if (items.Count > 0)
@@ -257,7 +257,7 @@ namespace LethalQuantities.Json
                                     }
                                     else
                                     {
-                                        Plugin.LETHAL_LOGGER.LogWarning($"Could not find trap with id {option.id}");
+                                        MiniLogger.LogWarning($"Could not find trap with id {option.id}");
                                     }
                                 }
                                 if (traps.Count > 0)
@@ -284,7 +284,7 @@ namespace LethalQuantities.Json
                                     }
                                     else
                                     {
-                                        Plugin.LETHAL_LOGGER.LogWarning($"Could not find matching SelectableLevel with id {option.id}");
+                                        MiniLogger.LogWarning($"Could not find matching SelectableLevel with id {option.id}");
                                     }
                                 }
                                 if (prices.Count > 0)
@@ -298,17 +298,17 @@ namespace LethalQuantities.Json
                         // Could move this to the top for faster return
                         if (!levelPresets.TryAdd(foundGuid.value, levelPreset))
                         {
-                            Plugin.LETHAL_LOGGER.LogError($"Already added a preset for the level {entry.Key}!");
+                            MiniLogger.LogError($"Already added a preset for the level {entry.Key}!");
                         }
                     }
                     else
                     {
-                        Plugin.LETHAL_LOGGER.LogError($"Unable to find preset {entry.Value} for level {entry.Key}");
+                        MiniLogger.LogError($"Unable to find preset {entry.Value} for level {entry.Key}");
                     }
                 }
                 else
                 {
-                    Plugin.LETHAL_LOGGER.LogError($"Unable to find a level with the name {entry.Key}, skipping");
+                    MiniLogger.LogError($"Unable to find a level with the name {entry.Key}, skipping");
                 }
             }
 

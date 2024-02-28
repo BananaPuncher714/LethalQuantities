@@ -1,9 +1,6 @@
 ﻿using LethalQuantities.Objects;
 using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
-using System.Text;
-using UnityEngine;
 
 namespace LethalQuantities.Json
 {

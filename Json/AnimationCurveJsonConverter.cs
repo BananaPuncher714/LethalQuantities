@@ -19,39 +19,54 @@ namespace LethalQuantities.Json
             }
             else if (reader.TokenType == JsonToken.StartArray)
             {
+                // TODO Improve this
                 reader.Read();
                 AnimationCurve curve = new AnimationCurve();
                 while (reader.TokenType != JsonToken.EndArray) {
-                    reader.Read();
-                    string timeStr = reader.ReadAsString();
-                    float time = 0;
-                    try
-                    {
-                        time = float.Parse(timeStr, CultureInfo.InvariantCulture);
-                    }
-                    catch
-                    {
-                        Plugin.LETHAL_LOGGER.LogError($"Encountered an invalid value for an animation curve key: '{timeStr}'");
-                        Plugin.LETHAL_LOGGER.LogError($"Please find and replace the value with a valid number, using 0 for now.");
-                    }
-                    reader.Read();
-                    string valueStr = reader.ReadAsString();
-                    float value = 0;
-                    try
-                    {
-                        value = float.Parse(valueStr, CultureInfo.InvariantCulture);
-                    }
-                    catch
-                    {
-                        Plugin.LETHAL_LOGGER.LogError($"Encountered an invalid value for an animation curve value: '{valueStr}'");
-                        Plugin.LETHAL_LOGGER.LogError($"Please find and replace the value with a valid number, using 0 for now.");
-                    }
-                    reader.Read();
+                    // Should always be an object that contains a time and value
+                    if (reader.TokenType == JsonToken.StartObject) {
+                        Optional<float> time = Optional<float>.Empty();
+                        Optional<float> value = Optional<float>.Empty();
 
-                    curve.AddKey(time, value);
+                        reader.Read();
+                        while (reader.TokenType != JsonToken.EndObject)
+                        {
+                            string keyType = reader.Value.ToString();
+                            string keyVal = reader.ReadAsString();
+                            float keyFloat = 0;
+                            try
+                            {
+                                keyFloat = float.Parse(keyVal, CultureInfo.InvariantCulture);
+                            }
+                            catch
+                            {
+                                MiniLogger.LogError($"Encountered an invalid value for an animation curve {keyType}: '{keyVal}'");
+                                MiniLogger.LogError($"Please find and replace the value with a valid number, using 0 for now.");
+                            }
+                            if (keyType == "time")
+                            {
+                                time.setValue(keyFloat);
+                            }
+                            else if (keyType == "value")
+                            {
+                                value.setValue(keyFloat);
+                            }
 
-                    if (reader.TokenType != JsonToken.EndArray)
+                            if (reader.TokenType != JsonToken.EndObject)
+                            {
+                                reader.Read();
+                            }
+                        }
+                        reader.Read();
+
+                        if (time.isSet() && value.isSet())
+                        {
+                            curve.AddKey(time.value, value.value);
+                        }
+                    }
+                    else
                     {
+                        // Skip, I guess?
                         reader.Read();
                     }
                 }

@@ -26,7 +26,7 @@ namespace LethalQuantities.Patches
                         // Must be the same across all players to avoid desync
                         __instance.Generator.LengthMultiplier = RoundManager.Instance.mapSizeMultiplier * RoundManager.Instance.currentLevel.factorySizeMultiplier;
 
-                        Plugin.LETHAL_LOGGER.LogInfo($"Found dungeon flow {name}, using a length multiplier of {__instance.Generator.LengthMultiplier}");
+                        MiniLogger.LogInfo($"Found dungeon flow {name}, using a length multiplier of {__instance.Generator.LengthMultiplier}");
                     }
                 }
             }

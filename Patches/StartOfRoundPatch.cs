@@ -45,27 +45,27 @@ namespace LethalQuantities.Patches
                 {
                     bool updatedConfigs = false;
                     bool updatedDefaultInfo = false;
-                    Plugin.LETHAL_LOGGER.LogInfo("Modifying moon prices");
+                    MiniLogger.LogInfo("Modifying moon prices");
                     foreach (CompatibleNoun noun in routeWord.compatibleNouns)
                     {
                         TerminalNode result = noun.result;
                         if (result.terminalOptions == null)
                         {
-                            Plugin.LETHAL_LOGGER.LogError($"Route subcommand {result.name} does not have any valid terminal options!");
+                            MiniLogger.LogError($"Route subcommand {result.name} does not have any valid terminal options!");
                             continue;
                         }
 
                         CompatibleNoun confirmNoun = result.terminalOptions.First(n => n.noun.name == "Confirm");
                         if (confirmNoun == null)
                         {
-                            Plugin.LETHAL_LOGGER.LogError($"Unable to find a confirm option for route command {result.name}");
+                            MiniLogger.LogError($"Unable to find a confirm option for route command {result.name}");
                             continue;
                         }
                         TerminalNode confirm = confirmNoun.result;
 
                         if (confirm == null)
                         {
-                            Plugin.LETHAL_LOGGER.LogError($"Found a confirm option for route command {result.name}, but it has no result node!");
+                            MiniLogger.LogError($"Found a confirm option for route command {result.name}, but it has no result node!");
                             continue;
                         }
                         int levelId = confirm.buyRerouteToMoon;
@@ -76,7 +76,7 @@ namespace LethalQuantities.Patches
                             {
                                 if (!defaultPrices.TryAdd(levelId, result.itemCost))
                                 {
-                                    Plugin.LETHAL_LOGGER.LogError($"Already changed price for TerminalNode {result.name} with level id {levelId}. Perhaps another mod has added it in twice??");
+                                    MiniLogger.LogError($"Already changed price for TerminalNode {result.name} with level id {levelId}. Perhaps another mod has added it in twice??");
                                 }
                             }
 
@@ -87,7 +87,7 @@ namespace LethalQuantities.Patches
                                 {
                                     if (!config.moons.TryGetValue(matchedGuid, out MoonPriceConfiguration c))
                                     {
-                                        Plugin.LETHAL_LOGGER.LogError("Unable to find a price config option for " + matched.name);
+                                        MiniLogger.LogError("Unable to find a price config option for " + matched.name);
                                     }
                                     else
                                     {
@@ -103,12 +103,12 @@ namespace LethalQuantities.Patches
 
                                 if (didMoonPriceUpdate)
                                 {
-                                    Plugin.LETHAL_LOGGER.LogInfo($"Updated price configs with a new default price for level {matched.name}");
+                                    MiniLogger.LogInfo($"Updated price configs with a new default price for level {matched.name}");
                                 }
                             }
                             else
                             {
-                                Plugin.LETHAL_LOGGER.LogError("Expected at least 1 enabled PriceConfiguration object, got none. Was this PriceConfiguration object loaded properly?");
+                                MiniLogger.LogError("Expected at least 1 enabled PriceConfiguration object, got none. Was this PriceConfiguration object loaded properly?");
                             }
 
                             if (preset.price.value.TryGetValue(matchedGuid, out LevelPresetPrice pricePreset))
@@ -124,7 +124,7 @@ namespace LethalQuantities.Patches
                         }
                         else
                         {
-                            Plugin.LETHAL_LOGGER.LogWarning($"Unable to find moon for level {levelId} on CompatibleNoun {result.name}");
+                            MiniLogger.LogWarning($"Unable to find moon for level {levelId} on CompatibleNoun {result.name}");
                         }
                     }
 
@@ -145,27 +145,27 @@ namespace LethalQuantities.Patches
                 else if (!wasDefault)
                 {
                     // Reset the moons to their vanilla values, for this level
-                    Plugin.LETHAL_LOGGER.LogInfo("Resetting moon prices back to the original values");
+                    MiniLogger.LogInfo("Resetting moon prices back to the original values");
                     foreach (CompatibleNoun noun in routeWord.compatibleNouns)
                     {
                         TerminalNode result = noun.result;
                         if (result.terminalOptions == null)
                         {
-                            Plugin.LETHAL_LOGGER.LogError($"Route subcommand {result.name} does not have any valid terminal options!");
+                            MiniLogger.LogError($"Route subcommand {result.name} does not have any valid terminal options!");
                             continue;
                         }
 
                         CompatibleNoun confirmNoun = result.terminalOptions.First(n => n.noun.name == "Confirm");
                         if (confirmNoun == null)
                         {
-                            Plugin.LETHAL_LOGGER.LogError($"Unable to find a confirm option for route command {result.name}");
+                            MiniLogger.LogError($"Unable to find a confirm option for route command {result.name}");
                             continue;
                         }
                         TerminalNode confirm = confirmNoun.result;
 
                         if (confirm == null)
                         {
-                            Plugin.LETHAL_LOGGER.LogError($"Found a confirm option for route command {result.name}, but it has no result node!");
+                            MiniLogger.LogError($"Found a confirm option for route command {result.name}, but it has no result node!");
                             continue;
                         }
                         int levelId = confirm.buyRerouteToMoon;
@@ -180,8 +180,8 @@ namespace LethalQuantities.Patches
             }
             catch (Exception e)
             {
-                Plugin.LETHAL_LOGGER.LogError("Encountered an error while trying to update the moon prices");
-                Plugin.LETHAL_LOGGER.LogError($"Please report this error to the mod developers: {e}");
+                MiniLogger.LogError("Encountered an error while trying to update the moon prices");
+                MiniLogger.LogError($"Please report this error to the mod developers: {e}");
             }
         }
     }

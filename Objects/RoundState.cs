@@ -77,7 +77,7 @@ namespace LethalQuantities.Objects
         {
             this.level = level;
 
-            Plugin.LETHAL_LOGGER.LogInfo("Preparing for level modification");
+            MiniLogger.LogInfo("Preparing for level modification");
 
             oldEnemies.AddRange(level.Enemies);
             oldDaytimeEnemies.AddRange(level.DaytimeEnemies);
@@ -113,7 +113,7 @@ namespace LethalQuantities.Objects
 
         public void OnDestroy()
         {
-            Plugin.LETHAL_LOGGER.LogInfo($"Cleaning up and restoring values to {level.name}");
+            MiniLogger.LogInfo($"Cleaning up and restoring values to {level.name}");
             // Undo any modifications made to the SelectedLevel
             foreach (GameObject obj in modifiedEnemyTypes)
             {
@@ -196,7 +196,7 @@ namespace LethalQuantities.Objects
             GameObject obj = type.enemyPrefab;
             if (obj == null)
             {
-                Plugin.LETHAL_LOGGER.LogError($"No enemy prefab found for enemy {type.name}!");
+                MiniLogger.LogError($"No enemy prefab found for enemy {type.name}!");
                 return null;
             }
             bool isActive = obj.activeSelf;

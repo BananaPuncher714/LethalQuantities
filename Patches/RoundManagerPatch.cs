@@ -26,21 +26,21 @@ namespace LethalQuantities.Patches
                     GlobalInformation globalInfo = new GlobalInformation(Plugin.GLOBAL_SAVE_DIR, Plugin.LEVEL_SAVE_DIR);
                     // Get all enemy, item and dungeon flows
                     // Filter out any potentially "fake" enemy types that might have been added by other mods
-                    Plugin.LETHAL_LOGGER.LogInfo("Fetching all enemy types");
+                    MiniLogger.LogInfo("Fetching all enemy types");
                     HashSet<string> addedEnemyTypes = new HashSet<string>();
                     globalInfo.allEnemyTypes.AddRange(Resources.FindObjectsOfTypeAll<EnemyType>().Where(type =>
                     {
                         if (type.enemyPrefab == null)
                         {
-                            Plugin.LETHAL_LOGGER.LogWarning($"Enemy type {type.name} is missing prefab! Perhaps another mod has removed it? Some default values in the config may not be correct.");
+                            MiniLogger.LogWarning($"Enemy type {type.name} is missing prefab! Perhaps another mod has removed it? Some default values in the config may not be correct.");
                         }
                         else if (!manager.NetworkConfig.Prefabs.Contains(type.enemyPrefab))
                         {
-                            Plugin.LETHAL_LOGGER.LogWarning($"Enemy type {type.name} is not a real object! Ignoring type");
+                            MiniLogger.LogWarning($"Enemy type {type.name} is not a real object! Ignoring type");
                         }
                         else if (addedEnemyTypes.Contains(type.name))
                         {
-                            Plugin.LETHAL_LOGGER.LogWarning($"Enemy type {type.name} was found twice! Perhaps another mod has added it? Some default values in the config may not be correct.");
+                            MiniLogger.LogWarning($"Enemy type {type.name} was found twice! Perhaps another mod has added it? Some default values in the config may not be correct.");
                         }
                         else
                         {
@@ -49,21 +49,21 @@ namespace LethalQuantities.Patches
                         }
                         return false;
                     }));
-                    Plugin.LETHAL_LOGGER.LogInfo("Fetching all items");
+                    MiniLogger.LogInfo("Fetching all items");
                     HashSet<string> addedItems = new HashSet<string>();
                     globalInfo.allItems.AddRange(Resources.FindObjectsOfTypeAll<Item>().Where(type =>
                     {
                         if (type.spawnPrefab == null)
                         {
-                            Plugin.LETHAL_LOGGER.LogWarning($"Item {type.name} is missing prefab! Perhaps another mod has removed it? Some default values in the config may not be correct.");
+                            MiniLogger.LogWarning($"Item {type.name} is missing prefab! Perhaps another mod has removed it? Some default values in the config may not be correct.");
                         }
                         else if (!manager.NetworkConfig.Prefabs.Contains(type.spawnPrefab))
                         {
-                            Plugin.LETHAL_LOGGER.LogWarning($"Item {type.name} is not a real item! Ignoring item");
+                            MiniLogger.LogWarning($"Item {type.name} is not a real item! Ignoring item");
                         }
                         else if (addedItems.Contains(type.name))
                         {
-                            Plugin.LETHAL_LOGGER.LogWarning($"Item {type.name} was found twice! Perhaps another mod has added it? Some default values in the config may not be correct.");
+                            MiniLogger.LogWarning($"Item {type.name} was found twice! Perhaps another mod has added it? Some default values in the config may not be correct.");
                         }
                         else
                         {
@@ -73,7 +73,7 @@ namespace LethalQuantities.Patches
                         return false;
                     }));
 
-                    Plugin.LETHAL_LOGGER.LogInfo("Fetching all moon prices");
+                    MiniLogger.LogInfo("Fetching all moon prices");
                     CompatibleNoun[] nouns = Resources.FindObjectsOfTypeAll<TerminalKeyword>().First(w => w.name == "Route").compatibleNouns;
                     foreach (SelectableLevel level in Resources.FindObjectsOfTypeAll<SelectableLevel>())
                     {
@@ -84,21 +84,21 @@ namespace LethalQuantities.Patches
                             TerminalNode result = noun.result;
                             if (result.terminalOptions == null)
                             {
-                                Plugin.LETHAL_LOGGER.LogError($"Route subcommand {result.name} does not have any valid terminal options!");
+                                MiniLogger.LogError($"Route subcommand {result.name} does not have any valid terminal options!");
                                 continue;
                             }
 
                             CompatibleNoun confirmNoun = result.terminalOptions.First(n => n.noun.name == "Confirm");
                             if (confirmNoun == null)
                             {
-                                Plugin.LETHAL_LOGGER.LogError($"Unable to find a confirm option for route command {result.name}");
+                                MiniLogger.LogError($"Unable to find a confirm option for route command {result.name}");
                                 continue;
                             }
                             TerminalNode confirm = confirmNoun.result;
 
                             if (confirm == null)
                             {
-                                Plugin.LETHAL_LOGGER.LogError($"Found a confirm option for route command {result.name}, but it has no result node!");
+                                MiniLogger.LogError($"Found a confirm option for route command {result.name}, but it has no result node!");
                                 continue;
                             }
 
@@ -106,7 +106,7 @@ namespace LethalQuantities.Patches
 
                             if (level.levelID == confirm.buyRerouteToMoon)
                             {
-                                Plugin.LETHAL_LOGGER.LogInfo($"Found the price {confirm.itemCost} for {level.name}");
+                                MiniLogger.LogInfo($"Found the price {confirm.itemCost} for {level.name}");
                                 genericInfo.price = confirm.itemCost;
                                 found = true;
                                 break;
@@ -114,13 +114,16 @@ namespace LethalQuantities.Patches
                         }
                         if (!found)
                         {
-                            Plugin.LETHAL_LOGGER.LogWarning($"Unable to find price of {level.name}({level.PlanetName})");
+                            MiniLogger.LogWarning($"Unable to find price of {level.name}({level.PlanetName})");
                         }
 
-                        globalInfo.allSelectableLevels.Add(SelectableLevelCache.getGuid(level), genericInfo);
+                        if (!globalInfo.allSelectableLevels.TryAdd(SelectableLevelCache.getGuid(level), genericInfo))
+                        {
+                            MiniLogger.LogWarning($"Attempted to set the price for {level} with the price {genericInfo.price} again");
+                        }
                     }
 
-                    Plugin.LETHAL_LOGGER.LogInfo("Fetching all traps");
+                    MiniLogger.LogInfo("Fetching all traps");
                     Dictionary<GameObject, DirectionalSpawnableMapObject> uniqueMapObjects = new Dictionary<GameObject, DirectionalSpawnableMapObject>();
                     // Keep track of added objects, try to make sure we don't add the same one twice
                     HashSet<string> addedTraps = new HashSet<string>();
@@ -143,7 +146,7 @@ namespace LethalQuantities.Patches
                     }
                     globalInfo.allSpawnableMapObjects.AddRange(uniqueMapObjects.Values);
 
-                    Plugin.LETHAL_LOGGER.LogInfo("Fetching all dungeon flows");
+                    MiniLogger.LogInfo("Fetching all dungeon flows");
                     globalInfo.allDungeonFlows.AddRange(Resources.FindObjectsOfTypeAll<DungeonFlow>());
                     globalInfo.manager = __instance;
                     globalInfo.sortData();
@@ -152,13 +155,13 @@ namespace LethalQuantities.Patches
                     if (!Plugin.INSTANCE.configInitialized)
                     {
                         // The purpose for this segment below is to save the vanilla information, before any mods change any values
-                        Plugin.LETHAL_LOGGER.LogInfo("Loading global configuration");
+                        MiniLogger.LogInfo("Loading global configuration");
                         configuration = new GlobalConfiguration(globalInfo);
 
                         Plugin.INSTANCE.configuration = configuration;
                         Plugin.INSTANCE.configInitialized = true;
 
-                        Plugin.LETHAL_LOGGER.LogInfo("Done configuring LethalQuantities");
+                        MiniLogger.LogInfo("Done configuring LethalQuantities");
                     }
                     else
                     {
@@ -168,7 +171,7 @@ namespace LethalQuantities.Patches
                     // Set some global options here
                     if (configuration.scrapConfiguration.enabled.Value)
                     {
-                        Plugin.LETHAL_LOGGER.LogInfo("Setting custom item weight values");
+                        MiniLogger.LogInfo("Setting custom item weight values");
                         foreach (Item item in globalInfo.allItems)
                         {
                             ItemConfiguration itemConfig = configuration.scrapConfiguration.items[item];
@@ -188,8 +191,8 @@ namespace LethalQuantities.Patches
                 }
                 catch (Exception e)
                 {
-                    Plugin.LETHAL_LOGGER.LogError("Encountered an error while trying to load the configuration");
-                    Plugin.LETHAL_LOGGER.LogError($"Please report this error to the mod developers: {e}");
+                    MiniLogger.LogError("Encountered an error while trying to load the configuration");
+                    MiniLogger.LogError($"Please report this error to the LethalQuantities mod developers: {e}");
                 }
             }
         }
@@ -222,16 +225,16 @@ namespace LethalQuantities.Patches
                         LevelPreset preset = state.preset;
 
 
-                        Plugin.LETHAL_LOGGER.LogInfo($"RoundState found for level {state.level.name}, modifying level before loading");
+                        MiniLogger.LogInfo($"RoundState found for level {state.level.name}, modifying level before loading");
                         int minimumSpawnProbabilityRange = (int)Math.Ceiling(Math.Abs(TimeOfDay.Instance.daysUntilDeadline - 3) / 3.2);
                         {
-                            Plugin.LETHAL_LOGGER.LogInfo("Changing inside enemy values");
+                            MiniLogger.LogInfo("Changing inside enemy values");
                             preset.maxPowerCount.update(ref newLevel.maxEnemyPowerCount);
                             preset.spawnCurve.update(ref newLevel.enemySpawnChanceThroughoutDay);
                             preset.spawnProbabilityRange.update(ref newLevel.spawnProbabilityRange);
                             if (newLevel.spawnProbabilityRange < minimumSpawnProbabilityRange)
                             {
-                                Plugin.LETHAL_LOGGER.LogWarning($"Interior enemy spawn amount range is too small({newLevel.spawnProbabilityRange}), setting to {minimumSpawnProbabilityRange}");
+                                MiniLogger.LogWarning($"Interior enemy spawn amount range is too small({newLevel.spawnProbabilityRange}), setting to {minimumSpawnProbabilityRange}");
                                 newLevel.spawnProbabilityRange = minimumSpawnProbabilityRange;
                             }
                             if (preset.enemies.set)
@@ -240,13 +243,13 @@ namespace LethalQuantities.Patches
                                 newLevel.Enemies.AddRange(state.enemies);
                             }
 
-                            Plugin.LETHAL_LOGGER.LogInfo("Changing daytime enemy values");
+                            MiniLogger.LogInfo("Changing daytime enemy values");
                             preset.maxDaytimePowerCount.update(ref newLevel.maxDaytimeEnemyPowerCount);
                             preset.daytimeSpawnCurve.update(ref newLevel.daytimeEnemySpawnChanceThroughDay);
                             preset.daytimeSpawnProbabilityRange.update(ref newLevel.daytimeEnemiesProbabilityRange);
                             if (newLevel.daytimeEnemiesProbabilityRange < minimumSpawnProbabilityRange)
                             {
-                                Plugin.LETHAL_LOGGER.LogWarning($"Interior enemy spawn amount range is too small({newLevel.daytimeEnemiesProbabilityRange}), setting to {minimumSpawnProbabilityRange}");
+                                MiniLogger.LogWarning($"Interior enemy spawn amount range is too small({newLevel.daytimeEnemiesProbabilityRange}), setting to {minimumSpawnProbabilityRange}");
                                 newLevel.daytimeEnemiesProbabilityRange = minimumSpawnProbabilityRange;
                             }
                             if (preset.daytimeEnemies.set)
@@ -255,7 +258,7 @@ namespace LethalQuantities.Patches
                                 newLevel.DaytimeEnemies.AddRange(state.daytimeEnemies);
                             }
 
-                            Plugin.LETHAL_LOGGER.LogInfo("Changing outside enemy values");
+                            MiniLogger.LogInfo("Changing outside enemy values");
                             preset.maxOutsidePowerCount.update(ref newLevel.maxOutsideEnemyPowerCount);
                             preset.outsideSpawnCurve.update(ref newLevel.outsideEnemySpawnChanceThroughDay);
                             if (preset.outsideEnemies.set)
@@ -264,7 +267,7 @@ namespace LethalQuantities.Patches
                                 newLevel.OutsideEnemies.AddRange(state.outsideEnemies);
                             }
 
-                            Plugin.LETHAL_LOGGER.LogInfo("Changing scrap values");
+                            MiniLogger.LogInfo("Changing scrap values");
                             preset.minScrap.update(ref newLevel.minScrap);
                             preset.maxScrap.update(ref newLevel.maxScrap);
                             preset.scrapAmountMultiplier.update(ref __instance.scrapAmountMultiplier);
@@ -280,7 +283,7 @@ namespace LethalQuantities.Patches
                             {
                                 if (!defaultRarities.TryAdd(item.spawnableItem, item.rarity))
                                 {
-                                    Plugin.LETHAL_LOGGER.LogWarning($"{newLevel.name} has a duplicate spawnable scrap item: {item.spawnableItem.name}");
+                                    MiniLogger.LogWarning($"{newLevel.name} has a duplicate spawnable scrap item: {item.spawnableItem.name}");
                                     defaultRarities[item.spawnableItem] += item.rarity;
                                 }
                             }
@@ -320,13 +323,13 @@ namespace LethalQuantities.Patches
                             }
                             else
                             {
-                                Plugin.LETHAL_LOGGER.LogWarning($"Preset for level {newLevel.name} has no scrap assigned! No changes have been applied.");
+                                MiniLogger.LogWarning($"Preset for level {newLevel.name} has no scrap assigned! No changes have been applied.");
                             }
                         }
 
                         if (preset.traps.isSet())
                         {
-                            Plugin.LETHAL_LOGGER.LogInfo("Changing interior trap spawn amounts");
+                            MiniLogger.LogInfo("Changing interior trap spawn amounts");
                             Dictionary<GameObject, AnimationCurve> defaultSpawnableMapObjects = new Dictionary<GameObject, AnimationCurve>();
                             foreach (SpawnableMapObject obj in newLevel.spawnableMapObjects)
                             {
@@ -355,8 +358,8 @@ namespace LethalQuantities.Patches
             }
             catch (Exception e)
             {
-                Plugin.LETHAL_LOGGER.LogError("Encountered an error while trying to modify the level");
-                Plugin.LETHAL_LOGGER.LogError($"Please report this error to the mod developers: {e}");
+                MiniLogger.LogError("Encountered an error while trying to modify the level");
+                MiniLogger.LogError($"Please report this error to the LethalQuantities mod developers: {e}");
             }
         }
 
@@ -366,8 +369,9 @@ namespace LethalQuantities.Patches
         private static void onGenerateNewFloorPrefix(RoundManager __instance)
         {
             DungeonFlow[] allDungeonFlows = Resources.FindObjectsOfTypeAll<DungeonFlow>();
+            try
             {
-                Plugin.LETHAL_LOGGER.LogInfo("Inserting missing dungeon flows into the RoundManager");
+                MiniLogger.LogInfo("Inserting missing dungeon flows into the RoundManager");
                 // Not very good, but for each dungeon flow, add it to the RoundManager if it isn't already there
                 // Only add dungeon flows whos default rarity is greater than 0, so if the user doesn't enable
                 // any custom flows, they won't get added
@@ -385,71 +389,73 @@ namespace LethalQuantities.Patches
                     }
 
                     bool used = false;
-                    foreach (LevelConfiguration levelConfig in Plugin.INSTANCE.configuration.levelConfigs.Values)
+                    foreach (LevelPreset preset in Plugin.INSTANCE.presets.Values)
                     {
-                        // Check if the rarity for this flow is set in any moons, and if so, then add it to the array of dungeon flows
-                        if (levelConfig.dungeon.enabled.Value)
+                        if (preset.dungeonFlows.isSet())
                         {
-                            if (levelConfig.dungeon.dungeonFlowConfigurations.TryGetValue(flow.name, out DungeonFlowConfiguration config))
+                            foreach (string presetName in preset.dungeonFlows.value.Keys)
                             {
-                                if (!config.rarity.isUnset())
+                                if (presetName == flow.name)
                                 {
                                     used = true;
-                                    break;
+                                    goto usedEnd;
                                 }
                             }
                         }
                     }
-                    // Otherwise check if it is enabled in the global config
-                    if (!used && Plugin.INSTANCE.configuration.dungeonConfiguration.enabled.Value)
-                    {
-                        if (Plugin.INSTANCE.configuration.dungeonConfiguration.dungeonFlowConfigurations.TryGetValue(flow.name, out DungeonFlowConfiguration config))
-                        {
-                            if (!config.rarity.isUnset())
-                            {
-                                used = true;
-                            }
-                        }
-                    }
+                    usedEnd:
 
                     if (index == -1 && used)
                     {
                         // Not added, so add it now
-                        Plugin.LETHAL_LOGGER.LogWarning($"Did not find dungeon flow {flow.name} in the global list of dungeon flows. Adding it now.");
+                        MiniLogger.LogWarning($"Did not find dungeon flow {flow.name} in the global list of dungeon flows. Adding it now.");
                         flows.Add(flow);
                     }
                 }
                 __instance.dungeonFlowTypes = flows.ToArray();
             }
-
-            SelectableLevel level = __instance.currentLevel;
-            RoundState state = Plugin.getRoundState(level);
-            if (state != null)
+            catch (Exception e)
             {
-                LevelPreset preset = state.preset;
-                if (preset.dungeonFlows.isSet())
+                MiniLogger.LogError("Encountered an error while trying to insert missing dungeonflows");
+                MiniLogger.LogError($"Please report this error to the LethalQuantities mod developers: {e}");
+            }
+
+            try
+            {
+                SelectableLevel level = __instance.currentLevel;
+                RoundState state = Plugin.getRoundState(level);
+                if (state != null)
                 {
-                    Plugin.LETHAL_LOGGER.LogInfo("Changing dungeon flow values");
-                    Dictionary<string, int> flows = new Dictionary<string, int>();
-                    foreach (IntWithRarity entry in level.dungeonFlowTypes)
+                    LevelPreset preset = state.preset;
+                    if (preset.dungeonFlows.isSet())
                     {
-                        flows.TryAdd(__instance.dungeonFlowTypes[entry.id].name, entry.rarity);
+                        MiniLogger.LogInfo("Changing dungeon flow values");
+                        Dictionary<string, int> flows = new Dictionary<string, int>();
+                        foreach (IntWithRarity entry in level.dungeonFlowTypes)
+                        {
+                            flows.TryAdd(__instance.dungeonFlowTypes[entry.id].name, entry.rarity);
+                        }
+
+                        Dictionary<string, int> updateFlows = new Dictionary<string, int>();
+                        foreach (var entry in preset.dungeonFlows.value)
+                        {
+                            string name = entry.Key;
+                            LevelPresetDungeonFlow presetFlow = entry.Value;
+
+                            int rarity = flows.GetValueOrDefault(name, 0);
+                            presetFlow.rarity.update(ref rarity);
+                            updateFlows.TryAdd(name, rarity);
+
+                            MiniLogger.LogInfo($"Set dungeon flow rarity for {name} to {rarity}");
+                        }
+                        level.dungeonFlowTypes = __instance.ConvertToDungeonFlowArray(updateFlows);
                     }
-
-                    Dictionary<string, int> updateFlows = new Dictionary<string, int>();
-                    foreach (var entry in preset.dungeonFlows.value)
-                    {
-                        string name = entry.Key;
-                        LevelPresetDungeonFlow presetFlow = entry.Value;
-
-                        int rarity = flows.GetValueOrDefault(name, 0);
-                        presetFlow.rarity.update(ref rarity);
-                        updateFlows.TryAdd(name, rarity);
-
-                        Plugin.LETHAL_LOGGER.LogInfo($"Set dungeon flow rarity for {name} to {rarity}");
-                    }
-                    level.dungeonFlowTypes = __instance.ConvertToDungeonFlowArray(updateFlows);
                 }
+            }
+            catch (Exception e)
+            {
+                MiniLogger.LogError("Encountered an error while trying to update level dungeonflows");
+                MiniLogger.LogError($"Please report this error to the LethalQuantities mod developers: {e}");
             }
         }
     }
@@ -482,7 +488,7 @@ namespace LethalQuantities.Patches
                     }
                     else
                     {
-                        Plugin.LETHAL_LOGGER.LogWarning($"Could not find dungeon flow {entry.Key}!");
+                        MiniLogger.LogWarning($"Could not find dungeon flow {entry.Key}!");
                     }
                 }
             }

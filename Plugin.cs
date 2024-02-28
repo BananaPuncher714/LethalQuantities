@@ -12,6 +12,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using System;
+using System.Linq;
 
 namespace LethalQuantities
 {
@@ -25,8 +26,6 @@ namespace LethalQuantities
         internal static readonly string PRESET_FILE = Path.Combine(Paths.ConfigPath, EXPORT_DIRECTORY, "Presets.json");
 
         public static Plugin INSTANCE { get; private set; }
-
-        public static ManualLogSource LETHAL_LOGGER { get; private set; }
 
         internal GlobalConfiguration configuration;
 
@@ -49,36 +48,33 @@ namespace LethalQuantities
                 INSTANCE = this;
             }
 
-            LETHAL_LOGGER = BepInEx.Logging.Logger.CreateLogSource(PluginInfo.PLUGIN_NAME);
-
-            LETHAL_LOGGER.LogInfo("Registering custom TomlTypeConverter for AnimationCurve");
+            MiniLogger.LogInfo("Registering custom TomlTypeConverter for AnimationCurve");
             TomlTypeConverter.AddConverter(typeof(AnimationCurve), new AnimationCurveTypeConverter());
 
-            LETHAL_LOGGER.LogInfo("Registering patches...");
+            MiniLogger.LogInfo("Registering patches...");
             _harmony = new Harmony(PluginInfo.PLUGIN_NAME);
             _harmony.PatchAll(typeof(RoundManagerPatch));
-            LETHAL_LOGGER.LogInfo("Registered RoundManager patch");
+            MiniLogger.LogInfo("Registered RoundManager patch");
             _harmony.PatchAll(typeof(ObjectPatch));
-            LETHAL_LOGGER.LogInfo("Registered Object patch");
+            MiniLogger.LogInfo("Registered Object patch");
             _harmony.PatchAll(typeof(DungeonPatch));
-            LETHAL_LOGGER.LogInfo("Registered RuntimeDungeon patch");
+            MiniLogger.LogInfo("Registered RuntimeDungeon patch");
             _harmony.PatchAll(typeof(StartOfRoundPatch));
-            LETHAL_LOGGER.LogInfo("Registered StartOfRound patch");
+            MiniLogger.LogInfo("Registered StartOfRound patch");
             _harmony.PatchAll(typeof(ConfigEntryBasePatch));
-            LETHAL_LOGGER.LogInfo("Registered ConfigEntryBase patch");
+            MiniLogger.LogInfo("Registered ConfigEntryBase patch");
             _harmony.PatchAll(typeof(TerminalPatch));
-            LETHAL_LOGGER.LogInfo("Registered Terminal patch");
+            MiniLogger.LogInfo("Registered Terminal patch");
 
             SceneManager.sceneLoaded += OnSceneLoaded;
-            LETHAL_LOGGER.LogInfo("Added sceneLoaded delegate");
+            MiniLogger.LogInfo("Added sceneLoaded delegate");
 
             // Copy the editor html over to the config folder if it does not already exist
-            // It's hardcoded for now because I don't know how to get the mod folder directly
-            string editorFile = Path.Combine(Paths.PluginPath, "BananaPuncher714-LethalQuantities", "Editor.html");
+            string editorFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Editor.html");
             string dest = Path.Combine(Paths.ConfigPath, EXPORT_DIRECTORY, "Editor.html");
             if (File.Exists(editorFile) && !File.Exists(dest))
             {
-                LETHAL_LOGGER.LogInfo($"Copying editor webpage from {editorFile} to {dest}");
+                MiniLogger.LogInfo("Copying editor webpage to the advanced config folder");
                 Directory.CreateDirectory(EXPORT_DIRECTORY);
                 File.Copy(editorFile, dest);
             }
@@ -86,7 +82,7 @@ namespace LethalQuantities
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            LETHAL_LOGGER.LogInfo($"Checking scene {scene.name} for a valid level");
+            MiniLogger.LogInfo($"Checking scene {scene.name} for a valid level");
             if (RoundManager.Instance != null)
             {
                 SelectableLevel level = RoundManager.Instance.currentLevel;
@@ -96,11 +92,11 @@ namespace LethalQuantities
                     {
                         foreach (RoundState oldState in FindObjectsOfType<RoundState>())
                         {
-                            LETHAL_LOGGER.LogWarning($"Found stale RoundState for level {oldState.level.name}");
+                            MiniLogger.LogWarning($"Found stale RoundState for level {oldState.level.name}");
                             Destroy(oldState.gameObject);
                         }
 
-                        LETHAL_LOGGER.LogInfo($"Found a valid configuration for {level.PlanetName}({level.name})");
+                        MiniLogger.LogInfo($"Found a valid configuration for {level.PlanetName}({level.name})");
                         // Add a manager to keep track of all objects
                         GameObject levelModifier = new GameObject("LevelModifier");
                         SceneManager.MoveGameObjectToScene(levelModifier, scene);
@@ -109,12 +105,12 @@ namespace LethalQuantities
                         state.plugin = this;
 
                         state.setData(scene, preset);
-                        LETHAL_LOGGER.LogInfo($"Initializing round information");
+                        MiniLogger.LogInfo($"Initializing round information");
                         state.initialize(level);
                     }
                     else
                     {
-                        LETHAL_LOGGER.LogWarning($"No preset found for level {level.name}");
+                        MiniLogger.LogWarning($"No preset found for level {level.name}");
                     }
                 }
             }
@@ -124,7 +120,7 @@ namespace LethalQuantities
         {
             if (defaultInformation != null)
             {
-                LETHAL_LOGGER.LogInfo($"Exporting default data");
+                MiniLogger.LogInfo($"Exporting default data");
                 Directory.CreateDirectory(EXPORT_DIRECTORY);
                 string exportPath = PRESET_FILE;
                 JObject jObj;
@@ -135,13 +131,13 @@ namespace LethalQuantities
                     if (configuration != null && configuration.isAnySet())
                     {
                         // If the users chooses to use the legacy values, then overwrite any exported presets with the new updated exported presets
-                        LETHAL_LOGGER.LogInfo($"Using legacy configuration: {configuration.useLegacy.Value}");
+                        MiniLogger.LogInfo($"Using legacy configuration: {configuration.useLegacy.Value}");
                         exportLegacy(jObj, configuration.useLegacy.Value);
                     }
                 }
                 else
                 {
-                    LETHAL_LOGGER.LogInfo("No data file found, exporting global values");
+                    MiniLogger.LogInfo("No data file found, exporting global values");
 
                     // Export the global configuration if it exists
                     jObj = new JObject();
@@ -154,7 +150,7 @@ namespace LethalQuantities
                 serializer.Converters.Add(new AnimationCurveJsonConverter());
                 jObj["defaults"] = JObject.FromObject(defaultInformation, serializer);
 
-                LETHAL_LOGGER.LogInfo($"Writing data to {exportPath}");
+                MiniLogger.LogInfo($"Writing data to the advanced config folder");
                 File.WriteAllText(exportPath, JsonConvert.SerializeObject(jObj));
             }
         }
@@ -169,7 +165,7 @@ namespace LethalQuantities
                 globalPreset = new Preset(configuration);
                 globalPreset.name = "Exported Global";
                 globalPreset.id = "exported-Global";
-                LETHAL_LOGGER.LogInfo($"Created global preset {globalPreset.id}");
+                MiniLogger.LogInfo($"Created global preset {globalPreset.id}");
 
                 presets.Add(globalPreset.id, globalPreset);
             }
@@ -192,11 +188,11 @@ namespace LethalQuantities
                     presets.TryAdd(levelPreset.id, levelPreset);
                     levelMap.TryAdd(entry.Key.getLevelName(), levelPreset.id);
 
-                    LETHAL_LOGGER.LogInfo($"Created level preset {levelPreset.id} for {entry.Key.getLevelName()}");
+                    MiniLogger.LogInfo($"Created level preset {levelPreset.id} for {entry.Key.getLevelName()}");
                 }
                 else if (globalPreset != null)
                 {
-                    LETHAL_LOGGER.LogInfo($"No configuration found for {entry.Key.getLevel().PlanetName}, defaulting to global");
+                    MiniLogger.LogInfo($"No configuration found for {entry.Key.getLevel().PlanetName}, defaulting to global");
                     levelMap.TryAdd(entry.Key.getLevelName(), globalPreset.id);
                 }
             }
@@ -223,7 +219,7 @@ namespace LethalQuantities
                 }
                 else
                 {
-                    LETHAL_LOGGER.LogError("Found an invalid presets node, replacing");
+                    MiniLogger.LogError("Found an invalid presets node, replacing");
                     jObj["presets"] = JObject.FromObject(presets, serializer);
                 }
             }
@@ -240,13 +236,17 @@ namespace LethalQuantities
             }
             if (File.Exists(path))
             {
-                LETHAL_LOGGER.LogInfo($"Importing data from {path}");
+                MiniLogger.LogInfo("Importing data");
                 JsonSerializerSettings settings = new JsonSerializerSettings();
                 settings.NullValueHandling = NullValueHandling.Ignore;
                 settings.Converters.Add(new AnimationCurveJsonConverter());
+                settings.Converters.Add(new DirectionalSpawnableMapObjectJsonConverter());
+                settings.Converters.Add(new EnemyTypeJsonConverter());
+                settings.Converters.Add(new ItemJsonConverter());
+                settings.Converters.Add(new SelectableLevelGuidJsonConverter());
                 ImportData importedInformation = JsonConvert.DeserializeObject<ImportData>(File.ReadAllText(path), settings);
 
-                LETHAL_LOGGER.LogInfo("Generating level presets");
+                MiniLogger.LogInfo("Generating level presets");
                 presets = importedInformation.generate(info);
 
                 JObject jObj = new JObject();
@@ -254,17 +254,16 @@ namespace LethalQuantities
                 {
                     jObj = JObject.Parse(File.ReadAllText(PRESET_FILE));
                 }
+
                 JsonSerializer serializer = new JsonSerializer();
                 serializer.Converters.Add(new AnimationCurveJsonConverter());
-                serializer.Converters.Add(new DirectionalSpawnableMapObjectJsonConverter());
-                serializer.Converters.Add(new EnemyTypeJsonConverter());
-                serializer.Converters.Add(new ItemJsonConverter());
+                serializer.Converters.Add(new DeepDictionaryConverter(settings));
 
                 jObj["results"] = JObject.FromObject(presets, serializer);
-                LETHAL_LOGGER.LogInfo($"Saving level presets to {PRESET_FILE}");
+                MiniLogger.LogInfo("Saving level presets");
                 File.WriteAllText(PRESET_FILE, JsonConvert.SerializeObject(jObj));
 
-                LETHAL_LOGGER.LogInfo("Done loading data");
+                MiniLogger.LogInfo("Done loading data");
             }
         }
 
@@ -278,6 +277,26 @@ namespace LethalQuantities
                 }
             }
             return null;
+        }
+    }
+
+    public static class MiniLogger
+    {
+        private static ManualLogSource logger = BepInEx.Logging.Logger.CreateLogSource(PluginInfo.PLUGIN_NAME);
+
+        public static void LogInfo(string message)
+        {
+            logger.LogInfo(message);
+        }
+
+        public static void LogWarning(string message)
+        {
+            logger.LogWarning(message);
+        }
+
+        public static void LogError(string message)
+        {
+            logger.LogError(message);
         }
     }
 }
