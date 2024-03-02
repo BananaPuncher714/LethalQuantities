@@ -74,47 +74,54 @@ namespace LethalQuantities.Patches
                     }));
 
                     MiniLogger.LogInfo("Fetching all moon prices");
-                    CompatibleNoun[] nouns = Resources.FindObjectsOfTypeAll<TerminalKeyword>().First(w => w.name == "Route").compatibleNouns;
+                    CompatibleNoun[] nouns = Resources.FindObjectsOfTypeAll<TerminalKeyword>().FirstOrDefault(w => w.name == "Route")?.compatibleNouns;
                     foreach (SelectableLevel level in Resources.FindObjectsOfTypeAll<SelectableLevel>())
                     {
                         GenericLevelInformation genericInfo = new GenericLevelInformation();
-                        bool found = false;
-                        foreach (CompatibleNoun noun in nouns)
+                        if (nouns != null)
                         {
-                            TerminalNode result = noun.result;
-                            if (result.terminalOptions == null)
+                            bool found = false;
+                            foreach (CompatibleNoun noun in nouns)
                             {
-                                MiniLogger.LogError($"Route subcommand {result.name} does not have any valid terminal options!");
-                                continue;
+                                TerminalNode result = noun.result;
+                                if (result.terminalOptions == null)
+                                {
+                                    MiniLogger.LogError($"Route subcommand {result.name} does not have any valid terminal options!");
+                                    continue;
+                                }
+
+                                CompatibleNoun confirmNoun = result.terminalOptions.FirstOrDefault(n => n.noun.name == "Confirm");
+                                if (confirmNoun == null)
+                                {
+                                    MiniLogger.LogError($"Unable to find a confirm option for route command {result.name}");
+                                    continue;
+                                }
+                                TerminalNode confirm = confirmNoun.result;
+
+                                if (confirm == null)
+                                {
+                                    MiniLogger.LogError($"Found a confirm option for route command {result.name}, but it has no result node!");
+                                    continue;
+                                }
+
+                                int levelId = confirm.buyRerouteToMoon;
+
+                                if (level.levelID == confirm.buyRerouteToMoon)
+                                {
+                                    MiniLogger.LogInfo($"Found the price {confirm.itemCost} for {level.name}");
+                                    genericInfo.price = confirm.itemCost;
+                                    found = true;
+                                    break;
+                                }
                             }
-
-                            CompatibleNoun confirmNoun = result.terminalOptions.First(n => n.noun.name == "Confirm");
-                            if (confirmNoun == null)
+                            if (!found)
                             {
-                                MiniLogger.LogError($"Unable to find a confirm option for route command {result.name}");
-                                continue;
-                            }
-                            TerminalNode confirm = confirmNoun.result;
-
-                            if (confirm == null)
-                            {
-                                MiniLogger.LogError($"Found a confirm option for route command {result.name}, but it has no result node!");
-                                continue;
-                            }
-
-                            int levelId = confirm.buyRerouteToMoon;
-
-                            if (level.levelID == confirm.buyRerouteToMoon)
-                            {
-                                MiniLogger.LogInfo($"Found the price {confirm.itemCost} for {level.name}");
-                                genericInfo.price = confirm.itemCost;
-                                found = true;
-                                break;
+                                MiniLogger.LogWarning($"Unable to find price of {level.name}({level.PlanetName})");
                             }
                         }
-                        if (!found)
+                        else
                         {
-                            MiniLogger.LogWarning($"Unable to find price of {level.name}({level.PlanetName})");
+                            MiniLogger.LogError("Unable to find Route TerminalKeyword! Cannot fetch moon prices");
                         }
 
                         if (!globalInfo.allSelectableLevels.TryAdd(SelectableLevelCache.getGuid(level), genericInfo))

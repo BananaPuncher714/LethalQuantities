@@ -12,6 +12,7 @@ namespace LethalQuantities.Json
 {
     public class ImportData
     {
+        public ExportData defaults;
         public Dictionary<string, Preset> presets = new Dictionary<string, Preset>();
         public Dictionary<string, string> levels = new Dictionary<string, string>();
 
@@ -76,6 +77,7 @@ namespace LethalQuantities.Json
                                     {
                                         LevelPresetEnemyType type = new LevelPresetEnemyType();
                                         type.rarity = set<int>(parents, nameof(Preset.enemies), option.id, nameof(EnemyTypeOptions.rarity));
+                                        type.maxEnemyCount = set<int>(parents, nameof(Preset.enemies), option.id, nameof(EnemyTypeOptions.maxEnemyCount));
                                         type.powerLevel = set<int>(parents, nameof(Preset.enemies), option.id, nameof(EnemyTypeOptions.powerLevel));
                                         type.spawnChanceCurve = set<AnimationCurve>(parents, nameof(Preset.enemies), option.id, nameof(EnemyTypeOptions.spawnChanceCurve));
                                         type.spawnFalloffCurve = set<AnimationCurve>(parents, nameof(Preset.enemies), option.id, nameof(EnemyTypeOptions.spawnFalloffCurve));
@@ -116,6 +118,7 @@ namespace LethalQuantities.Json
                                     {
                                         LevelPresetEnemyType type = new LevelPresetEnemyType();
                                         type.rarity = set<int>(parents, nameof(Preset.daytimeEnemies), option.id, nameof(EnemyTypeOptions.rarity));
+                                        type.maxEnemyCount = set<int>(parents, nameof(Preset.daytimeEnemies), option.id, nameof(EnemyTypeOptions.maxEnemyCount));
                                         type.powerLevel = set<int>(parents, nameof(Preset.daytimeEnemies), option.id, nameof(EnemyTypeOptions.powerLevel));
                                         type.spawnChanceCurve = set<AnimationCurve>(parents, nameof(Preset.daytimeEnemies), option.id, nameof(EnemyTypeOptions.spawnChanceCurve));
                                         type.spawnFalloffCurve = set<AnimationCurve>(parents, nameof(Preset.daytimeEnemies), option.id, nameof(EnemyTypeOptions.spawnFalloffCurve));
@@ -156,6 +159,7 @@ namespace LethalQuantities.Json
                                     {
                                         LevelPresetEnemyType type = new LevelPresetEnemyType();
                                         type.rarity = set<int>(parents, nameof(Preset.outsideEnemies), option.id, nameof(EnemyTypeOptions.rarity));
+                                        type.maxEnemyCount = set<int>(parents, nameof(Preset.outsideEnemies), option.id, nameof(EnemyTypeOptions.maxEnemyCount));
                                         type.powerLevel = set<int>(parents, nameof(Preset.outsideEnemies), option.id, nameof(EnemyTypeOptions.powerLevel));
                                         type.spawnChanceCurve = set<AnimationCurve>(parents, nameof(Preset.outsideEnemies), option.id, nameof(EnemyTypeOptions.spawnChanceCurve));
                                         type.spawnFalloffCurve = set<AnimationCurve>(parents, nameof(Preset.outsideEnemies), option.id, nameof(EnemyTypeOptions.spawnFalloffCurve));
@@ -389,7 +393,7 @@ namespace LethalQuantities.Json
                     else
                     {
                         // Attempt to get the next field with the value
-                        FieldInfo info = objType.GetFields().Where(f => f.Name == name).First();
+                        FieldInfo info = objType.GetFields().Where(f => f.Name == name).FirstOrDefault();
                         if (info != null)
                         {
                             obj = info.GetValue(obj);

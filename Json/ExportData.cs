@@ -24,6 +24,10 @@ namespace LethalQuantities.Json
         public bool use_spawn_falloff;
         public string name;
 
+        public ExportDataEnemyType()
+        {
+        }
+
         public ExportDataEnemyType(EnemyType type, int health)
         {
             max_enemy_count = type.MaxCount;
@@ -50,6 +54,10 @@ namespace LethalQuantities.Json
         public bool scrap;
         public string name;
 
+        public ExportDataItem()
+        {
+        }
+
         public ExportDataItem(Item item)
         {
             weight = (item.weight - 1) * 100;
@@ -66,6 +74,10 @@ namespace LethalQuantities.Json
         public bool spawn_facing_away_from_wall;
         public string name;
         public string description;
+
+        public ExportDataTrap()
+        {
+        }
 
         public ExportDataTrap(DirectionalSpawnableMapObject obj)
         {
@@ -97,6 +109,10 @@ namespace LethalQuantities.Json
         public Dictionary<string, int> scrap = new Dictionary<string, int>();
         public Dictionary<string, int> dungeon_flows = new Dictionary<string, int>();
         public Dictionary<string, AnimationCurve> spawnable_map_objects = new Dictionary<string, AnimationCurve>();
+
+        public ExportTypeSelectableLevel()
+        {
+        }
 
         public ExportTypeSelectableLevel(SelectableLevel level, int price)
         {
@@ -153,6 +169,10 @@ namespace LethalQuantities.Json
         public Dictionary<string, ExportDataTrap> traps = new Dictionary<string, ExportDataTrap>();
         public Dictionary<string, ExportTypeSelectableLevel> levels = new Dictionary<string, ExportTypeSelectableLevel>();
         public List<string> dungeon_flows = new List<string>();
+
+        public ExportData()
+        {
+        }
 
         public ExportData(RoundManager manager, GlobalInformation info)
         {

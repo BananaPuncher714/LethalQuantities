@@ -1,4 +1,9 @@
 ## Changelog
+### 1.2.7
+- Fixed errors with RouteRandom
+- Removed errors complaining about legacy configs
+- Fixed bug where max enemy count wasn't being applied properly
+- Fixed moons with a price of -1 not updating with the correct information(may not always be correct)
 ### 1.2.6
 - Fixed incompatability with LLL
 - Removed lingering legacy code

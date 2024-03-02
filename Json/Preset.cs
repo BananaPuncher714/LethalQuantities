@@ -281,6 +281,55 @@ namespace LethalQuantities.Json
         {
         }
 
+        public void update(ExportData data)
+        {
+            // TODO Improve this
+            // For now, add some small fixes like updating the prices
+            if (price.value != null)
+            {
+                price.value.RemoveAll(opt => !data.levels.ContainsKey(opt.id));
+                foreach (PriceOptions priceOpt in price.value)
+                {
+                    if (priceOpt.price.value == -1)
+                    {
+                        if (data.levels.TryGetValue(priceOpt.id, out ExportTypeSelectableLevel level)) {
+                            priceOpt.price.value = level.price;
+                        }
+                    }
+                }
+            }
+
+            if (scrap.value != null)
+            {
+                scrap.value.RemoveAll(opt => !data.items.ContainsKey(opt.id));
+            }
+
+            if (enemies.value != null)
+            {
+                enemies.value.RemoveAll(opt => !data.enemies.ContainsKey(opt.id));
+            }
+
+            if (daytimeEnemies.value != null)
+            {
+                daytimeEnemies.value.RemoveAll(opt => !data.enemies.ContainsKey(opt.id));
+            }
+
+            if (outsideEnemies.value != null)
+            {
+                outsideEnemies.value.RemoveAll(opt => !data.enemies.ContainsKey(opt.id));
+            }
+
+            if (dungeonFlows.value != null)
+            {
+                dungeonFlows.value.RemoveAll(opt => !data.dungeon_flows.Contains(opt.id));
+            }
+
+            if (traps.value != null)
+            {
+                traps.value.RemoveAll(opt => !data.traps.ContainsKey(opt.id));
+            }
+        }
+
         public Preset(LevelConfiguration configuration)
         {
             {

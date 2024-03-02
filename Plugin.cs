@@ -123,10 +123,33 @@ namespace LethalQuantities
                 MiniLogger.LogInfo($"Exporting default data");
                 Directory.CreateDirectory(EXPORT_DIRECTORY);
                 string exportPath = PRESET_FILE;
+                JsonSerializer serializer = new JsonSerializer();
+                serializer.NullValueHandling = NullValueHandling.Ignore;
+                serializer.Converters.Add(new AnimationCurveJsonConverter());
                 JObject jObj;
                 if (File.Exists(exportPath))
                 {
                     jObj = JObject.Parse(File.ReadAllText(exportPath));
+
+                    // TODO In the case that the exported data changes(only here)
+                    // then all the presets and any information in them such as enemy names, item names
+                    // default moon prices, etc need to be updated since they store their
+                    // information separately from the default data
+                    // Could probably add references via id, but whatever, it's a low priority task
+                    // Also it would probably be good to have data validation and correction here
+                    // Update all preset objects
+
+                    if (jObj.ContainsKey("presets"))
+                    {
+                        Dictionary<string, Preset> loadedPresets = jObj["presets"].ToObject<Dictionary<string, Preset>>(serializer);
+
+                        // TODO Stop reading and writing more than once
+                        foreach (Preset preset in loadedPresets.Values)
+                        {
+                            preset.update(defaultInformation);
+                        }
+                        jObj["presets"] = JObject.FromObject(loadedPresets, serializer);
+                    }
 
                     if (configuration != null && configuration.isAnySet())
                     {
@@ -146,8 +169,6 @@ namespace LethalQuantities
                 }
 
                 // Set the default information
-                JsonSerializer serializer = new JsonSerializer();
-                serializer.Converters.Add(new AnimationCurveJsonConverter());
                 jObj["defaults"] = JObject.FromObject(defaultInformation, serializer);
 
                 MiniLogger.LogInfo($"Writing data to the advanced config folder");

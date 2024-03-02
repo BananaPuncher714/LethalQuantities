@@ -4,7 +4,7 @@
         <TargetFramework>netstandard2.1</TargetFramework>
         <AssemblyName>LethalQuantities</AssemblyName>
         <Description>Customization of Lethal Company variables</Description>
-        <Version>1.2.6</Version>
+        <Version>1.2.7</Version>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <LangVersion>latest</LangVersion>
     </PropertyGroup>
