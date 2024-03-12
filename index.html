@@ -1230,6 +1230,16 @@
                             val.hasSpawnFalloff = false;
                         }
                     }
+                    if (preset.enemies.value) {
+                        for (const val of Object.values(preset.enemies.value)) {
+                            val.hasSpawnFalloff = true;
+                        }
+                    }
+                    if (preset.outsideEnemies.value) {
+                        for (const val of Object.values(preset.outsideEnemies.value)) {
+                            val.hasSpawnFalloff = true;
+                        }
+                    }
                     preset.availableOutsideEnemies = structuredClone(this.enemies);
                     preset.availableFlows = structuredClone(this.dungeonFlows);
                     preset.availableTraps = structuredClone(this.traps);
