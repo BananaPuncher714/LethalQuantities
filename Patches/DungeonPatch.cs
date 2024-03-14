@@ -17,11 +17,12 @@ namespace LethalQuantities.Patches
             if (state != null)
             {
                 string name = __instance.Generator.DungeonFlow.name;
-                if (state.preset.dungeonFlows.isSet())
+                LevelPreset preset = state.getPreset();
+                if (preset.dungeonFlows.isSet())
                 {
-                    if (state.preset.dungeonFlows.value.TryGetValue(name, out LevelPresetDungeonFlow preset))
+                    if (preset.dungeonFlows.value.TryGetValue(name, out LevelPresetDungeonFlow flowPreset))
                     {
-                        preset.factorySizeMultiplier.update(ref RoundManager.Instance.mapSizeMultiplier);
+                        flowPreset.factorySizeMultiplier.update(ref RoundManager.Instance.mapSizeMultiplier);
 
                         // Must be the same across all players to avoid desync
                         __instance.Generator.LengthMultiplier = RoundManager.Instance.mapSizeMultiplier * RoundManager.Instance.currentLevel.factorySizeMultiplier;

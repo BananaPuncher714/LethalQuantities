@@ -23,7 +23,8 @@ namespace LethalQuantities
         internal static readonly string GLOBAL_SAVE_DIR = Path.Combine(Paths.ConfigPath, PluginInfo.PLUGIN_NAME, "Global");
         internal static readonly string LEVEL_SAVE_DIR = Path.Combine(Paths.ConfigPath, PluginInfo.PLUGIN_NAME, "Moons");
 
-        internal static readonly string PRESET_FILE = Path.Combine(Paths.ConfigPath, EXPORT_DIRECTORY, "Presets.json");
+        internal static readonly string PRESET_FILE_NAME = "Presets.json";
+        internal static readonly string PRESET_FILE = Path.Combine(Paths.ConfigPath, EXPORT_DIRECTORY, PRESET_FILE_NAME);
 
         public static Plugin INSTANCE { get; private set; }
 
@@ -35,6 +36,9 @@ namespace LethalQuantities
         internal ExportData defaultInformation;
         internal Dictionary<Guid, LevelPreset> presets = new Dictionary<Guid, LevelPreset>();
         internal GlobalInformation globalInfo;
+
+        internal FileSystemWatcher watcher;
+        internal int ignoreCount = 0;
 
         private void Awake()
         {
@@ -78,6 +82,58 @@ namespace LethalQuantities
                 Directory.CreateDirectory(EXPORT_DIRECTORY);
                 File.Copy(editorFile, dest);
             }
+
+            Directory.CreateDirectory(EXPORT_DIRECTORY);
+            watcher = new FileSystemWatcher();
+            watcher.Path = EXPORT_DIRECTORY;
+            watcher.NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite;
+            watcher.Filter = "*.json";
+            watcher.Changed += onPresetChanged;
+            watcher.Deleted += onPresetDeleted;
+            watcher.Renamed += onPresetRenamed;
+
+            watcher.EnableRaisingEvents = true;
+        }
+
+        private void onPresetChanged(object source, FileSystemEventArgs ev)
+        {
+            // Update the presets
+            if (ev.Name == PRESET_FILE_NAME)
+            {
+                if (ignoreCount > 0)
+                {
+                    ignoreCount--;
+                }
+                else
+                {
+                    MiniLogger.LogInfo("The preset file has been changed, updating...");
+                    loadData(globalInfo, PRESET_FILE);
+                }
+            }
+        }
+
+        private void onPresetDeleted(object source, FileSystemEventArgs ev)
+        {
+            // Re-create the data
+            if (ev.Name == PRESET_FILE_NAME)
+            {
+                MiniLogger.LogInfo("The preset file has been deleted, saving defaults...");
+                exportData();
+            }
+        }
+
+        private void onPresetRenamed(object source, RenamedEventArgs ev)
+        {
+            if (ev.OldName == PRESET_FILE_NAME)
+            {
+                MiniLogger.LogInfo("The preset file has been renamed, saving defaults...");
+                exportData();
+            }
+            else if (ev.Name == PRESET_FILE_NAME)
+            {
+                MiniLogger.LogInfo("The preset file has been changed, updating...");
+                loadData(globalInfo, PRESET_FILE);
+            }
         }
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
@@ -88,7 +144,8 @@ namespace LethalQuantities
                 SelectableLevel level = RoundManager.Instance.currentLevel;
                 if (level != null)
                 {
-                    if (presets.TryGetValue(RoundManager.Instance.currentLevel.getGuid(), out LevelPreset preset))
+                    Guid levelGuid = RoundManager.Instance.currentLevel.getGuid();
+                    if (presets.TryGetValue(levelGuid, out LevelPreset preset))
                     {
                         foreach (RoundState oldState in FindObjectsOfType<RoundState>())
                         {
@@ -104,7 +161,7 @@ namespace LethalQuantities
                         RoundState state = levelModifier.AddComponent<RoundState>();
                         state.plugin = this;
 
-                        state.setData(scene, preset);
+                        state.setData(scene, levelGuid);
                         MiniLogger.LogInfo($"Initializing round information");
                         state.initialize(level);
                     }
@@ -120,6 +177,7 @@ namespace LethalQuantities
         {
             if (defaultInformation != null)
             {
+                // Disable the file watcher
                 MiniLogger.LogInfo($"Exporting default data");
                 Directory.CreateDirectory(EXPORT_DIRECTORY);
                 string exportPath = PRESET_FILE;
@@ -127,6 +185,7 @@ namespace LethalQuantities
                 serializer.NullValueHandling = NullValueHandling.Ignore;
                 serializer.Converters.Add(new AnimationCurveJsonConverter());
                 JObject jObj;
+
                 if (File.Exists(exportPath))
                 {
                     jObj = JObject.Parse(File.ReadAllText(exportPath));
@@ -172,6 +231,7 @@ namespace LethalQuantities
                 jObj["defaults"] = JObject.FromObject(defaultInformation, serializer);
 
                 MiniLogger.LogInfo($"Writing data to the advanced config folder");
+
                 File.WriteAllText(exportPath, JsonConvert.SerializeObject(jObj));
             }
         }
@@ -282,6 +342,8 @@ namespace LethalQuantities
 
                 jObj["results"] = JObject.FromObject(presets, serializer);
                 MiniLogger.LogInfo("Saving level presets");
+
+                ignoreCount++;
                 File.WriteAllText(PRESET_FILE, JsonConvert.SerializeObject(jObj));
 
                 MiniLogger.LogInfo("Done loading data");

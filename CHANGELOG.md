@@ -1,4 +1,10 @@
 ## Changelog
+### 1.2.8
+- Fixed map desync when changing the map size multiplier
+- Fixed enemies and outside enemies not displaying their spawn falloff curve option
+- Fixed web UI memory leak bug
+- Added live update option to allow on-fly configuration without needing to restart the game
+- Made web UI level list use planet names instead of ids
 ### 1.2.7
 - Fixed errors with RouteRandom
 - Removed errors complaining about legacy configs

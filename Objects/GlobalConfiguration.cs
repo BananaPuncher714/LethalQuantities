@@ -192,7 +192,7 @@ namespace LethalQuantities.Objects
             ConfigFile fileConfigFile = new ConfigFile(Path.Combine(globalInfo.configSaveDir, FILES_CFG_NAME), true);
             fileConfigFile.SaveOnConfigSet = false;
 
-            useLegacy = fileConfigFile.Bind("Advanced", "UseLegacy", false, "Whether or not to use the old configuration handling system. This is for if you do not want to use the web UI.");
+            useLegacy = fileConfigFile.Bind("Advanced", "UseLegacy", false, "Whether or not to use the old configuration handling system. This is for if you do not want to use the web UI. If you choose to use the web UI, then you should not enable any of the configuration files below.");
 
             instantiateEnemyConfigs(globalInfo, fileConfigFile);
             instantiateScrapConfigs(globalInfo, fileConfigFile);

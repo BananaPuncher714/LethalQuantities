@@ -1230,6 +1230,16 @@
                             val.hasSpawnFalloff = false;
                         }
                     }
+                    if (preset.enemies.value) {
+                        for (const val of Object.values(preset.enemies.value)) {
+                            val.hasSpawnFalloff = true;
+                        }
+                    }
+                    if (preset.outsideEnemies.value) {
+                        for (const val of Object.values(preset.outsideEnemies.value)) {
+                            val.hasSpawnFalloff = true;
+                        }
+                    }
                     preset.availableOutsideEnemies = structuredClone(this.enemies);
                     preset.availableFlows = structuredClone(this.dungeonFlows);
                     preset.availableTraps = structuredClone(this.traps);
@@ -1400,7 +1410,14 @@
 
                         levelInputs[id] = presetInput;
 
-                        addEntry(col2, format(id), presetInput);
+
+                        const identifierText = document.createElement("span");
+                        identifierText.append(`Name: ${menu.configuration.defaults.levels[id].planet_name}`, document.createElement("br"), `ID: ${id}`);
+                        const planetSpan = document.createElement("span");
+                        planetSpan.innerText = format(menu.configuration.defaults.levels[id].planet_name || id);
+                        const identifier = tooltip(planetSpan, identifierText);
+
+                        addEntry(col2, identifier, presetInput);
                     }
 
                     menu.presetEntryContainer = col1;
@@ -1768,13 +1785,15 @@
                     downloadConfiguration(configuration, "Presets.json");
                 });
 
-                document.addEventListener("keydown", e => {
+                const saveListener = (e) => {
                     if (e.ctrlKey && e.key === 's') {
                         console.log("Saving configuration via ctrl+s")
                         e.preventDefault();
                         downloadConfiguration(configuration, "Presets.json");
                     }
-                });
+                };
+
+                document.addEventListener("keydown", saveListener);
 
                 // Add a reset button to go back to the main screen
                 const resetButton = document.createElement("button");
@@ -1783,6 +1802,7 @@
                     if (confirm("Any information you have currently will be deleted. Are you sure you want to continue?")) {
                         localStorage.removeItem("saved");
                         window.removeEventListener("beforeunload", leaveEventListener);
+                        document.removeEventListener("keydown", saveListener);
                         initialize();
                     }
                 });

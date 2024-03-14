@@ -32,15 +32,15 @@ namespace LethalQuantities.Patches
                     {
                         if (type.enemyPrefab == null)
                         {
-                            MiniLogger.LogWarning($"Enemy type {type.name} is missing prefab! Perhaps another mod has removed it? Some default values in the config may not be correct.");
+                            //MiniLogger.LogWarning($"Enemy type {type.name} is missing prefab! Perhaps another mod has removed it? Some default values in the config may not be correct.");
                         }
                         else if (!manager.NetworkConfig.Prefabs.Contains(type.enemyPrefab))
                         {
-                            MiniLogger.LogWarning($"Enemy type {type.name} is not a real object! Ignoring type");
+                            //MiniLogger.LogWarning($"Enemy type {type.name} is not a real object! Ignoring type");
                         }
                         else if (addedEnemyTypes.Contains(type.name))
                         {
-                            MiniLogger.LogWarning($"Enemy type {type.name} was found twice! Perhaps another mod has added it? Some default values in the config may not be correct.");
+                            //MiniLogger.LogWarning($"Enemy type {type.name} was found twice! Perhaps another mod has added it? Some default values in the config may not be correct.");
                         }
                         else
                         {
@@ -55,15 +55,15 @@ namespace LethalQuantities.Patches
                     {
                         if (type.spawnPrefab == null)
                         {
-                            MiniLogger.LogWarning($"Item {type.name} is missing prefab! Perhaps another mod has removed it? Some default values in the config may not be correct.");
+                            //MiniLogger.LogWarning($"Item {type.name} is missing prefab! Perhaps another mod has removed it? Some default values in the config may not be correct.");
                         }
                         else if (!manager.NetworkConfig.Prefabs.Contains(type.spawnPrefab))
                         {
-                            MiniLogger.LogWarning($"Item {type.name} is not a real item! Ignoring item");
+                            //MiniLogger.LogWarning($"Item {type.name} is not a real item! Ignoring item");
                         }
                         else if (addedItems.Contains(type.name))
                         {
-                            MiniLogger.LogWarning($"Item {type.name} was found twice! Perhaps another mod has added it? Some default values in the config may not be correct.");
+                            //MiniLogger.LogWarning($"Item {type.name} was found twice! Perhaps another mod has added it? Some default values in the config may not be correct.");
                         }
                         else
                         {
@@ -227,11 +227,9 @@ namespace LethalQuantities.Patches
                 RoundState state = Plugin.getRoundState(newLevel);
                 if (state != null)
                 {
+                    LevelPreset preset = state.getPreset();
                     if (__instance.IsServer)
                     {
-                        LevelPreset preset = state.preset;
-
-
                         MiniLogger.LogInfo($"RoundState found for level {state.level.name}, modifying level before loading");
                         int minimumSpawnProbabilityRange = (int)Math.Ceiling(Math.Abs(TimeOfDay.Instance.daysUntilDeadline - 3) / 3.2);
                         {
@@ -256,7 +254,7 @@ namespace LethalQuantities.Patches
                             preset.daytimeSpawnProbabilityRange.update(ref newLevel.daytimeEnemiesProbabilityRange);
                             if (newLevel.daytimeEnemiesProbabilityRange < minimumSpawnProbabilityRange)
                             {
-                                MiniLogger.LogWarning($"Interior enemy spawn amount range is too small({newLevel.daytimeEnemiesProbabilityRange}), setting to {minimumSpawnProbabilityRange}");
+                                MiniLogger.LogWarning($"Daytime enemy spawn amount range is too small({newLevel.daytimeEnemiesProbabilityRange}), setting to {minimumSpawnProbabilityRange}");
                                 newLevel.daytimeEnemiesProbabilityRange = minimumSpawnProbabilityRange;
                             }
                             if (preset.daytimeEnemies.set)
@@ -279,8 +277,6 @@ namespace LethalQuantities.Patches
                             preset.maxScrap.update(ref newLevel.maxScrap);
                             preset.scrapAmountMultiplier.update(ref __instance.scrapAmountMultiplier);
                             preset.scrapValueMultiplier.update(ref __instance.scrapValueMultiplier);
-
-                            preset.mapSizeMultiplier.update(ref newLevel.factorySizeMultiplier);
                         }
 
                         if (preset.scrap.isSet())
@@ -361,6 +357,8 @@ namespace LethalQuantities.Patches
                             newLevel.spawnableMapObjects = newMapObjects.ToArray();
                         }
                     }
+
+                    preset.mapSizeMultiplier.update(ref newLevel.factorySizeMultiplier);
                 }
             }
             catch (Exception e)
@@ -433,7 +431,7 @@ namespace LethalQuantities.Patches
                 RoundState state = Plugin.getRoundState(level);
                 if (state != null)
                 {
-                    LevelPreset preset = state.preset;
+                    LevelPreset preset = state.getPreset();
                     if (preset.dungeonFlows.isSet())
                     {
                         MiniLogger.LogInfo("Changing dungeon flow values");
@@ -456,6 +454,7 @@ namespace LethalQuantities.Patches
                             MiniLogger.LogInfo($"Set dungeon flow rarity for {name} to {rarity}");
                         }
                         level.dungeonFlowTypes = __instance.ConvertToDungeonFlowArray(updateFlows);
+                        preset.mapSizeMultiplier.update(ref level.factorySizeMultiplier);
                     }
                 }
             }

@@ -48,7 +48,7 @@ namespace LethalQuantities.Objects
         public Plugin plugin { get; internal set; }
         public Scene scene { get; internal set; }
         public SelectableLevel level { get; internal set; }
-        public LevelPreset preset { get; internal set; }
+        public Guid levelGuid;
 
         public List<SpawnableEnemyWithRarity> enemies { get; } = new List<SpawnableEnemyWithRarity>();
         public List<SpawnableEnemyWithRarity> daytimeEnemies { get; } = new List<SpawnableEnemyWithRarity>();
@@ -67,10 +67,23 @@ namespace LethalQuantities.Objects
         public List<SpawnableMapObject> defaultSpawnableMapObjects = new List<SpawnableMapObject>();
         public Dictionary<Item, ItemInformation> defaultItemInformation = new Dictionary<Item, ItemInformation>();
 
-        public void setData(Scene scene, LevelPreset preset)
+        public void setData(Scene scene, Guid guid)
         {
             this.scene = scene;
-            this.preset = preset;
+            this.levelGuid = guid;
+        }
+
+        public LevelPreset getPreset()
+        {
+            if (plugin.presets.TryGetValue(levelGuid, out var preset))
+            {
+                return preset;
+            }
+            else
+            {
+                MiniLogger.LogError($"No preset for ${level.name} was found!");
+                return null;
+            }
         }
 
         public void initialize(SelectableLevel level)
@@ -89,7 +102,7 @@ namespace LethalQuantities.Objects
             defaultFlowTypes = level.dungeonFlowTypes.ToList();
             defaultSpawnableMapObjects = level.spawnableMapObjects.ToList();
 
-
+            LevelPreset preset = getPreset();
             if (preset.enemies.isSet())
             {
                 populate(level.Enemies, enemies, preset.enemies.value, EnemySpawnCategory.INSIDE);
