@@ -216,7 +216,7 @@ namespace LethalQuantities.Patches
 
         [HarmonyPatch(typeof(RoundManager), nameof(RoundManager.LoadNewLevel))]
         // Keep it at an acceptable priority level, so that if some other mod has an urgent need to modify anything before us, they can
-        [HarmonyPriority(100)]
+        [HarmonyPriority(800)]
         [HarmonyPrefix]
         // Attempt to set the various level variables before other mods, since this should serve as the "base" for level information.
         // Values set by this mod are meant to be overwritten, especially by mods that add events, or varying changes.
@@ -228,7 +228,8 @@ namespace LethalQuantities.Patches
                 if (state != null)
                 {
                     LevelPreset preset = state.getPreset();
-                    if (__instance.IsServer)
+                    // Don't need to worry about modifying these things client side only, since it probably hurts more not to
+                    //if (__instance.IsServer)
                     {
                         MiniLogger.LogInfo($"RoundState found for level {state.level.name}, modifying level before loading");
                         int minimumSpawnProbabilityRange = (int)Math.Ceiling(Math.Abs(TimeOfDay.Instance.daysUntilDeadline - 3) / 3.2);
@@ -380,13 +381,13 @@ namespace LethalQuantities.Patches
                 // Not very good, but for each dungeon flow, add it to the RoundManager if it isn't already there
                 // Only add dungeon flows whos default rarity is greater than 0, so if the user doesn't enable
                 // any custom flows, they won't get added
-                List<DungeonFlow> flows = __instance.dungeonFlowTypes.ToList();
+                List<IndoorMapType> flows = __instance.dungeonFlowTypes.ToList();
                 foreach (DungeonFlow flow in allDungeonFlows)
                 {
                     int index = -1;
                     for (int i = 0; i < flows.Count; i++)
                     {
-                        if (flows[i] == flow)
+                        if (flows[i].dungeonFlow == flow)
                         {
                             index = i;
                             break;
@@ -414,7 +415,7 @@ namespace LethalQuantities.Patches
                     {
                         // Not added, so add it now
                         MiniLogger.LogWarning($"Did not find dungeon flow {flow.name} in the global list of dungeon flows. Adding it now.");
-                        flows.Add(flow);
+                        flows.Add(flows[index]);
                     }
                 }
                 __instance.dungeonFlowTypes = flows.ToArray();
@@ -438,7 +439,7 @@ namespace LethalQuantities.Patches
                         Dictionary<string, int> flows = new Dictionary<string, int>();
                         foreach (IntWithRarity entry in level.dungeonFlowTypes)
                         {
-                            flows.TryAdd(__instance.dungeonFlowTypes[entry.id].name, entry.rarity);
+                            flows.TryAdd(__instance.dungeonFlowTypes[entry.id].dungeonFlow.name, entry.rarity);
                         }
 
                         Dictionary<string, int> updateFlows = new Dictionary<string, int>();
@@ -479,7 +480,7 @@ namespace LethalQuantities.Patches
                     int id = -1;
                     for (int i = 0; i < manager.dungeonFlowTypes.Length && id < 0; i++)
                     {
-                        if (manager.dungeonFlowTypes[i].name == entry.Key)
+                        if (manager.dungeonFlowTypes[i].dungeonFlow.name == entry.Key)
                         {
                             id = i;
                         }

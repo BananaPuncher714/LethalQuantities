@@ -63,6 +63,10 @@
                     prefabs.presetDaytimeSpawnRange = tooltip("Daytime enemy spawn amount range", "How much the value from the spawn chance curve can deviate. The total amount of enemies that will be spawned is randomly chosen from the spawn chance curve value minus the range, to the spawn chance curve value plus the range. For example, if the spawn chance curve value is 2, and the amount range is 3, then anywhere between 0 and 5 enemies can spawn.");
                     prefabs.presetDaytime = tooltip("Daytime enemies", "The list of all spawnable daytime enemies. Only enemies in this list will be allowed to spawn, regardless of the parent's daytime enemies list. If you would like to include enemies from the parent's enemies list, you must add it to this list, but you do not have to set the rarity.");
 
+                    prefabs.presetTitleLevelInformation = tooltip(fromHtml(`<span><b>Level Information</b></span>`), "Settings relating to the level information, mostly for cosmetic purposes");
+                    prefabs.presetLevelRiskLevel = tooltip("Risk level", "The risk level, normally represented with letters from D to A, and S to SSS+ for difficulty. This can be anything though");
+                    prefabs.presetLevelDescription = tooltip("Description", "The level's description. Please try to respect the original description, but can be modified to adjust for things such as difficulty or lore");
+
                     prefabs.presetTitleDungeons = tooltip(fromHtml(`<span><b>Dungeon flows</b></span>`), "Settings for dungeon flows. The overall map size is equal to the map size multiplier times the factory size multiplier");
                     prefabs.presetDungeonsMapSize = tooltip("Map size multiplier", "A multiplier that gets applied to the size of the dungeon flow. A value of 1 means that it generates at its regular size, while 0.5 means half, and 2 means twice as large. This value is multiplier by the factory size multiplier of the dungeon flow to find the final multiplier.");
                     prefabs.presetDungeons = tooltip("Dungeon flows", "The list of all available dungeon flows. Only dungeon flows in this list can be selected, regardless of the parent's dungeon flows list. If you would like to include flows from the parent's dungeon flows list, you must add it to this list, but you do not have to set the rarity.");
@@ -76,6 +80,7 @@
                 {
                     prefabs.enemyTypeMaxCount = tooltip("Max enemy count", `The maximum amount of this enemy that can spawn`);
                     prefabs.enemyTypePowerLevel = tooltip("Power level", `How much one of this enemy contributes to the level's power count`);
+                    prefabs.enemyTypeGroupSpawnCount = tooltip("Group spawn count", `How many of this enemy will spawn at once`)
                     prefabs.enemyTypeSpawnCurve = tooltip("Spawn chance curve", fromHtml(`<span>An animation curve controlling how likely this enemy to spawn throughout the day.<ul><li>The key ranges from 0 to 1, where 0 is the start of the day, and 1 is the latest time that the ship can leave.</li>
                             <li>The value is a multiplier that is multiplied by the rarity to find the final rarity to use when determining which enemy to spawn.</li></ul></span>`));
                     prefabs.enemyTypeStunMultiplier = tooltip("Stun time multiplier", "The multiplier on how long a stun grenade stuns this enemy. It is multiplied by the stun grenade effect duration(5 seconds) to find the total stun duration.");
@@ -853,6 +858,7 @@
                 constructor() {
                     this.maxEnemyCount = getPOLO();
                     this.powerLevel = getPOLO();
+                    this.groupSpawnCount = getPOLO();
                     this.spawnChanceCurve = getPOLO();
                     this.stunTimeMultiplier = getPOLO();
                     this.doorSpeedMultiplier = getPOLO();
@@ -871,7 +877,8 @@
                 static bind(enemy) {
                     const container = prefabs.container.cloneNode(true);
                     addEntry(container, prefabs.enemyTypeMaxCount.cloneNode(true), bindToggleableUnsignedInt(enemy.maxEnemyCount));
-                    addEntry(container, prefabs.enemyTypePowerLevel.cloneNode(true), bindToggleableUnsignedInt(enemy.powerLevel));
+                    addEntry(container, prefabs.enemyTypePowerLevel.cloneNode(true), bindToggleableUnsignedFloat(enemy.powerLevel));
+                    addEntry(container, prefabs.enemyTypeGroupSpawnCount.cloneNode(true), bindToggleableUnsignedInt(enemy.groupSpawnCount));
                     addEntry(container, prefabs.enemyTypeSpawnCurve.cloneNode(true), new AnimationCurveBoundList(enemy.spawnChanceCurve).getElement());
                     addEntry(container, prefabs.enemyTypeStunMultiplier.cloneNode(true), bindToggleableUnsignedFloat(enemy.stunTimeMultiplier));
                     addEntry(container, prefabs.enemyTypeDoorMultiplier.cloneNode(true), bindToggleableUnsignedFloat(enemy.doorSpeedMultiplier));
@@ -980,6 +987,8 @@
                     this.traps = getPOLO();
                     this.scrap = getPOLO();
                     this.dungeonFlows = getPOLO();
+                    this.riskLevel = getPOLO();
+                    this.levelDescription = getPOLO();
                     this.availableEnemies = {};
                     this.availableDaytimeEnemies = {};
                     this.availableOutsideEnemies = {};
@@ -1052,6 +1061,10 @@
                     col2.style.padding = "4px";
 
                     // Don't really have to clone these spoilers, since they're used only once
+                    col2.append(prefabs.presetTitleLevelInformation.cloneNode(true), document.createElement("br"));
+                    addEntry(col2, prefabs.presetLevelRiskLevel.cloneNode(true), bindToggleableString(preset.riskLevel));
+                    addEntry(col2, prefabs.presetLevelDescription.cloneNode(true), bindToggleableTextArea(preset.levelDescription, 40, 6));
+
                     col2.append(prefabs.presetTitleScrap.cloneNode(true), document.createElement("br"));
                     addEntry(col2, prefabs.presetScrapAmountMultiplier.cloneNode(true), new bindToggleableUnsignedFloat(preset.scrapAmountMultiplier));
                     addEntry(col2, prefabs.presetScrapValueMultiplier.cloneNode(true), new bindToggleableUnsignedFloat(preset.scrapValueMultiplier));
@@ -1141,6 +1154,8 @@
                         const preset = new Preset();
                         preset.id = levelId;
                         preset.name = (levelInfo.planet_name == null || levelInfo.planet_name === "") ? levelId : levelInfo.planet_name;
+                        preset.riskLevel.value = levelInfo.risk_level;
+                        preset.levelDescription.value = levelInfo.description;
                         preset.mapSizeMultiplier.value = levelInfo.factory_size_multiplier
                         preset.scrapAmountMultiplier.value = this.defaults.scrap_amount_multiplier;
                         preset.scrapValueMultiplier.value = this.defaults.scrap_value_multiplier;
@@ -1283,6 +1298,7 @@
 
                         jsType.maxEnemyCount.value = type.max_enemy_count;
                         jsType.powerLevel.value = type.power_level;
+                        jsType.groupSpawnCount.value = type.spawn_in_groups_of;
                         jsType.spawnChanceCurve.value = type.spawn_chance_curve;
                         jsType.stunTimeMultiplier.value = type.stun_time_multiplier;
                         jsType.doorSpeedMultiplier.value = type.door_speed_multiplier;
@@ -1868,6 +1884,21 @@
                     }
                 }
                 return types;
+            }
+
+            function bindToggleableString(obj, width = "") {
+                const input = document.createElement("input");
+                input.style.width = width;
+                obj.placeholder && (input.placeholder = obj.placeholder);
+                return new ToggleableBoundElement(input, obj).getElement();
+            }
+
+            function bindToggleableTextArea(obj, cols = "", rows= "") {
+                const input = document.createElement("textarea");
+                input.cols = cols;
+                input.rows = rows;
+                obj.placeholder && (input.placeholder = obj.placeholder);
+                return new ToggleableBoundElement(input, obj).getElement();
             }
 
             function bindToggleableInt(obj, width = "") {

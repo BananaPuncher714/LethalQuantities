@@ -1,4 +1,10 @@
 ## Changelog
+### 1.2.9
+- Updated to Lethal Company v50
+- Fixed item weights from being host only
+- Fixed priorities being incorrect(low to high)
+- Added an option to change the moon's risk level and description
+- Added group spawn count option
 ### 1.2.8
 - Fixed map desync when changing the map size multiplier
 - Fixed enemies and outside enemies not displaying their spawn falloff curve option

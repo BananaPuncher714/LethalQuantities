@@ -37,7 +37,8 @@ namespace LethalQuantities.Json
         public Optional<int> rarity = new Optional<int>();
 
         public Optional<int> maxEnemyCount = new Optional<int>();
-        public Optional<int> powerLevel = new Optional<int>();
+        public Optional<float> powerLevel = new Optional<float>();
+        public Optional<int> groupSpawnCount = new Optional<int>();
         public Optional<AnimationCurve> spawnChanceCurve = new Optional<AnimationCurve>();
         public Optional<AnimationCurve> spawnFalloffCurve = new Optional<AnimationCurve>();
         public Optional<bool> useSpawnFalloff = new Optional<bool>();
@@ -53,6 +54,9 @@ namespace LethalQuantities.Json
 
     public class LevelPreset
     {
+        public Optional<string> riskLevel = new Optional<string>();
+        public Optional<string> levelDescription = new Optional<string>();
+
         public Optional<Dictionary<EnemyType, LevelPresetEnemyType>> enemies = new Optional<Dictionary<EnemyType, LevelPresetEnemyType>>();
         public Optional<int> maxPowerCount = new Optional<int>();
         public Optional<AnimationCurve> spawnCurve = new Optional<AnimationCurve>();

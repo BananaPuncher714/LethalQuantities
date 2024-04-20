@@ -77,7 +77,8 @@ namespace LethalQuantities.Objects
         }
         public CustomEntry<int> rarity { get; set; } = new EmptyEntry<int>();
         public CustomEntry<int> maxEnemyCount { get; set; } = new EmptyEntry<int>();
-        public CustomEntry<int> powerLevel { get; set; } = new EmptyEntry<int>();
+        public CustomEntry<float> powerLevel { get; set; } = new EmptyEntry<float>();
+        public CustomEntry<int> spawnGroupCount { get; set; } = new EmptyEntry<int>();
         public CustomEntry<AnimationCurve> spawnCurve { get; set; } = new EmptyEntry<AnimationCurve>();
         public CustomEntry<float> stunTimeMultiplier { get; set; } = new EmptyEntry<float>();
         public CustomEntry<float> doorSpeedMultiplier { get; set; } = new EmptyEntry<float>();
@@ -313,6 +314,7 @@ namespace LethalQuantities.Objects
 
     public class LevelConfiguration : ISettable
     {
+        public Guid levelGuid { get; }
         public EnemyConfiguration<EnemyTypeConfiguration> enemies { get; } = new EnemyConfiguration<EnemyTypeConfiguration>();
         public EnemyConfiguration<DaytimeEnemyTypeConfiguration> daytimeEnemies { get; } = new EnemyConfiguration<DaytimeEnemyTypeConfiguration>();
         public OutsideEnemyConfiguration<EnemyTypeConfiguration> outsideEnemies { get; } = new OutsideEnemyConfiguration<EnemyTypeConfiguration>();
@@ -333,6 +335,7 @@ namespace LethalQuantities.Objects
 
         public LevelConfiguration(LevelInformation levelInfo)
         {
+            levelGuid = levelInfo.level.getGuid();
             instantiateConfigs(levelInfo);
         }
 
@@ -383,6 +386,7 @@ namespace LethalQuantities.Objects
                         typeConfiguration.stunnable = enemyConfig.BindGlobal(masterTypeConfig.stunnable, tablename, "Stunnable", enemyType.canBeStunned, $"Whether or not a(n) {friendlyName} can be stunned.\nAlternate values: DEFAULT, GLOBAL");
                         typeConfiguration.killable = enemyConfig.BindGlobal(masterTypeConfig.killable, tablename, "Killable", enemyType.canDie, $"Whether or not a(n) {friendlyName} can die.\nAlternate values: DEFAULT, GLOBAL");
                         typeConfiguration.enemyHp = enemyConfig.BindGlobal(masterTypeConfig.enemyHp, tablename, "EnemyHp", enemyType.enemyPrefab != null ? enemyType.enemyPrefab.GetComponent<EnemyAI>().enemyHP : 3, $"The initial amount of health a(n) {friendlyName} has.\nAlternate values: DEFAULT, GLOBAL");
+                        typeConfiguration.spawnGroupCount = enemyConfig.BindGlobal(masterTypeConfig.spawnGroupCount, tablename, "SpawnInGroupsOf", enemyType.spawnInGroupsOf, $"How many {enemyType.enemyName}s this tries to spawn at once\nAlternate values: DEFAULT, GLOBAL");
                         typeConfiguration.spawnFalloffCurve = enemyConfig.BindGlobal(masterTypeConfig.spawnFalloffCurve, tablename, "SpawnFalloffCurve", enemyType.numberSpawnedFalloff, $"The spawning curve multiplier of how less/more likely a(n) {friendlyName} is to spawn based on how many already have been spawned. (Key is number of {friendlyName}/10).\nAlternate values: DEFAULT, GLOBAL");
                         typeConfiguration.useSpawnFalloff = enemyConfig.BindGlobal(masterTypeConfig.useSpawnFalloff, tablename, "UseSpawnFalloff", enemyType.useNumberSpawnedFalloff, $"Whether or not to modify spawn rates based on how many existing {friendlyName} there are inside.\nAlternate values: DEFAULT, GLOBAL");
 
@@ -405,7 +409,7 @@ namespace LethalQuantities.Objects
                         // Store rarity in a separate table for convenience
                         typeConfiguration.rarity = new EmptyEntry<int>(enemySpawnRarities.GetValueOrDefault(enemyType.name, 0));
                         typeConfiguration.maxEnemyCount = new EmptyEntry<int>(enemyType.MaxCount);
-                        typeConfiguration.powerLevel = new EmptyEntry<int>(enemyType.PowerLevel);
+                        typeConfiguration.powerLevel = new EmptyEntry<float>(enemyType.PowerLevel);
                         typeConfiguration.spawnCurve = new EmptyEntry<AnimationCurve>(enemyType.probabilityCurve);
                         typeConfiguration.stunTimeMultiplier = new EmptyEntry<float>(enemyType.stunTimeMultiplier);
                         typeConfiguration.doorSpeedMultiplier = new EmptyEntry<float>(enemyType.doorSpeedMultiplier);
@@ -413,6 +417,7 @@ namespace LethalQuantities.Objects
                         typeConfiguration.stunnable = new EmptyEntry<bool>(enemyType.canBeStunned);
                         typeConfiguration.killable = new EmptyEntry<bool>(enemyType.canDie);
                         typeConfiguration.enemyHp = new EmptyEntry<int>(enemyType.enemyPrefab != null ? enemyType.enemyPrefab.GetComponent<EnemyAI>().enemyHP : 3);
+                        typeConfiguration.spawnGroupCount = new EmptyEntry<int>(enemyType.spawnInGroupsOf);
                         typeConfiguration.spawnFalloffCurve = new EmptyEntry<AnimationCurve>(enemyType.numberSpawnedFalloff);
                         typeConfiguration.useSpawnFalloff = new EmptyEntry<bool>(enemyType.useNumberSpawnedFalloff);
 
@@ -453,6 +458,7 @@ namespace LethalQuantities.Objects
                         typeConfiguration.stunnable = enemyConfig.BindGlobal(masterTypeConfig.stunnable, tablename, "Stunnable", enemyType.canBeStunned, $"Whether or not a(n) {friendlyName} can be stunned.\nAlternate values: DEFAULT, GLOBAL");
                         typeConfiguration.killable = enemyConfig.BindGlobal(masterTypeConfig.killable, tablename, "Killable", enemyType.canDie, $"Whether or not a(n) {friendlyName} can die.\nAlternate values: DEFAULT, GLOBAL");
                         typeConfiguration.enemyHp = enemyConfig.BindGlobal(masterTypeConfig.enemyHp, tablename, "EnemyHp", enemyType.enemyPrefab != null ? enemyType.enemyPrefab.GetComponent<EnemyAI>().enemyHP : 3, $"The initial amount of health a(n) {friendlyName} has.\nAlternate values: DEFAULT, GLOBAL");
+                        typeConfiguration.spawnGroupCount = enemyConfig.BindGlobal(masterTypeConfig.spawnGroupCount, tablename, "SpawnInGroupsOf", enemyType.spawnInGroupsOf, $"How many {enemyType.enemyName}s this tries to spawn at once\nAlternate values: DEFAULT, GLOBAL");
                         // Not implemented for daytime enemies
                         //typeConfiguration.spawnFalloffCurve = enemyConfig.BindGlobal(masterTypeConfig.spawnFalloffCurve, tablename, "SpawnFalloffCurve", enemyType.numberSpawnedFalloff, $"The spawning curve multiplier of how less/more likely a(n) {friendlyName} is to spawn based on how many have already been spawned. (Key is number of {enemyType.enemyName}/10). This does not work for daytime enemies. The default value is {{0}}");
                         //typeConfiguration.useSpawnFalloff = enemyConfig.BindGlobal(masterTypeConfig.useSpawnFalloff, tablename, "UseSpawnFalloff", enemyType.useNumberSpawnedFalloff, $"Whether or not to modify spawn rates based on how many existing {friendlyName} there are. The default value is {{0}}");
@@ -476,7 +482,7 @@ namespace LethalQuantities.Objects
                         // Store rarity in a separate table for convenience
                         typeConfiguration.rarity = new EmptyEntry<int>(enemySpawnRarities.GetValueOrDefault(enemyType.name, 0));
                         typeConfiguration.maxEnemyCount = new EmptyEntry<int>(enemyType.MaxCount);
-                        typeConfiguration.powerLevel = new EmptyEntry<int>(enemyType.PowerLevel);
+                        typeConfiguration.powerLevel = new EmptyEntry<float>(enemyType.PowerLevel);
                         typeConfiguration.spawnCurve = new EmptyEntry<AnimationCurve>(enemyType.probabilityCurve);
                         typeConfiguration.stunTimeMultiplier = new EmptyEntry<float>(enemyType.stunTimeMultiplier);
                         typeConfiguration.doorSpeedMultiplier = new EmptyEntry<float>(enemyType.doorSpeedMultiplier);
@@ -484,6 +490,7 @@ namespace LethalQuantities.Objects
                         typeConfiguration.stunnable = new EmptyEntry<bool>(enemyType.canBeStunned);
                         typeConfiguration.killable = new EmptyEntry<bool>(enemyType.canDie);
                         typeConfiguration.enemyHp = new EmptyEntry<int>(enemyType.enemyPrefab != null ? enemyType.enemyPrefab.GetComponent<EnemyAI>().enemyHP : 3);
+                        typeConfiguration.spawnGroupCount = new EmptyEntry<int>(enemyType.spawnInGroupsOf);
                         typeConfiguration.spawnFalloffCurve = new EmptyEntry<AnimationCurve>(enemyType.numberSpawnedFalloff);
                         typeConfiguration.useSpawnFalloff = new EmptyEntry<bool>(enemyType.useNumberSpawnedFalloff);
 
@@ -525,6 +532,7 @@ namespace LethalQuantities.Objects
                         typeConfiguration.stunnable = enemyConfig.BindGlobal(masterTypeConfig.stunnable, tablename, "Stunnable", enemyType.canBeStunned, $"Whether or not a(n) {friendlyName} can be stunned.\nAlternate values: DEFAULT, GLOBAL");
                         typeConfiguration.killable = enemyConfig.BindGlobal(masterTypeConfig.killable, tablename, "Killable", enemyType.canDie, $"Whether or not a(n) {friendlyName} can die.\nAlternate values: DEFAULT, GLOBAL");
                         typeConfiguration.enemyHp = enemyConfig.BindGlobal(masterTypeConfig.enemyHp, tablename, "EnemyHp", enemyType.enemyPrefab != null ? enemyType.enemyPrefab.GetComponent<EnemyAI>().enemyHP : 3, $"The initial amount of health a(n) {friendlyName} has.\nAlternate values: DEFAULT, GLOBAL");
+                        typeConfiguration.spawnGroupCount = enemyConfig.BindGlobal(masterTypeConfig.spawnGroupCount, tablename, "SpawnInGroupsOf", enemyType.spawnInGroupsOf, $"How many {enemyType.enemyName}s this tries to spawn at once\nAlternate values: DEFAULT, GLOBAL");
                         typeConfiguration.spawnFalloffCurve = enemyConfig.BindGlobal(masterTypeConfig.spawnFalloffCurve, tablename, "SpawnFalloffCurve", enemyType.numberSpawnedFalloff, $"The spawning curve multiplier of how less/more likely a(n) {friendlyName} is to spawn based on how many have already been spawned. (Key is number of {friendlyName} allowed at once.\nAlternate values: DEFAULT, GLOBAL");
                         typeConfiguration.useSpawnFalloff = enemyConfig.BindGlobal(masterTypeConfig.useSpawnFalloff, tablename, "UseSpawnFalloff", enemyType.useNumberSpawnedFalloff, $"Whether or not to modify spawn rates based on how many existing {friendlyName} there are.\nAlternate values: DEFAULT, GLOBAL");
 
@@ -546,7 +554,7 @@ namespace LethalQuantities.Objects
                         // Store rarity in a separate table for convenience
                         typeConfiguration.rarity = new EmptyEntry<int>(enemySpawnRarities.GetValueOrDefault(enemyType.name, 0));
                         typeConfiguration.maxEnemyCount = new EmptyEntry<int>(enemyType.MaxCount);
-                        typeConfiguration.powerLevel = new EmptyEntry<int>(enemyType.PowerLevel);
+                        typeConfiguration.powerLevel = new EmptyEntry<float>(enemyType.PowerLevel);
                         typeConfiguration.spawnCurve = new EmptyEntry<AnimationCurve>(enemyType.probabilityCurve);
                         typeConfiguration.stunTimeMultiplier = new EmptyEntry<float>(enemyType.stunTimeMultiplier);
                         typeConfiguration.doorSpeedMultiplier = new EmptyEntry<float>(enemyType.doorSpeedMultiplier);
@@ -554,6 +562,7 @@ namespace LethalQuantities.Objects
                         typeConfiguration.stunnable = new EmptyEntry<bool>(enemyType.canBeStunned);
                         typeConfiguration.killable = new EmptyEntry<bool>(enemyType.canDie);
                         typeConfiguration.enemyHp = new EmptyEntry<int>(enemyType.enemyPrefab != null ? enemyType.enemyPrefab.GetComponent<EnemyAI>().enemyHP : 3);
+                        typeConfiguration.spawnGroupCount = new EmptyEntry<int>(enemyType.spawnInGroupsOf);
                         typeConfiguration.spawnFalloffCurve = new EmptyEntry<AnimationCurve>(enemyType.numberSpawnedFalloff);
                         typeConfiguration.useSpawnFalloff = new EmptyEntry<bool>(enemyType.useNumberSpawnedFalloff);
 
@@ -652,7 +661,7 @@ namespace LethalQuantities.Objects
                 Dictionary<DungeonFlow, int> flowRarities = new Dictionary<DungeonFlow, int>();
                 foreach (IntWithRarity flow in level.dungeonFlowTypes)
                 {
-                    flowRarities.TryAdd(levelInfo.globalInfo.manager.dungeonFlowTypes[flow.id], flow.rarity);
+                    flowRarities.TryAdd(levelInfo.globalInfo.manager.dungeonFlowTypes[flow.id].dungeonFlow, flow.rarity);
                 }
 
                 foreach (DungeonFlow flow in levelInfo.globalInfo.allDungeonFlows)
@@ -676,7 +685,7 @@ namespace LethalQuantities.Objects
                 Dictionary<DungeonFlow, int> flowRarities = new Dictionary<DungeonFlow, int>();
                 foreach (IntWithRarity flow in level.dungeonFlowTypes)
                 {
-                    flowRarities.TryAdd(levelInfo.globalInfo.manager.dungeonFlowTypes[flow.id], flow.rarity);
+                    flowRarities.TryAdd(levelInfo.globalInfo.manager.dungeonFlowTypes[flow.id].dungeonFlow, flow.rarity);
                 }
 
                 foreach (DungeonFlow flow in levelInfo.globalInfo.allDungeonFlows)

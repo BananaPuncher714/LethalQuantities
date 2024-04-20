@@ -47,6 +47,12 @@ namespace LethalQuantities.Json
             set = val != null;
         }
 
+        public bool get(out T val)
+        {
+            val = this.value;
+            return set;
+        }
+
         public Optional(CustomEntry<T> entry)
         {
             value = entry.localValue(value);
@@ -142,7 +148,8 @@ namespace LethalQuantities.Json
         public Optional<int> rarity = new Optional<int>();
         public Optional<bool> killable = new Optional<bool>();
         public Optional<int> maxEnemyCount = new Optional<int>();
-        public Optional<int> powerLevel = new Optional<int>();
+        public Optional<float> powerLevel = new Optional<float>();
+        public Optional<int> groupSpawnCount = new Optional<int>();
         public Optional<AnimationCurve> spawnChanceCurve = new Optional<AnimationCurve>();
         public Optional<AnimationCurve> spawnFalloffCurve = new Optional<AnimationCurve>();
         public Optional<float> stunGameDifficultyMultiplier = new Optional<float>();
@@ -163,7 +170,8 @@ namespace LethalQuantities.Json
             rarity = new Optional<int>(configuration.rarity);
             killable = new Optional<bool>(configuration.killable);
             maxEnemyCount = new Optional<int>(configuration.maxEnemyCount);
-            powerLevel = new Optional<int>(configuration.powerLevel);
+            powerLevel = new Optional<float>(configuration.powerLevel);
+            groupSpawnCount = new Optional<int>(configuration.spawnGroupCount);
             spawnChanceCurve = new Optional<AnimationCurve>(configuration.spawnCurve);
             stunGameDifficultyMultiplier = new Optional<float>(configuration.stunGameDifficultyMultiplier);
             stunTimeMultiplier = new Optional<float>(configuration.stunTimeMultiplier);
@@ -185,7 +193,8 @@ namespace LethalQuantities.Json
             doorSpeedMultiplier = new Optional<float>(type.doorSpeedMultiplier, false);
             killable = new Optional<bool>(type.canDie, false);
             maxEnemyCount = new Optional<int>(type.MaxCount, false);
-            powerLevel = new Optional<int>(type.PowerLevel, false);
+            powerLevel = new Optional<float>(type.PowerLevel, false);
+            groupSpawnCount = new Optional<int>(type.spawnInGroupsOf, false);
             spawnChanceCurve = new Optional<AnimationCurve>(type.probabilityCurve, false);
             stunGameDifficultyMultiplier = new Optional<float>(type.stunGameDifficultyMultiplier, false);
             stunTimeMultiplier = new Optional<float>(type.stunTimeMultiplier, false);
@@ -256,6 +265,8 @@ namespace LethalQuantities.Json
         public string name = "";
         public string id { get; set; } = "";
         public string parent = "";
+        public Optional<string> levelDescription = new Optional<string>();
+        public Optional<string> riskLevel = new Optional<string>();
         public Optional<List<EnemyTypeOptions>> daytimeEnemies = new Optional<List<EnemyTypeOptions>>();
         public Optional<AnimationCurve> daytimeSpawnCurve = new Optional<AnimationCurve>();
         public Optional<float> daytimeSpawnProbabilityRange = new Optional<float>();
@@ -332,6 +343,12 @@ namespace LethalQuantities.Json
 
         public Preset(LevelConfiguration configuration)
         {
+            {
+                SelectableLevel level = configuration.levelGuid.getLevel();
+
+                riskLevel = new Optional<string>(level.riskLevel);
+                levelDescription = new Optional<string>(level.LevelDescription);
+            }
             {
                 maxPowerCount = new Optional<int>(configuration.enemies.maxPowerCount);
                 spawnCurve = new Optional<AnimationCurve>(configuration.enemies.spawnAmountCurve);

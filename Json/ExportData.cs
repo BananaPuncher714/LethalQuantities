@@ -12,7 +12,7 @@ namespace LethalQuantities.Json
     public class ExportDataEnemyType
     {
         public int max_enemy_count;
-        public int power_level;
+        public float power_level;
         public AnimationCurve spawn_chance_curve;
         public float stun_time_multiplier;
         public float door_speed_multiplier;
@@ -23,6 +23,7 @@ namespace LethalQuantities.Json
         public AnimationCurve spawn_falloff_curve;
         public bool use_spawn_falloff;
         public string name;
+        public int spawn_in_groups_of;
 
         public ExportDataEnemyType()
         {
@@ -42,6 +43,7 @@ namespace LethalQuantities.Json
             spawn_falloff_curve = new AnimationCurve(type.numberSpawnedFalloff.keys.Select(key => new Keyframe(key.time * 10, key.value)).ToArray());
             use_spawn_falloff = type.useNumberSpawnedFalloff;
             name = type.getFriendlyName();
+            spawn_in_groups_of = type.spawnInGroupsOf;
         }
     }
 
@@ -87,6 +89,12 @@ namespace LethalQuantities.Json
         }
     }
 
+    public class ExportDataDungeonFlow
+    {
+        public string name;
+
+    }
+
     public class ExportTypeSelectableLevel
     {
         public int price;
@@ -103,6 +111,8 @@ namespace LethalQuantities.Json
         public int min_scrap;
         public int max_scrap;
         public bool spawn_enemies_and_scrap;
+        public string risk_level;
+        public string description;
         public Dictionary<string, int> enemies = new Dictionary<string, int>();
         public Dictionary<string, int> daytime_enemies = new Dictionary<string, int>();
         public Dictionary<string, int> outside_enemies = new Dictionary<string, int>();
@@ -130,6 +140,8 @@ namespace LethalQuantities.Json
             min_scrap = level.minScrap;
             max_scrap = level.maxScrap;
             spawn_enemies_and_scrap = level.spawnEnemiesAndScrap;
+            risk_level = level.riskLevel;
+            description = level.LevelDescription;
 
             foreach (var item in level.Enemies)
             {
@@ -149,7 +161,7 @@ namespace LethalQuantities.Json
             }
             foreach (var item in level.dungeonFlowTypes)
             {
-                dungeon_flows.TryAdd(RoundManager.Instance.dungeonFlowTypes[item.id].name, item.rarity);
+                dungeon_flows.TryAdd(RoundManager.Instance.dungeonFlowTypes[item.id].dungeonFlow.name, item.rarity);
             }
             foreach (var item in level.spawnableMapObjects)
             {

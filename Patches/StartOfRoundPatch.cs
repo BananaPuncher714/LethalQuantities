@@ -9,14 +9,61 @@ namespace LethalQuantities.Patches
 {
     internal class StartOfRoundPatch
     {
+        private class LevelCosmeticSettings
+        {
+            Guid guid;
+            string description;
+            string riskLevel;
+
+            internal LevelCosmeticSettings(SelectableLevel level)
+            {
+                guid = level.getGuid();
+                riskLevel = level.riskLevel;
+                description = level.LevelDescription;
+            }
+
+            internal void reset()
+            {
+                SelectableLevel level = guid.getLevel();
+                level.LevelDescription = description;
+                level.riskLevel = riskLevel;
+            }
+        }
+
         private static Dictionary<int, int> defaultPrices = new Dictionary<int, int>();
+        private static Optional<LevelCosmeticSettings> previousLevelSettings = Optional<LevelCosmeticSettings>.Empty();
 
         [HarmonyPatch(typeof(StartOfRound), nameof(StartOfRound.ChangeLevel))]
         [HarmonyPriority(200)]
         [HarmonyPrefix]
         private static void onPlanetChange(StartOfRound __instance, int levelID)
         {
-            updateMoonPrices(__instance.levels[levelID]);
+            SelectableLevel level = __instance.levels[levelID];
+
+            updateMoonPrices(level);
+
+            try
+            {
+                // Undo the previous level's settings if set
+                if (previousLevelSettings.get(out LevelCosmeticSettings prev))
+                {
+                    MiniLogger.LogInfo("Resetting previous level's risk level and description");
+                    prev.reset();
+                }
+
+                // Set the cosmetic information
+                if (Plugin.INSTANCE.presets.TryGetValue(level.getGuid(), out LevelPreset preset))
+                {
+                    previousLevelSettings = new Optional<LevelCosmeticSettings>(new LevelCosmeticSettings(level));
+
+                    preset.riskLevel.update(ref level.riskLevel);
+                    preset.levelDescription.update(ref level.LevelDescription);
+                }
+            } catch (Exception e)
+            {
+                MiniLogger.LogError("Encountered an error while trying to set the moon risk level and description");
+                MiniLogger.LogError($"Please report this error to the mod developers: {e}");
+            }
         }
 
         public static void updateMoonPrices(SelectableLevel level)

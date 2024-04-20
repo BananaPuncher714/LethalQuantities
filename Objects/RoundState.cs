@@ -185,6 +185,7 @@ namespace LethalQuantities.Objects
                     presetInfo.stunGameDifficultyMultiplier.update(ref type.stunGameDifficultyMultiplier);
                     presetInfo.stunnable.update(ref type.canBeStunned);
                     presetInfo.killable.update(ref type.canDie);
+                    presetInfo.groupSpawnCount.update(ref type.spawnInGroupsOf);
                     presetInfo.spawnFalloffCurve.update(ref type.numberSpawnedFalloff);
                     presetInfo.useSpawnFalloff.update(ref type.useNumberSpawnedFalloff);
 

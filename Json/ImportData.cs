@@ -66,6 +66,9 @@ namespace LethalQuantities.Json
 
                         levelPreset.mapSizeMultiplier = set<float>(parents, nameof(Preset.mapSizeMultiplier));
 
+                        levelPreset.riskLevel = set<string>(parents, nameof(Preset.riskLevel));
+                        levelPreset.levelDescription = set<string>(parents, nameof(Preset.levelDescription));
+
                         {
                             Optional<List<EnemyTypeOptions>> enemyOptions = set<List<EnemyTypeOptions>>(parents, nameof(Preset.enemies));
                             if (enemyOptions.isSet())
@@ -78,7 +81,8 @@ namespace LethalQuantities.Json
                                         LevelPresetEnemyType type = new LevelPresetEnemyType();
                                         type.rarity = set<int>(parents, nameof(Preset.enemies), option.id, nameof(EnemyTypeOptions.rarity));
                                         type.maxEnemyCount = set<int>(parents, nameof(Preset.enemies), option.id, nameof(EnemyTypeOptions.maxEnemyCount));
-                                        type.powerLevel = set<int>(parents, nameof(Preset.enemies), option.id, nameof(EnemyTypeOptions.powerLevel));
+                                        type.powerLevel = set<float>(parents, nameof(Preset.enemies), option.id, nameof(EnemyTypeOptions.powerLevel));
+                                        type.groupSpawnCount = set<int>(parents, nameof(Preset.enemies), option.id, nameof(EnemyTypeOptions.groupSpawnCount));
                                         type.spawnChanceCurve = set<AnimationCurve>(parents, nameof(Preset.enemies), option.id, nameof(EnemyTypeOptions.spawnChanceCurve));
                                         type.spawnFalloffCurve = set<AnimationCurve>(parents, nameof(Preset.enemies), option.id, nameof(EnemyTypeOptions.spawnFalloffCurve));
                                         if (type.spawnFalloffCurve.isSet())
@@ -119,7 +123,8 @@ namespace LethalQuantities.Json
                                         LevelPresetEnemyType type = new LevelPresetEnemyType();
                                         type.rarity = set<int>(parents, nameof(Preset.daytimeEnemies), option.id, nameof(EnemyTypeOptions.rarity));
                                         type.maxEnemyCount = set<int>(parents, nameof(Preset.daytimeEnemies), option.id, nameof(EnemyTypeOptions.maxEnemyCount));
-                                        type.powerLevel = set<int>(parents, nameof(Preset.daytimeEnemies), option.id, nameof(EnemyTypeOptions.powerLevel));
+                                        type.powerLevel = set<float>(parents, nameof(Preset.daytimeEnemies), option.id, nameof(EnemyTypeOptions.powerLevel));
+                                        type.groupSpawnCount = set<int>(parents, nameof(Preset.daytimeEnemies), option.id, nameof(EnemyTypeOptions.groupSpawnCount));
                                         type.spawnChanceCurve = set<AnimationCurve>(parents, nameof(Preset.daytimeEnemies), option.id, nameof(EnemyTypeOptions.spawnChanceCurve));
                                         type.spawnFalloffCurve = set<AnimationCurve>(parents, nameof(Preset.daytimeEnemies), option.id, nameof(EnemyTypeOptions.spawnFalloffCurve));
                                         if (type.spawnFalloffCurve.isSet())
@@ -160,7 +165,8 @@ namespace LethalQuantities.Json
                                         LevelPresetEnemyType type = new LevelPresetEnemyType();
                                         type.rarity = set<int>(parents, nameof(Preset.outsideEnemies), option.id, nameof(EnemyTypeOptions.rarity));
                                         type.maxEnemyCount = set<int>(parents, nameof(Preset.outsideEnemies), option.id, nameof(EnemyTypeOptions.maxEnemyCount));
-                                        type.powerLevel = set<int>(parents, nameof(Preset.outsideEnemies), option.id, nameof(EnemyTypeOptions.powerLevel));
+                                        type.powerLevel = set<float>(parents, nameof(Preset.outsideEnemies), option.id, nameof(EnemyTypeOptions.powerLevel));
+                                        type.groupSpawnCount = set<int>(parents, nameof(Preset.outsideEnemies), option.id, nameof(EnemyTypeOptions.groupSpawnCount));
                                         type.spawnChanceCurve = set<AnimationCurve>(parents, nameof(Preset.outsideEnemies), option.id, nameof(EnemyTypeOptions.spawnChanceCurve));
                                         type.spawnFalloffCurve = set<AnimationCurve>(parents, nameof(Preset.outsideEnemies), option.id, nameof(EnemyTypeOptions.spawnFalloffCurve));
                                         if (type.spawnFalloffCurve.isSet())

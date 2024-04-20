@@ -80,6 +80,7 @@ These configuration files do _not_ interfere with each other, meaning enemies sp
 - EnemyType - There is one section for each enemy. Invalid enemy types are ignored.
   - `MaxEnemyCount` - The total amount of enemies of the given type that can spawn
   - `PowerLevel` - How much power an enemy of the given type counts for
+  - `GroupSpawnCount` - How many enemies will spawn together at once. Will not spawn more than allowed by the maximum power level.
   - `SpawnCurve` - An AnimationCurve from 0 to 1. The key represents the percentage of time progressed, much like `SpawnChanceCurve`. The value normally ranges from 0 to 1, and is multiplied by `Rarity` to find the weight. For more information, view the **Spawn Logic** section below
   - `StunTimeMultiplier` - The  multiplier for how long an enemy can be stunned.
   - `DoorSpeedMultiplier` - The multiplier for how long an enemy takes to open a door.
