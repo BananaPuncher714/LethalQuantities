@@ -1223,6 +1223,8 @@
                         this.#removeUnknownId(preset.availableFlows, preset.dungeonFlows.value);
                         this.#removeUnknownId(preset.availableTraps, preset.traps.value);
                         this.#removeUnknownId(preset.availablePrices, preset.price.value);
+
+                        this.convertPreset(preset);
                     }
 
                     for (const id of Object.keys(this.levels)) {
@@ -1259,6 +1261,53 @@
                     preset.availableFlows = structuredClone(this.dungeonFlows);
                     preset.availableTraps = structuredClone(this.traps);
                     preset.availablePrices = structuredClone(this.prices);
+                }
+
+                convertPreset(preset) {
+                    const presetTemplate = new Preset();
+                    const enemyTemplate = new EnemyType();
+                    const scrapTemplate = new ItemType();
+                    const priceTemplate = new PriceType();
+                    const flowTemplate = new DungeonFlowType();
+                    const trapTemplate = new TrapType();
+
+                    merge(preset, presetTemplate);
+
+                    if (preset.daytimeEnemies.value) {
+                        for (const val of Object.values(preset.daytimeEnemies.value)) {
+                            merge(val, enemyTemplate);
+                        }
+                    }
+                    if (preset.enemies.value) {
+                        for (const val of Object.values(preset.enemies.value)) {
+                            merge(val, enemyTemplate);
+                        }
+                    }
+                    if (preset.outsideEnemies.value) {
+                        for (const val of Object.values(preset.outsideEnemies.value)) {
+                            merge(val, enemyTemplate);
+                        }
+                    }
+                    if (preset.price.value) {
+                        for (const val of Object.values(preset.price.value)) {
+                            merge(val, priceTemplate);
+                        }
+                    }
+                    if (preset.scrap.value) {
+                        for (const val of Object.values(preset.scrap.value)) {
+                            merge(val, scrapTemplate);
+                        }
+                    }
+                    if (preset.dungeonFlows.value) {
+                        for (const val of Object.values(preset.dungeonFlows.value)) {
+                            merge(val, flowTemplate);
+                        }
+                    }
+                    if (preset.traps.value) {
+                        for (const val of Object.values(preset.traps.value)) {
+                            merge(val, trapTemplate);
+                        }
+                    }
                 }
 
                 #removeUnknownId(options, list) {
@@ -1973,6 +2022,14 @@
                 return str.replace("&", "&amp;")
                         .replace(">", "&gt;")
                         .replace("<", "&lt;");
+            }
+
+            function merge(obj1, obj2) {
+                for (const [key, val] of Object.entries(obj2)) {
+                    if (!Object.hasOwn(obj1, key)) {
+                        obj1[key] = structuredClone(val);
+                    }
+                }
             }
 
             // Insertion sort
